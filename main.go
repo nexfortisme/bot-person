@@ -53,8 +53,6 @@ func main() {
 		log.Fatalf("Could not parse config file")
 	}
 
-	fmt.Print(bConfig)
-
 	// Create the Discord client and add the handler
 	// to process messages
 	discord, err := discordgo.New("Bot " + config.DiscordToken)
@@ -169,3 +167,4 @@ func replaceMentionsWithNames(mentions []*discordgo.User, message string) string
 }
 
 // This - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2048
+// https://beta.openai.com/account/usage
