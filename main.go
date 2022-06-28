@@ -94,10 +94,11 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Remove the initial mention of the bot
 	toReplace := fmt.Sprintf("<@%s> ", id)
+	requestUser := m.Author.Username
 	msg := strings.Replace(m.Message.Content, toReplace, "", 1)
 	msg = replaceMentionsWithNames(m.Mentions, msg)
 
-	log.Printf("< %s\n", msg)
+	log.Printf(" %s (%s) < %s\n", requestUser, msg)
 
 	respTxt := formulateResponse(msg)
 
