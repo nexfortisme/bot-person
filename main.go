@@ -102,7 +102,7 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	respTxt := formulateResponse(msg)
 
-	log.Printf("> %s\n", respTxt)
+	log.Printf(" Bot Person > %s\n", respTxt)
 	s.ChannelMessageSend(m.ChannelID, respTxt)
 }
 
