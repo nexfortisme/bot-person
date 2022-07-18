@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -53,6 +54,16 @@ func main() {
 		log.Fatalf("Could not parse config file")
 	}
 
+	f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+
+	mw := io.MultiWriter(os.Stdout, f)
+	defer f.Close()
+
+	log.SetOutput(mw)
+
 	// Create the Discord client and add the handler
 	// to process messages
 	discord, err := discordgo.New("Bot " + config.DiscordToken)
@@ -76,7 +87,7 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
-	discord.Close()
+	_ = discord.Close()
 }
 
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -105,8 +116,11 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	respTxt := formulateResponse(msg)
 
-	log.Printf(" Bot Person > %s\n", respTxt)
-	s.ChannelMessageSend(m.ChannelID, respTxt)
+	log.Printf("Bot Person > %s \n", respTxt)
+	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
+	if err != nil {
+		return
+	}
 }
 
 func formulateResponse(prompt string) string {
@@ -123,7 +137,7 @@ func formulateResponse(prompt string) string {
 	  }`
 	data := fmt.Sprintf(dataTemplate, prompt)
 
-	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/completions", strings.NewReader((data)))
+	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/completions", strings.NewReader(data))
 	if err != nil {
 		log.Fatalf("Error creating POST request")
 	}
@@ -137,7 +151,10 @@ func formulateResponse(prompt string) string {
 	var rspOAI OpenAIResponse
 	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
 	// need to add proper error handling
-	json.Unmarshal([]byte(string(buf)), &rspOAI)
+	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
+	if err != nil {
+		return ""
+	}
 
 	// It's possible that OpenAI returns no response, so
 	// fallback to a default one
