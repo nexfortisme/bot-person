@@ -99,20 +99,20 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Only process messages that mention the bot
 	id := s.State.User.ID
-	if !mentionsBot(m.Mentions, id) {
+	if !mentionsBot(m.Mentions, id) && !mentionsKeyphrase(m) {
 		return
 	}
 
 	// Remove the initial mention of the bot
 	toReplace := fmt.Sprintf("<@%s> ", id)
-	requestUser := m.Author.Username
-	rGuild, _ := s.State.Guild(m.GuildID)
-	rGuildName := rGuild.Name
+	// requestUser := m.Author.Username
+	// rGuild, _ := s.State.Guild(m.GuildID)
+	// rGuildName := rGuild.Name
 
 	msg := strings.Replace(m.Message.Content, toReplace, "", 1)
 	msg = replaceMentionsWithNames(m.Mentions, msg)
 
-	log.Printf(" %s (%s) < %s\n", requestUser, rGuildName, msg)
+	// log.Printf(" %s (%s) < %s\n", requestUser, rGuildName, msg)
 
 	respTxt := formulateResponse(msg)
 
@@ -173,6 +173,10 @@ func mentionsBot(mentions []*discordgo.User, id string) bool {
 		}
 	}
 	return false
+}
+
+func mentionsKeyphrase(m *discordgo.MessageCreate) bool {
+	return strings.HasPrefix(m.Content, "!bot")
 }
 
 // The message string that the bot receives reads mentions of other users as
