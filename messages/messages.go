@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"main/logging"
+	"main/util"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -40,23 +40,16 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if strings.HasPrefix(m.Message.Content, "bad bot") {
-		logging.LogIncomingMessage(s, m, m.Message.Content)
-		logging.IncrementTracker(2, m)
+		logging.IncrementTracker(2, m, s)
 		log.Printf("Bot Person > I'm Sorry")
 		_, err := s.ChannelMessageSend(m.ChannelID, "I'm Sorry.")
-		if err != nil {
-			return
-		}
-	} else if strings.HasPrefix(m.Message.Content, "!badCount") {
-		logging.LogIncomingMessage(s, m, m.Message.Content)
-		logging.IncrementTracker(1, m)
-		ret := "Bad Bot Count: " + strconv.Itoa(logging.GetBadBotCount())
-		_, err := s.ChannelMessageSend(m.ChannelID, ret)
-		if err != nil {
-			return
-		}
-		ret = "Bot Person > " + ret
-		log.Printf(ret)
+		util.HandleErrors(err)
+	} else if strings.HasPrefix(m.Message.Content, "!botStats") {
+		logging.IncrementTracker(1, m, s)
+		logging.GetBotStats(s, m)
+	} else if strings.HasPrefix(m.Message.Content, "!myStats") {
+		logging.IncrementTracker(1, m, s)
+		logging.GetUserStats(s, m)
 	}
 
 	// Only process messages that mention the bot
@@ -72,13 +65,11 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	logging.LogIncomingMessage(s, m, msg)
 
 	respTxt := getOpenAIResponse(msg, openAIKey)
-	logging.IncrementTracker(1, m)
+	logging.IncrementTracker(1, m, s)
 
 	log.Printf("Bot Person > %s \n", respTxt)
 	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
-	if err != nil {
-		return
-	}
+	util.HandleErrors(err)
 
 }
 
@@ -126,7 +117,7 @@ func getOpenAIResponse(prompt string, openAIKey string) string {
 }
 
 func mentionsKeyphrase(m *discordgo.MessageCreate) bool {
-	return strings.HasPrefix(m.Content, "!bot")
+	return strings.HasPrefix(m.Content, "!bot") && m.Content != "!botStats"
 }
 
 // Determine if the bot's ID is in the list of users mentioned
