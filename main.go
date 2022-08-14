@@ -6,12 +6,10 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"main/logging"
 	"main/messages"
-	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -39,25 +37,9 @@ type Config struct {
 	DiscordToken string `json:"DiscordToken"`
 }
 
-// TODO - Add user tracking
-// USERs []USER `json:"users"`
-/*
-	user: {
-		username string
-		userData BotTracking
-	}
-*/
-type BotTracking struct {
-	BadBotCount  int `json:"BadBotCount"`
-	MessageCount int `json:"MessageCount"`
-}
-
 var (
 	config Config
-)
-
-var (
-	botTracking BotTracking
+	// botTracking BotTracking
 )
 
 func readConfig() {
@@ -73,32 +55,10 @@ func readConfig() {
 	}
 }
 
-func initBotStatistics() {
-	var trackingFile []byte
-
-	trackingFile, err := ioutil.ReadFile("botTracking.json")
-	if err != nil {
-
-		log.Printf("Error Reading botTracking. Creating File")
-		ioutil.WriteFile("botTracking.json", []byte("{\"BadBotCount\":0,\"MessageCount\":0}"), 0666)
-
-		trackingFile, err = ioutil.ReadFile("botTracking.json")
-		if err != nil {
-			log.Fatalf("Could not read config file: botTracking.json")
-		}
-
-	}
-
-	err = json.Unmarshal(trackingFile, &botTracking)
-	if err != nil {
-		log.Fatalf("Could not parse: botTracking.json")
-	}
-}
-
 func main() {
 
 	readConfig()
-	initBotStatistics()
+	logging.InitBotStatistics()
 
 	f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -138,145 +98,14 @@ func main() {
 
 }
 
+// TODO - Do this better
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-	var mMessage = ""
-	if strings.HasPrefix(m.Message.Content, "!") {
-		mMessage = m.Message.Content
-	} else {
-		mMessage = strings.ToLower(m.Message.Content)
-	}
-
-	// The bot should ignore messages from itself
-	if m.Author.ID == s.State.User.ID {
-		return
-	}
-
-	if strings.HasPrefix(mMessage, "bad bot") {
-		messages.LogIncomingMessage(s, m, mMessage)
-		incrementTracker(2)
-		log.Printf("Bot Person > I'm Sorry")
-		_, err := s.ChannelMessageSend(m.ChannelID, "I'm Sorry.")
-		if err != nil {
-			return
-		}
-	} else if strings.HasPrefix(mMessage, "!badCount") {
-		messages.LogIncomingMessage(s, m, mMessage)
-		incrementTracker(1)
-		ret := "Bad Bot Count: " + strconv.Itoa(botTracking.BadBotCount)
-		_, err := s.ChannelMessageSend(m.ChannelID, ret)
-		if err != nil {
-			return
-		}
-		ret = "Bot Person > " + ret
-		log.Printf(ret)
-	}
-
-	// Only process messages that mention the bot
-	id := s.State.User.ID
-	if !mentionsBot(m.Mentions, id) {
-		return
-	}
-
-	// Remove the initial mention of the bot
-	toReplace := fmt.Sprintf("<@%s> ", id)
-	msg := strings.Replace(m.Message.Content, toReplace, "", 1)
-	msg = replaceMentionsWithNames(m.Mentions, msg)
-
-	messages.LogIncomingMessage(s, m, msg)
-
-	respTxt := formulateResponse(msg)
-
-	incrementTracker(1)
-
-	log.Printf("Bot Person > %s \n", respTxt)
-	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
-	if err != nil {
-		return
-	}
-}
-
-func formulateResponse(prompt string) string {
-	client := &http.Client{}
-
-	dataTemplate := `{
-		"model": "text-davinci-002",
-		"prompt": "%s",
-		"temperature": 0.7,
-		"max_tokens": 256,
-		"top_p": 1,
-		"frequency_penalty": 0,
-		"presence_penalty": 0
-	  }`
-	data := fmt.Sprintf(dataTemplate, prompt)
-
-	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/completions", strings.NewReader(data))
-	if err != nil {
-		log.Fatalf("Error creating POST request")
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+config.OpenAIKey)
-
-	resp, _ := client.Do(req)
-
-	buf, _ := ioutil.ReadAll(resp.Body)
-	var rspOAI OpenAIResponse
-	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
-	// need to add proper error handling
-	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
-	if err != nil {
-		return ""
-	}
-
-	// It's possible that OpenAI returns no response, so
-	// fallback to a default one
-	if len(rspOAI.Choices) == 0 {
-		return "I'm sorry, I don't understand?"
-	} else {
-		return rspOAI.Choices[0].Text
-	}
-}
-
-// Determine if the bot's ID is in the list of users mentioned
-func mentionsBot(mentions []*discordgo.User, id string) bool {
-	for _, user := range mentions {
-		if user.ID == id {
-			return true
-		}
-	}
-	return false
-}
-
-func mentionsKeyphrase(m *discordgo.MessageCreate) bool {
-	return strings.HasPrefix(m.Content, "!bot")
-}
-
-// The message string that the bot receives reads mentions of other users as
-// an ID in the form of "<@000000000000>", instead iterate over each mention and
-// replace the ID with the user's username
-func replaceMentionsWithNames(mentions []*discordgo.User, message string) string {
-	retStr := strings.Clone(message)
-	for _, mention := range mentions {
-		idStr := fmt.Sprintf("<@%s>", mention.ID)
-		retStr = strings.ReplaceAll(retStr, idStr, mention.Username)
-	}
-	return retStr
-}
-
-func incrementTracker(flag int) {
-	if flag == 1 {
-		botTracking.MessageCount++
-	} else {
-		botTracking.MessageCount++
-		botTracking.BadBotCount++
-	}
+	messages.ParseMessage(s, m, config.OpenAIKey)
 }
 
 func shutDown(discord *discordgo.Session) {
 	fmt.Println("Shutting Down")
-	fle, _ := json.Marshal(botTracking)
-	ioutil.WriteFile("botTracking.json", fle, 0666)
+	logging.ShutDown()
 	_ = discord.Close()
 }
 
