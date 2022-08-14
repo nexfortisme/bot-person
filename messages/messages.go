@@ -48,8 +48,8 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		logging.IncrementTracker(1, m, s)
 		logging.GetBotStats(s, m)
 	} else if strings.HasPrefix(m.Message.Content, "!myStats") {
-		logging.IncrementTracker(1, m, s)
 		logging.GetUserStats(s, m)
+		logging.IncrementTracker(1, m, s)
 	}
 
 	// Only process messages that mention the bot

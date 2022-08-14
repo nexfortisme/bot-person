@@ -46,7 +46,7 @@ func InitBotStatistics() {
 	if err != nil {
 
 		log.Printf("Error Reading botTracking. Creating File")
-		ioutil.WriteFile("botTracking.json", []byte("{\"BadBotCount\":0,\"MessageCount\":0}"), 0666)
+		ioutil.WriteFile("botTracking.json", []byte("{\"BadBotCount\":0,\"MessageCount\":0, \"UserStats\":[]}"), 0666)
 
 		trackingFile, err = ioutil.ReadFile("botTracking.json")
 		if err != nil {
@@ -85,11 +85,9 @@ func IncrementTracker(flag int, m *discordgo.MessageCreate, s *discordgo.Session
 
 	// TODO - Handle this better. I don't like traversing an array each time.
 	for index, element := range botTracking.UserStats {
-		fmt.Println("Element Username, Author Username: " + element.UserName + " , " + m.Author.ID)
 		if element.UserName != m.Author.ID {
 			continue
 		} else {
-			fmt.Println("User Match Found")
 			hitUser = true
 
 			if flag == 1 {
@@ -105,7 +103,7 @@ func IncrementTracker(flag int, m *discordgo.MessageCreate, s *discordgo.Session
 	}
 
 	if !hitUser {
-		fmt.Println("Creating New User For: " + m.Author.Username)
+		log.Println("Creating New User For: " + m.Author.Username)
 		if flag == 1 {
 			botTracking.UserStats = append(botTracking.UserStats, UserStruct{m.Author.ID, UserStatsStruct{0, 1}})
 		} else {
@@ -131,8 +129,14 @@ func GetUserStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 			_, err := s.ChannelMessageSend(m.ChannelID, msg)
 			util.HandleErrors(err)
 			LogOutGoingMessage(s, m, msg)
+			return
 		}
 	}
+
+	msg := "Sorry, you don't have any recorded interactions with the bot."
+	_, err := s.ChannelMessageSend(m.ChannelID, msg)
+	util.HandleErrors(err)
+	LogOutGoingMessage(s, m, msg)
 }
 
 func GetBotStats(s *discordgo.Session, m *discordgo.MessageCreate) {
