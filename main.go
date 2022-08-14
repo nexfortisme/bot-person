@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"main/messages"
 	"net/http"
 	"os"
 	"os/signal"
@@ -38,6 +39,14 @@ type Config struct {
 	DiscordToken string `json:"DiscordToken"`
 }
 
+// TODO - Add user tracking
+// USERs []USER `json:"users"`
+/*
+	user: {
+		username string
+		userData BotTracking
+	}
+*/
 type BotTracking struct {
 	BadBotCount  int `json:"BadBotCount"`
 	MessageCount int `json:"MessageCount"`
@@ -144,7 +153,7 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if strings.HasPrefix(mMessage, "bad bot") {
-		logIncomingMessage(s, m, mMessage)
+		messages.LogIncomingMessage(s, m, mMessage)
 		incrementTracker(2)
 		log.Printf("Bot Person > I'm Sorry")
 		_, err := s.ChannelMessageSend(m.ChannelID, "I'm Sorry.")
@@ -152,14 +161,14 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 	} else if strings.HasPrefix(mMessage, "!badCount") {
-		logIncomingMessage(s, m, mMessage)
+		messages.LogIncomingMessage(s, m, mMessage)
 		incrementTracker(1)
 		ret := "Bad Bot Count: " + strconv.Itoa(botTracking.BadBotCount)
 		_, err := s.ChannelMessageSend(m.ChannelID, ret)
 		if err != nil {
 			return
 		}
-		ret = "Bot Person > " + ret;
+		ret = "Bot Person > " + ret
 		log.Printf(ret)
 	}
 
@@ -174,7 +183,7 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 	msg := strings.Replace(m.Message.Content, toReplace, "", 1)
 	msg = replaceMentionsWithNames(m.Mentions, msg)
 
-	logIncomingMessage(s, m, msg);
+	messages.LogIncomingMessage(s, m, msg)
 
 	respTxt := formulateResponse(msg)
 
@@ -269,14 +278,6 @@ func shutDown(discord *discordgo.Session) {
 	fle, _ := json.Marshal(botTracking)
 	ioutil.WriteFile("botTracking.json", fle, 0666)
 	_ = discord.Close()
-}
-
-func logIncomingMessage(s *discordgo.Session, m *discordgo.MessageCreate, message string) {
-	requestUser := m.Author.Username
-	rGuild, _ := s.State.Guild(m.GuildID)
-	rGuildName := rGuild.Name
-
-	log.Printf(" %s (%s) < %s\n", requestUser, rGuildName, message)
 }
 
 // This - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2048
