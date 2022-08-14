@@ -90,7 +90,6 @@ func main() {
 
 	readConfig()
 	initBotStatistics()
-	
 
 	f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -100,6 +99,7 @@ func main() {
 	mw := io.MultiWriter(os.Stdout, f)
 	defer f.Close()
 
+	// This makes it print to both the console and to a file
 	log.SetOutput(mw)
 
 	// Create the Discord client and add the handler
@@ -131,10 +131,8 @@ func main() {
 
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 
-	fmt.Println(m.Message.Content)
-
-	var mMessage = "";
-	if strings.HasPrefix(m.Message.Content, "!"){
+	var mMessage = ""
+	if strings.HasPrefix(m.Message.Content, "!") {
 		mMessage = m.Message.Content
 	} else {
 		mMessage = strings.ToLower(m.Message.Content)
@@ -145,16 +143,19 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if strings.Contains(mMessage, "bad bot") {
+	if strings.HasPrefix(mMessage, "bad bot") {
+		logIncomingMessage(s, m, mMessage)
 		incrementTracker(2)
+		log.Printf("Bot Person > I'm Sorry")
 		_, err := s.ChannelMessageSend(m.ChannelID, "I'm Sorry.")
 		if err != nil {
 			return
 		}
-	} else if strings.Contains(mMessage, "!badCount"){
+	} else if strings.HasPrefix(mMessage, "!badCount") {
+		logIncomingMessage(s, m, mMessage)
 		incrementTracker(1)
-		ret := "Bad Bot Count: " + strconv.Itoa(botTracking.BadBotCount);
-		log.Printf(ret);
+		ret := "Bot Person > Bad Bot Count: " + strconv.Itoa(botTracking.BadBotCount)
+		log.Printf(ret)
 		_, err := s.ChannelMessageSend(m.ChannelID, ret)
 		if err != nil {
 			return
@@ -163,20 +164,16 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Only process messages that mention the bot
 	id := s.State.User.ID
-	if !mentionsBot(m.Mentions, id) && !mentionsKeyphrase(m) {
+	if !mentionsBot(m.Mentions, id) {
 		return
 	}
 
 	// Remove the initial mention of the bot
 	toReplace := fmt.Sprintf("<@%s> ", id)
-	requestUser := m.Author.Username
-	rGuild, _ := s.State.Guild(m.GuildID)
-	rGuildName := rGuild.Name
-
 	msg := strings.Replace(m.Message.Content, toReplace, "", 1)
 	msg = replaceMentionsWithNames(m.Mentions, msg)
 
-	log.Printf(" %s (%s) < %s\n", requestUser, rGuildName, msg)
+	logIncomingMessage(s, m, msg);
 
 	respTxt := formulateResponse(msg)
 
@@ -271,6 +268,14 @@ func shutDown(discord *discordgo.Session) {
 	fle, _ := json.Marshal(botTracking)
 	ioutil.WriteFile("botTracking.json", fle, 0666)
 	_ = discord.Close()
+}
+
+func logIncomingMessage(s *discordgo.Session, m *discordgo.MessageCreate, message string) {
+	requestUser := m.Author.Username
+	rGuild, _ := s.State.Guild(m.GuildID)
+	rGuildName := rGuild.Name
+
+	log.Printf(" %s (%s) < %s\n", requestUser, rGuildName, message)
 }
 
 // This - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2048
