@@ -11,14 +11,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// TODO - Add user tracking
-// USERs []USER `json:"users"`
-/*
-	user: {
-		username string
-		userData BotTracking
-	}
-*/
 type BotTracking struct {
 	BadBotCount  int          `json:"BadBotCount"`
 	MessageCount int          `json:"MessageCount"`
@@ -140,7 +132,8 @@ func GetUserStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func GetBotStats(s *discordgo.Session, m *discordgo.MessageCreate) {
-	msg := "Across all servers, the bot has been interacted with " + strconv.Itoa(botTracking.MessageCount) + " times and has been bad " + strconv.Itoa(botTracking.BadBotCount) + " times."
+	guildCount := len(s.State.Guilds)
+	msg := "Across " + strconv.Itoa(guildCount) + " servers, the bot has been interacted with " + strconv.Itoa(botTracking.MessageCount) + " times and has been bad " + strconv.Itoa(botTracking.BadBotCount) + " times."
 	_, err := s.ChannelMessageSend(m.ChannelID, msg)
 	util.HandleErrors(err)
 	LogOutGoingMessage(s, m, msg)
