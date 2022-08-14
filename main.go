@@ -154,12 +154,13 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(mMessage, "!badCount") {
 		logIncomingMessage(s, m, mMessage)
 		incrementTracker(1)
-		ret := "Bot Person > Bad Bot Count: " + strconv.Itoa(botTracking.BadBotCount)
-		log.Printf(ret)
+		ret := "Bad Bot Count: " + strconv.Itoa(botTracking.BadBotCount)
 		_, err := s.ChannelMessageSend(m.ChannelID, ret)
 		if err != nil {
 			return
 		}
+		ret = "Bot Person > " + ret;
+		log.Printf(ret)
 	}
 
 	// Only process messages that mention the bot
