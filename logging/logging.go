@@ -2,6 +2,7 @@ package logging
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -17,6 +18,17 @@ import (
 	}
 */
 type BotTracking struct {
+	BadBotCount  int          `json:"BadBotCount"`
+	MessageCount int          `json:"MessageCount"`
+	UserStats    []UserStruct `json:"UserTracking"`
+}
+
+type UserStruct struct {
+	UserName  string          `json:"username"`
+	UserStats UserStatsStruct `json:"userStats"`
+}
+
+type UserStatsStruct struct {
 	BadBotCount  int `json:"BadBotCount"`
 	MessageCount int `json:"MessageCount"`
 }
@@ -51,8 +63,8 @@ func LogOutGoingMessage(s *discordgo.Session, m *discordgo.MessageCreate, messag
 
 }
 
-func LogError(err string){
-	log.Fatalf(err);
+func LogError(err string) {
+	log.Fatalf(err)
 }
 
 func LogIncomingMessage(s *discordgo.Session, m *discordgo.MessageCreate, message string) {
@@ -64,7 +76,40 @@ func LogIncomingMessage(s *discordgo.Session, m *discordgo.MessageCreate, messag
 
 }
 
-func IncrementTracker(flag int) {
+func IncrementTracker(flag int, m *discordgo.MessageCreate) {
+
+	var hitUser = false
+
+	// TODO - Handle this better. I don't like traversing an array each time.
+	for index, element := range botTracking.UserStats {
+		fmt.Println("Element Username, Author Username: " + element.UserName + " , " + m.Author.ID)
+		if element.UserName != m.Author.ID {
+			continue
+		} else {
+			fmt.Println("User Match Found")
+			hitUser = true
+
+			if flag == 1 {
+				element.UserStats.MessageCount++
+			} else {
+				element.UserStats.MessageCount++
+				element.UserStats.BadBotCount++
+			}
+
+			// Is this necessary?
+			botTracking.UserStats[index] = element
+		}
+	}
+
+	if !hitUser {
+		fmt.Println("Creating New User For: " + m.Author.Username)
+		if flag == 1 {
+			botTracking.UserStats = append(botTracking.UserStats, UserStruct{m.Author.ID, UserStatsStruct{0, 1}})
+		} else {
+			botTracking.UserStats = append(botTracking.UserStats, UserStruct{m.Author.ID, UserStatsStruct{1, 1}})
+		}
+	}
+
 	if flag == 1 {
 		botTracking.MessageCount++
 	} else {
@@ -73,13 +118,12 @@ func IncrementTracker(flag int) {
 	}
 }
 
-
-
 func GetBadBotCount() int {
 	return botTracking.BadBotCount
 }
 
 func ShutDown() {
+	fmt.Println(botTracking)
 	fle, _ := json.Marshal(botTracking)
 	ioutil.WriteFile("botTracking.json", fle, 0666)
 }

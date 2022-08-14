@@ -41,7 +41,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if strings.HasPrefix(m.Message.Content, "bad bot") {
 		logging.LogIncomingMessage(s, m, m.Message.Content)
-		logging.IncrementTracker(2)
+		logging.IncrementTracker(2, m)
 		log.Printf("Bot Person > I'm Sorry")
 		_, err := s.ChannelMessageSend(m.ChannelID, "I'm Sorry.")
 		if err != nil {
@@ -49,7 +49,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		}
 	} else if strings.HasPrefix(m.Message.Content, "!badCount") {
 		logging.LogIncomingMessage(s, m, m.Message.Content)
-		logging.IncrementTracker(1)
+		logging.IncrementTracker(1, m)
 		ret := "Bad Bot Count: " + strconv.Itoa(logging.GetBadBotCount())
 		_, err := s.ChannelMessageSend(m.ChannelID, ret)
 		if err != nil {
@@ -72,7 +72,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	logging.LogIncomingMessage(s, m, msg)
 
 	respTxt := getOpenAIResponse(msg, openAIKey)
-	logging.IncrementTracker(1)
+	logging.IncrementTracker(1, m)
 
 	log.Printf("Bot Person > %s \n", respTxt)
 	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
