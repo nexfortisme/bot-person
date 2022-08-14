@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -37,12 +38,20 @@ type Config struct {
 	DiscordToken string `json:"DiscordToken"`
 }
 
+type BotTracking struct {
+	BadBotCount  int `json:"BadBotCount"`
+	MessageCount int `json:"MessageCount"`
+}
+
 var (
 	config Config
 )
 
-func main() {
+var (
+	botTracking BotTracking
+)
 
+func readConfig() {
 	// Parse the config
 	bConfig, err := ioutil.ReadFile("config.json")
 	if err != nil {
@@ -51,8 +60,37 @@ func main() {
 
 	err = json.Unmarshal(bConfig, &config)
 	if err != nil {
-		log.Fatalf("Could not parse config file")
+		log.Fatalf("Could not parse: config.json")
 	}
+}
+
+func initBotStatistics() {
+	var trackingFile []byte
+
+	trackingFile, err := ioutil.ReadFile("botTracking.json")
+	if err != nil {
+
+		log.Printf("Error Reading botTracking. Creating File")
+		ioutil.WriteFile("botTracking.json", []byte("{\"BadBotCount\":0,\"MessageCount\":0}"), 0666)
+
+		trackingFile, err = ioutil.ReadFile("botTracking.json")
+		if err != nil {
+			log.Fatalf("Could not read config file: botTracking.json")
+		}
+
+	}
+
+	err = json.Unmarshal(trackingFile, &botTracking)
+	if err != nil {
+		log.Fatalf("Could not parse: botTracking.json")
+	}
+}
+
+func main() {
+
+	readConfig()
+	initBotStatistics()
+	
 
 	f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -87,14 +125,40 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
-	_ = discord.Close()
+	shutDown(discord)
+
 }
 
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 
+	fmt.Println(m.Message.Content)
+
+	var mMessage = "";
+	if strings.HasPrefix(m.Message.Content, "!"){
+		mMessage = m.Message.Content
+	} else {
+		mMessage = strings.ToLower(m.Message.Content)
+	}
+
 	// The bot should ignore messages from itself
 	if m.Author.ID == s.State.User.ID {
 		return
+	}
+
+	if strings.Contains(mMessage, "bad bot") {
+		incrementTracker(2)
+		_, err := s.ChannelMessageSend(m.ChannelID, "I'm Sorry.")
+		if err != nil {
+			return
+		}
+	} else if strings.Contains(mMessage, "!badCount"){
+		incrementTracker(1)
+		ret := "Bad Bot Count: " + strconv.Itoa(botTracking.BadBotCount);
+		log.Printf(ret);
+		_, err := s.ChannelMessageSend(m.ChannelID, ret)
+		if err != nil {
+			return
+		}
 	}
 
 	// Only process messages that mention the bot
@@ -105,16 +169,18 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Remove the initial mention of the bot
 	toReplace := fmt.Sprintf("<@%s> ", id)
-	// requestUser := m.Author.Username
-	// rGuild, _ := s.State.Guild(m.GuildID)
-	// rGuildName := rGuild.Name
+	requestUser := m.Author.Username
+	rGuild, _ := s.State.Guild(m.GuildID)
+	rGuildName := rGuild.Name
 
 	msg := strings.Replace(m.Message.Content, toReplace, "", 1)
 	msg = replaceMentionsWithNames(m.Mentions, msg)
 
-	// log.Printf(" %s (%s) < %s\n", requestUser, rGuildName, msg)
+	log.Printf(" %s (%s) < %s\n", requestUser, rGuildName, msg)
 
 	respTxt := formulateResponse(msg)
+
+	incrementTracker(1)
 
 	log.Printf("Bot Person > %s \n", respTxt)
 	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
@@ -189,6 +255,22 @@ func replaceMentionsWithNames(mentions []*discordgo.User, message string) string
 		retStr = strings.ReplaceAll(retStr, idStr, mention.Username)
 	}
 	return retStr
+}
+
+func incrementTracker(flag int) {
+	if flag == 1 {
+		botTracking.MessageCount++
+	} else {
+		botTracking.MessageCount++
+		botTracking.BadBotCount++
+	}
+}
+
+func shutDown(discord *discordgo.Session) {
+	fmt.Println("Shutting Down")
+	fle, _ := json.Marshal(botTracking)
+	ioutil.WriteFile("botTracking.json", fle, 0666)
+	_ = discord.Close()
 }
 
 // This - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2048
