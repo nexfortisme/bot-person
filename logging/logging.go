@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"main/util"
+	"os"
 	"strconv"
 
 	"github.com/bwmarrin/discordgo"
@@ -18,7 +19,7 @@ type BotTracking struct {
 }
 
 type UserStruct struct {
-	UserName  string          `json:"username"`
+	UserId    string          `json:"username"`
 	UserStats UserStatsStruct `json:"userStats"`
 }
 
@@ -38,7 +39,7 @@ func InitBotStatistics() {
 	if err != nil {
 
 		log.Printf("Error Reading botTracking. Creating File")
-		ioutil.WriteFile("botTracking.json", []byte("{\"BadBotCount\":0,\"MessageCount\":0, \"UserStats\":[]}"), 0666)
+		os.WriteFile("botTracking.json", []byte("{\"BadBotCount\":0,\"MessageCount\":0, \"UserStats\":[]}"), 0666)
 
 		trackingFile, err = ioutil.ReadFile("botTracking.json")
 		if err != nil {
@@ -77,7 +78,7 @@ func IncrementTracker(flag int, m *discordgo.MessageCreate, s *discordgo.Session
 
 	// TODO - Handle this better. I don't like traversing an array each time.
 	for index, element := range botTracking.UserStats {
-		if element.UserName != m.Author.ID {
+		if element.UserId != m.Author.ID {
 			continue
 		} else {
 			hitUser = true
@@ -113,8 +114,8 @@ func IncrementTracker(flag int, m *discordgo.MessageCreate, s *discordgo.Session
 
 func GetUserStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 	for _, element := range botTracking.UserStats {
-		fmt.Println("Element Username, Author Username: " + element.UserName + " , " + m.Author.ID)
-		if element.UserName != m.Author.ID {
+		fmt.Println("Element Username, Author Username: " + element.UserId + " , " + m.Author.ID)
+		if element.UserId != m.Author.ID {
 			continue
 		} else {
 			msg := "You have interacted with the bot " + strconv.Itoa(element.UserStats.MessageCount) + " times and you scolded the bot " + strconv.Itoa(element.UserStats.BadBotCount) + " times."
@@ -145,5 +146,5 @@ func GetBadBotCount() int {
 
 func ShutDown() {
 	fle, _ := json.Marshal(botTracking)
-	ioutil.WriteFile("botTracking.json", fle, 0666)
+	os.WriteFile("botTracking.json", fle, 0666)
 }

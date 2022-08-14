@@ -1,5 +1,6 @@
 *.exe
 config.json
+config_old.json
 botTracking.json
 .idea
 main

@@ -1,15 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"main/logging"
 	"main/messages"
+	"main/util"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -38,24 +40,49 @@ type Config struct {
 }
 
 var (
-	config Config
-	// botTracking BotTracking
+	config        Config
+	createdConfig bool
 )
 
 func readConfig() {
-	// Parse the config
-	bConfig, err := ioutil.ReadFile("config.json")
+	var bConfig []byte
+
+	bConfig, err := os.ReadFile("config.json")
 	if err != nil {
-		log.Fatalf("Could not read config file: config.json")
+		createdConfig = true
+		log.Printf("Error reading config. Creating File")
+		os.WriteFile("config.json", []byte("{\"DiscordToken\":\"\",\"OpenAIKey\":\"\"}"), 0666)
+		bConfig, err = os.ReadFile("config.json")
+		util.HandleFatalErrors(err, "Could not read config file: config.json")
 	}
 
 	err = json.Unmarshal(bConfig, &config)
-	if err != nil {
-		log.Fatalf("Could not parse: config.json")
+	util.HandleFatalErrors(err, "Could not parse: config_old.json")
+
+	// Handling the case the config file has just been created
+	if config.DiscordToken == "" {
+		createdConfig = true
+		reader := bufio.NewReader(os.Stdin)
+		log.Print("Please Enter the Discord Token: ")
+		config.DiscordToken, err = reader.ReadString('\n')
+		config.DiscordToken = strings.TrimSuffix(config.DiscordToken, "\r\n")
+		log.Println("Discord Token Set to: '" + config.DiscordToken + "'")
 	}
+
+	if config.OpenAIKey == "" {
+		createdConfig = true
+		reader := bufio.NewReader(os.Stdin)
+		log.Print("Please Enter the Open AI Key: ")
+		config.OpenAIKey, err = reader.ReadString('\n')
+		config.OpenAIKey = strings.TrimSuffix(config.OpenAIKey, "\r\n")
+		log.Println("Open AI Key Set to: '" + config.OpenAIKey + "'")
+	}
+
 }
 
 func main() {
+
+	createdConfig = false
 
 	readConfig()
 	logging.InitBotStatistics()
@@ -105,6 +132,15 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func shutDown(discord *discordgo.Session) {
 	fmt.Println("Shutting Down")
+	if createdConfig {
+		fmt.Println("Config Updated. Saving...")
+		fle, _ := json.Marshal(config)
+		err := os.WriteFile("config.json", fle, 0666)
+		if err != nil {
+			log.Fatalf("Error Writing config_old.json")
+			return
+		}
+	}
 	logging.ShutDown()
 	_ = discord.Close()
 }
