@@ -74,7 +74,7 @@ func LogIncomingMessage(s *discordgo.Session, m *discordgo.MessageCreate, messag
 func IncrementTracker(flag int, m *discordgo.MessageCreate, s *discordgo.Session) {
 
 	var hitUser = false
-	LogIncomingMessage(s, m, m.Message.Content)
+	LogIncomingMessage(s, m, util.ReplaceIDsWithNames(m, s))
 
 	// TODO - Handle this better. I don't like traversing an array each time.
 	for index, element := range botTracking.UserStats {
