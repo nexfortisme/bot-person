@@ -58,12 +58,12 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		return
 	}
 
-	msg := util.ReplaceIDsWithNames(m, s);
+	msg := util.ReplaceIDsWithNames(m, s)
 
 	// logging.LogIncomingMessage(s, m, msg)
 
-	respTxt := getOpenAIResponse(msg, openAIKey)
 	logging.IncrementTracker(1, m, s)
+	respTxt := getOpenAIResponse(msg, openAIKey)
 
 	log.Printf("Bot Person > %s \n", respTxt)
 	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
@@ -129,4 +129,3 @@ func mentionsBot(mentions []*discordgo.User, id string) bool {
 	}
 	return false
 }
-
