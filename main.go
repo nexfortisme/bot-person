@@ -64,7 +64,7 @@ func readConfig() {
 		createdConfig = true
 		reader := bufio.NewReader(os.Stdin)
 		log.Print("Please Enter the Discord Token: ")
-		config.DiscordToken, err = reader.ReadString('\n')
+		config.DiscordToken, _ = reader.ReadString('\n')
 		config.DiscordToken = strings.TrimSuffix(config.DiscordToken, "\r\n")
 		log.Println("Discord Token Set to: '" + config.DiscordToken + "'")
 	}
@@ -73,7 +73,7 @@ func readConfig() {
 		createdConfig = true
 		reader := bufio.NewReader(os.Stdin)
 		log.Print("Please Enter the Open AI Key: ")
-		config.OpenAIKey, err = reader.ReadString('\n')
+		config.OpenAIKey, _ = reader.ReadString('\n')
 		config.OpenAIKey = strings.TrimSuffix(config.OpenAIKey, "\r\n")
 		log.Println("Open AI Key Set to: '" + config.OpenAIKey + "'")
 	}
@@ -122,7 +122,6 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 	shutDown(discord)
-
 }
 
 // TODO - Do this better

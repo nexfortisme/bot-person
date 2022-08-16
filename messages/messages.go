@@ -58,11 +58,9 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		return
 	}
 
-	toReplace := fmt.Sprintf("<@%s> ", id)
-	msg := strings.Replace(m.Message.Content, toReplace, "", 1)
-	msg = replaceMentionsWithNames(m.Mentions, msg)
+	msg := util.ReplaceIDsWithNames(m, s);
 
-	logging.LogIncomingMessage(s, m, msg)
+	// logging.LogIncomingMessage(s, m, msg)
 
 	respTxt := getOpenAIResponse(msg, openAIKey)
 	logging.IncrementTracker(1, m, s)
@@ -116,6 +114,8 @@ func getOpenAIResponse(prompt string, openAIKey string) string {
 	}
 }
 
+// Checking for the !bot keyword
+// TODO - Replace with slash commands
 func mentionsKeyphrase(m *discordgo.MessageCreate) bool {
 	return strings.HasPrefix(m.Content, "!bot") && m.Content != "!botStats"
 }
@@ -130,14 +130,3 @@ func mentionsBot(mentions []*discordgo.User, id string) bool {
 	return false
 }
 
-// The message string that the bot receives reads mentions of other users as
-// an ID in the form of "<@000000000000>", instead iterate over each mention and
-// replace the ID with the user's username
-func replaceMentionsWithNames(mentions []*discordgo.User, message string) string {
-	retStr := strings.Clone(message)
-	for _, mention := range mentions {
-		idStr := fmt.Sprintf("<@%s>", mention.ID)
-		retStr = strings.ReplaceAll(retStr, idStr, mention.Username)
-	}
-	return retStr
-}
