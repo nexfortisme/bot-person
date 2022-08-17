@@ -70,10 +70,10 @@ var (
 				},
 			},
 		},
-		{
-			Name:        "my-stats",
-			Description: "Get yout tracking data",
-		},
+		// {
+		// 	Name:        "my-stats",
+		// 	Description: "Get yout tracking data",
+		// },
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -105,18 +105,11 @@ var (
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
 						// Flags:   uint64(discordgo.MessageFlagsEphemeral),
-						Content: "Please wait",
+						Content: "Thinking...",
 					},
 				})
 
 				msg = messages.ParseSlashCommand(s, option.StringValue(), config.OpenAIKey)
-
-				// s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				// 	Content: msg,
-				// })
-
-				// This works to respond to a slash command, but it loses the original message.
-				// Add original Message to response
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: msg,
 				})
@@ -235,23 +228,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	// Used for adding slash commands
-	// Add the command and then add the handler for that command
-	// https://github.com/bwmarrin/discordgo/blob/master/examples/slash_commands/main.go
-	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
-	for i, v := range commands {
-		cmd, err := discord.ApplicationCommandCreate(discord.State.User.ID, "", v)
-		if err != nil {
-			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
-		}
-		registeredCommands[i] = cmd
-	}
-	discord.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-			h(s, i)
-		}
-	})
-
+	registerCommands(discord)
 	log.Println("Bot is now running")
 
 	// Pulled from the examples for discordgo, this lets the bot continue to run
@@ -266,6 +243,25 @@ func main() {
 // TODO - Do this better
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 	messages.ParseMessage(s, m, config.OpenAIKey)
+}
+
+func registerCommands(s *discordgo.Session) {
+	// Used for adding slash commands
+	// Add the command and then add the handler for that command
+	// https://github.com/bwmarrin/discordgo/blob/master/examples/slash_commands/main.go
+	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
+	for i, v := range commands {
+		cmd, err := s.ApplicationCommandCreate(s.State.User.ID, "", v)
+		if err != nil {
+			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
+		}
+		registeredCommands[i] = cmd
+	}
+	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+			h(s, i)
+		}
+	})
 }
 
 func removeRegisteredCommands(s *discordgo.Session) {
@@ -311,5 +307,5 @@ func shutDown(discord *discordgo.Session) {
 }
 
 // Dev - https://discord.com/oauth2/authorize?client_id=1009233301778743457&scope=bot&permissions=2048
-// Prod - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2048
+// Prod - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2147485696
 // https://beta.openai.com/account/usage
