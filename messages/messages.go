@@ -38,17 +38,25 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		return
 	}
 
+	var incomingMessage string
+
+	if !strings.HasPrefix(m.Message.Content, "!") {
+		incomingMessage = strings.ToLower(m.Message.Content)
+	} else {
+		incomingMessage = m.Message.Content
+	}
+
 	// TODO - Handle this better. I don't like this and I feel bad about it
-	if strings.HasPrefix(m.Message.Content, "bad bot") {
+	if strings.HasPrefix(incomingMessage, "bad bot") {
 		logging.IncrementTracker(2, m, s)
 		log.Printf("Bot Person > I'm Sorry")
 		// Have this have a list of responses that it pulls from randomly
 		_, err := s.ChannelMessageSend(m.ChannelID, "I'm Sorry.")
 		util.HandleErrors(err)
-	} else if strings.HasPrefix(m.Message.Content, "!botStats") {
+	} else if strings.HasPrefix(incomingMessage, "!botStats") {
 		logging.IncrementTracker(1, m, s)
 		logging.GetBotStats(s, m)
-	} else if strings.HasPrefix(m.Message.Content, "!myStats") {
+	} else if strings.HasPrefix(incomingMessage, "!myStats") {
 		logging.GetUserStats(s, m)
 		logging.IncrementTracker(1, m, s)
 	}
