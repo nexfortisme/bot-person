@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"main/logging"
@@ -45,6 +44,8 @@ var (
 	config         Config
 	devMode        bool
 	removeCommands bool
+	enableLogging  bool
+	enableTracking bool
 
 	createdConfig         = false
 	integerOptionMinValue = 1.0
@@ -98,14 +99,14 @@ var (
 			var msg string
 
 			if option, ok := optionMap["prompt"]; ok {
-				fmt.Println("Prompt: " + option.StringValue())
+				placeholder := "Thinking about: " + option.StringValue()
 
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					// Ignore type for now, they will be discussed in "responses"
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
 						// Flags:   uint64(discordgo.MessageFlagsEphemeral),
-						Content: "Thinking...",
+						Content: placeholder,
 					},
 				})
 
