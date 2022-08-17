@@ -42,9 +42,10 @@ type Config struct {
 }
 
 var (
-	config        Config
-	createdConfig bool
-	devMode       bool
+	config                Config
+	createdConfig         bool
+	devMode               bool
+	integerOptionMinValue = 1.0
 
 	commands = []*discordgo.ApplicationCommand{
 		{
@@ -53,7 +54,24 @@ var (
 			// Commands/options without description will fail the registration
 			// of the command.
 			Description: "Basic command",
-		},	
+		},
+		{
+			Name:        "bot",
+			Description: "General bot command",
+			Options: []*discordgo.ApplicationCommandOption{
+
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "prompt",
+					Description: "Propmt to send to the bot",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Name:        "my-stats",
+			Description: "Get yout tracking data",
+		},
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -61,7 +79,51 @@ var (
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Hey there! Congratulations, you just executed your first slash command",
+					Content: "eat shit",
+				},
+			})
+		},
+		"bot": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			// Access options in the order provided by the user.
+			options := i.ApplicationCommandData().Options
+
+			// Or convert the slice into a map
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+
+			var msg string
+
+			if option, ok := optionMap["prompt"]; ok {
+				fmt.Println("Prompt: " + option.StringValue())
+
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					// Ignore type for now, they will be discussed in "responses"
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Flags:   uint64(discordgo.MessageFlagsEphemeral),
+						Content: "Please wait",
+					},
+				})
+
+				msg = messages.ParseSlashCommand(s, option.StringValue(), config.OpenAIKey)
+
+				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					Content: msg,
+				})
+			}
+
+		},
+		"my-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			// Access options in the order provided by the user.
+
+			msg := logging.SlashGetUserStats(s, i)
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: msg,
 				},
 			})
 		},
@@ -101,7 +163,6 @@ func readConfig() {
 		config.OpenAIKey = strings.TrimSuffix(config.OpenAIKey, "\r\n")
 		log.Println("Open AI Key Set to: '" + config.OpenAIKey + "'")
 	}
-
 }
 
 func main() {
@@ -131,7 +192,7 @@ func main() {
 	// TODO - Handle case where a user enters dev mode and there isnt a dev mode key
 	if devMode {
 		log.Println("Entering Dev Mode...")
-		discord, err = discordgo.New("Bot " + config.DevDiscordToken);
+		discord, err = discordgo.New("Bot " + config.DevDiscordToken)
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
 		}
@@ -151,14 +212,20 @@ func main() {
 	}
 
 	// Used for adding slash commands
-	discord.ApplicationCommandCreate(discord.State.User.ID, "", commands[0]);
+	// Add the command and then add the handler for that command
+	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
+	for i, v := range commands {
+		cmd, err := discord.ApplicationCommandCreate(discord.State.User.ID, "", v)
+		if err != nil {
+			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
+		}
+		registeredCommands[i] = cmd
+	}
 	discord.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-			h(s, i);
+			h(s, i)
 		}
 	})
-
-	fmt.Println("ID: " + discord.State.User.ID);
 
 	fmt.Println("Bot is now running")
 
@@ -191,6 +258,6 @@ func shutDown(discord *discordgo.Session) {
 	_ = discord.Close()
 }
 
-// dev - https://discord.com/oauth2/authorize?client_id=1009233301778743457&scope=bot&permissions=2048
-// This - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2048
+// Dev - https://discord.com/oauth2/authorize?client_id=1009233301778743457&scope=bot&permissions=2048
+// Prod - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2048
 // https://beta.openai.com/account/usage
