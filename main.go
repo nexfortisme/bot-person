@@ -181,6 +181,7 @@ func readConfig() {
 
 func main() {
 
+	// https://gobyexample.com/command-line-flags
 	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
 	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
 	flag.Parse()
@@ -236,6 +237,7 @@ func main() {
 
 	// Used for adding slash commands
 	// Add the command and then add the handler for that command
+	// https://github.com/bwmarrin/discordgo/blob/master/examples/slash_commands/main.go
 	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
 	for i, v := range commands {
 		cmd, err := discord.ApplicationCommandCreate(discord.State.User.ID, "", v)
