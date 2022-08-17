@@ -72,6 +72,13 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 }
 
+func ParseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
+	respTxt := getOpenAIResponse(prompt, openAIKey)
+	respTxt = "Request: " + prompt + " " + respTxt
+	log.Printf("Bot Person > %s \n", respTxt)
+	return respTxt
+}
+
 func getOpenAIResponse(prompt string, openAIKey string) string {
 	client := &http.Client{}
 

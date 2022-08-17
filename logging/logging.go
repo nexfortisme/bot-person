@@ -132,6 +132,26 @@ func GetUserStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 	LogOutGoingMessage(s, m, msg)
 }
 
+func SlashGetUserStats(s *discordgo.Session, i *discordgo.InteractionCreate) string{
+	for _, element := range botTracking.UserStats {
+		fmt.Println("Element Username, Author Username: " + element.UserId + " , " + i.User.ID)
+		if element.UserId != i.User.ID{
+			continue
+		} else {
+			msg := "You have interacted with the bot " + strconv.Itoa(element.UserStats.MessageCount) + " times and you scolded the bot " + strconv.Itoa(element.UserStats.BadBotCount) + " times."
+			// _, err := s.ChannelMessageSend(m.ChannelID, msg)
+			// util.HandleErrors(err)
+			// LogOutGoingMessage(s, m, msg)
+			return msg
+		}
+	}
+	msg := "Sorry, you don't have any recorded interactions with the bot."
+	// _, err := s.ChannelMessageSend(m.ChannelID, msg)
+	// util.HandleErrors(err)
+	// LogOutGoingMessage(s, m, msg)
+	return msg;
+}
+
 func GetBotStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 	guildCount := len(s.State.Guilds)
 	msg := "Across " + strconv.Itoa(guildCount) + " servers, the bot has been interacted with " + strconv.Itoa(botTracking.MessageCount) + " times and has been bad " + strconv.Itoa(botTracking.BadBotCount) + " times."
