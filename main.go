@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -35,13 +36,15 @@ type OpenAIChoice struct {
 }
 
 type Config struct {
-	OpenAIKey    string `json:"OpenAIKey"`
-	DiscordToken string `json:"DiscordToken"`
+	OpenAIKey       string `json:"OpenAIKey"`
+	DiscordToken    string `json:"DiscordToken"`
+	DevDiscordToken string `json:"DevDiscordToken"`
 }
 
 var (
 	config        Config
 	createdConfig bool
+	devMode       bool
 )
 
 func readConfig() {
@@ -84,6 +87,9 @@ func main() {
 
 	createdConfig = false
 
+	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
+	flag.Parse()
+
 	readConfig()
 	logging.InitBotStatistics()
 
@@ -98,11 +104,21 @@ func main() {
 	// This makes it print to both the console and to a file
 	log.SetOutput(mw)
 
-	// Create the Discord client and add the handler
-	// to process messages
-	discord, err := discordgo.New("Bot " + config.DiscordToken)
-	if err != nil {
-		log.Fatal("Error connecting bot to server")
+	// Create the Discord client and add the handler to process messages
+	var discord *discordgo.Session
+
+	// TODO - Handle case where a user enters dev mode and there isnt a dev mode key
+	if devMode {
+		log.Println("Entering Dev Mode...")
+		discord, err = discordgo.New("Bot " + config.DevDiscordToken);
+		if err != nil {
+			log.Fatal("Error connecting bot to server")
+		}
+	} else {
+		discord, err = discordgo.New("Bot " + config.DiscordToken)
+		if err != nil {
+			log.Fatal("Error connecting bot to server")
+		}
 	}
 
 	discord.AddHandler(messageReceive)
@@ -144,5 +160,7 @@ func shutDown(discord *discordgo.Session) {
 	_ = discord.Close()
 }
 
+// 1009233301778743457
+// dev - https://discord.com/oauth2/authorize?client_id=1009233301778743457&scope=bot&permissions=2048
 // This - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2048
 // https://beta.openai.com/account/usage

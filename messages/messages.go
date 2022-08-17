@@ -42,6 +42,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	if strings.HasPrefix(m.Message.Content, "bad bot") {
 		logging.IncrementTracker(2, m, s)
 		log.Printf("Bot Person > I'm Sorry")
+		// Have this have a list of responses that it pulls from randomly
 		_, err := s.ChannelMessageSend(m.ChannelID, "I'm Sorry.")
 		util.HandleErrors(err)
 	} else if strings.HasPrefix(m.Message.Content, "!botStats") {
