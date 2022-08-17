@@ -42,9 +42,11 @@ type Config struct {
 }
 
 var (
-	config                Config
-	createdConfig         bool
-	devMode               bool
+	config         Config
+	devMode        bool
+	removeCommands bool
+
+	createdConfig         = false
 	integerOptionMinValue = 1.0
 
 	commands = []*discordgo.ApplicationCommand{
@@ -102,16 +104,28 @@ var (
 					// Ignore type for now, they will be discussed in "responses"
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Flags:   uint64(discordgo.MessageFlagsEphemeral),
+						// Flags:   uint64(discordgo.MessageFlagsEphemeral),
 						Content: "Please wait",
 					},
 				})
 
 				msg = messages.ParseSlashCommand(s, option.StringValue(), config.OpenAIKey)
 
-				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				// s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				// 	Content: msg,
+				// })
+
+				// This works to respond to a slash command, but it loses the original message.
+				// Add original Message to response
+				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: msg,
 				})
+				if err != nil {
+					s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+						Content: "Something went wrong",
+					})
+					return
+				}
 			}
 
 		},
@@ -167,9 +181,8 @@ func readConfig() {
 
 func main() {
 
-	createdConfig = false
-
 	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
+	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
 	flag.Parse()
 
 	readConfig()
@@ -192,6 +205,16 @@ func main() {
 	// TODO - Handle case where a user enters dev mode and there isnt a dev mode key
 	if devMode {
 		log.Println("Entering Dev Mode...")
+
+		if config.DevDiscordToken == "" {
+			createdConfig = true
+			reader := bufio.NewReader(os.Stdin)
+			log.Print("Please Enter the Dev Discord Token: ")
+			config.DevDiscordToken, _ = reader.ReadString('\n')
+			config.DevDiscordToken = strings.TrimSuffix(config.DevDiscordToken, "\r\n")
+			log.Println("Dev Discord Token Set to: '" + config.DevDiscordToken + "'")
+		}
+
 		discord, err = discordgo.New("Bot " + config.DevDiscordToken)
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
@@ -227,7 +250,7 @@ func main() {
 		}
 	})
 
-	fmt.Println("Bot is now running")
+	log.Println("Bot is now running")
 
 	// Pulled from the examples for discordgo, this lets the bot continue to run
 	// until an interrupt is received, at which point the bot disconnects from
@@ -243,17 +266,44 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 	messages.ParseMessage(s, m, config.OpenAIKey)
 }
 
-func shutDown(discord *discordgo.Session) {
-	fmt.Println("Shutting Down")
-	if createdConfig {
-		fmt.Println("Config Updated. Saving...")
-		fle, _ := json.Marshal(config)
-		err := os.WriteFile("config.json", fle, 0666)
+func removeRegisteredCommands(s *discordgo.Session) {
+	log.Println("Removing Commands...")
+
+	registeredCommands, err := s.ApplicationCommands(s.State.User.ID, "")
+	if err != nil {
+		log.Fatalf("Could not fetch registered commands: %v", err)
+	}
+
+	for _, v := range registeredCommands {
+		err := s.ApplicationCommandDelete(s.State.User.ID, "", v.ID)
 		if err != nil {
-			log.Fatalf("Error Writing config_old.json")
-			return
+			log.Panicf("Cannot delete '%v' command: %v", v.Name, err)
 		}
 	}
+}
+
+func writeConfig() {
+	log.Println("Config Updated. Writing...")
+
+	fle, _ := json.Marshal(config)
+	err := os.WriteFile("config.json", fle, 0666)
+	if err != nil {
+		log.Fatalf("Error Writing config.json")
+		return
+	}
+}
+
+func shutDown(discord *discordgo.Session) {
+	log.Println("Shutting Down...")
+
+	if createdConfig {
+		writeConfig()
+	}
+
+	if removeCommands {
+		removeRegisteredCommands(discord)
+	}
+
 	logging.ShutDown()
 	_ = discord.Close()
 }
