@@ -45,6 +45,27 @@ var (
 	config        Config
 	createdConfig bool
 	devMode       bool
+
+	commands = []*discordgo.ApplicationCommand{
+		{
+			Name: "basic-command",
+			// All commands and options must have a description
+			// Commands/options without description will fail the registration
+			// of the command.
+			Description: "Basic command",
+		},	
+	}
+
+	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"basic-command": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Hey there! Congratulations, you just executed your first slash command",
+				},
+			})
+		},
+	}
 )
 
 func readConfig() {
@@ -129,6 +150,16 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	// Used for adding slash commands
+	discord.ApplicationCommandCreate(discord.State.User.ID, "", commands[0]);
+	discord.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+			h(s, i);
+		}
+	})
+
+	fmt.Println("ID: " + discord.State.User.ID);
+
 	fmt.Println("Bot is now running")
 
 	// Pulled from the examples for discordgo, this lets the bot continue to run
@@ -160,7 +191,6 @@ func shutDown(discord *discordgo.Session) {
 	_ = discord.Close()
 }
 
-// 1009233301778743457
 // dev - https://discord.com/oauth2/authorize?client_id=1009233301778743457&scope=bot&permissions=2048
 // This - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2048
 // https://beta.openai.com/account/usage
