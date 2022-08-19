@@ -112,6 +112,10 @@ func getOpenAIResponse(prompt string, openAIKey string) string {
 
 	resp, _ := client.Do(req)
 
+	if resp == nil {
+		return "Error Contacting OpenAI API. Please Try Again Later."
+	}
+
 	buf, _ := ioutil.ReadAll(resp.Body)
 	var rspOAI OpenAIResponse
 	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
