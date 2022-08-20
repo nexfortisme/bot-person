@@ -56,24 +56,37 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if strings.HasPrefix(incomingMessage, "bad bot") {
-		logging.IncrementTracker(2, m, s)
-		response := badBotResponses[rand.Intn(len(badBotResponses))]
+		logging.LogIncomingMessage(s, m)
+
+		logging.IncrementTracker(2, m.Author.ID, m.Author.Username)
+		badBotRetort := badBotResponses[rand.Intn(len(badBotResponses))]
 		// TODO - Here Too
-		log.Printf("Bot Person > " + response)
-		_, err := s.ChannelMessageSend(m.ChannelID, response)
+		log.Println("Bot Person > " + badBotRetort)
+		_, err := s.ChannelMessageSend(m.ChannelID, badBotRetort)
 		util.HandleErrors(err)
 	} else if strings.HasPrefix(incomingMessage, "good bot") {
-		logging.IncrementTracker(1, m, s)
-		log.Printf("Bot Person > Thank You!")
+		logging.LogIncomingMessage(s, m)
+
+		logging.IncrementTracker(1, m.Author.ID, m.Author.Username)
+		log.Println("Bot Person > Thank You!")
 		_, err := s.ChannelMessageSend(m.ChannelID, "Thank You!")
 		util.HandleErrors(err)
 	} else if strings.HasPrefix(incomingMessage, "!botStats") {
-		logging.IncrementTracker(0, m, s)
+		logging.LogIncomingMessage(s, m)
+
 		logging.GetBotStats(s, m)
+		logging.IncrementTracker(0, m.Author.ID, m.Author.Username)
 	} else if strings.HasPrefix(incomingMessage, "!myStats") {
+		logging.LogIncomingMessage(s, m)
+
 		logging.GetUserStats(s, m)
-		logging.IncrementTracker(0, m, s)
+		logging.IncrementTracker(0, m.Author.ID, m.Author.Username)
 	}
+
+	// Commands to add
+	// about - list who made it and maybe a link to the git repo
+	// invite - Generates an invite link to be able to invite the bot to differnet servers
+	// stopTracking - Allows uers to opt out of data collection
 
 	// Only process messages that mention the bot
 	id := s.State.User.ID
@@ -83,9 +96,9 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	msg := util.ReplaceIDsWithNames(m, s)
 
-	// logging.LogIncomingMessage(s, m, msg)
+	logging.LogIncomingMessage(s, m)
 
-	logging.IncrementTracker(0, m, s)
+	logging.IncrementTracker(0, m.Author.ID, m.Author.Username)
 	respTxt := getOpenAIResponse(msg, openAIKey)
 
 	// TODO - Here as well

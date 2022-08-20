@@ -80,7 +80,7 @@ var (
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"test": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			logging.IncreametSlashCommandTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -88,6 +88,7 @@ var (
 				},
 			})
 		},
+		// TODO - Handle logging of the incoming request by the user
 		"bot": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			// Access options in the order provided by the user.
 			options := i.ApplicationCommandData().Options
@@ -118,7 +119,7 @@ var (
 				msg = messages.ParseSlashCommand(s, option.StringValue(), config.OpenAIKey)
 
 				// Incrementint interaciton counter
-				logging.IncreametSlashCommandTracker(1, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+				logging.IncrementTracker(1, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 
 				// Updating the initial message with the response from the OpenAI API
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
@@ -136,7 +137,7 @@ var (
 		},
 		"my-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			msg := logging.SlashGetUserStats(s, i)
-			logging.IncreametSlashCommandTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -146,7 +147,7 @@ var (
 		},
 		"bot-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			msg := logging.SlashGetBotStats(s)
-			logging.IncreametSlashCommandTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{

@@ -63,35 +63,18 @@ func LogError(err string) {
 	log.Fatalf(err)
 }
 
-func LogIncomingMessage(s *discordgo.Session, m *discordgo.MessageCreate, message string) {
+func LogIncomingMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	requestUser := m.Author.Username
 	rGuild, _ := s.State.Guild(m.GuildID)
 	rGuildName := rGuild.Name
+	message := util.ReplaceIDsWithNames(m, s)
 
 	log.Printf("%s (%s) < %s\n", requestUser, rGuildName, message)
-
 }
 
-// TODO - Collapse these two functions down into a single function
-// Maybe beed a second flag or logic to handle logging of the incoming message
-// Or just handle the logging of the message seperately from incrementing the tracker
-func IncrementTracker(flag int, m *discordgo.MessageCreate, s *discordgo.Session) {
 
-	var foundUser = false
-	LogIncomingMessage(s, m, util.ReplaceIDsWithNames(m, s))
-
-	foundUser = handleUserStatIncrementing(flag, m.Author.ID)
-
-	if !foundUser {
-		createNewUserTracking(m.Author.ID, m.Author.Username, flag)
-	}
-
-	incrementBotTracking(flag)
-}
-
-func IncreametSlashCommandTracker(flag int, userId string, username string) {
+func IncrementTracker(flag int, userId string, username string) {
 	foundUser := false
-
 	foundUser = handleUserStatIncrementing(flag, userId)
 
 	if !foundUser {
