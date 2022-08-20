@@ -41,44 +41,46 @@ type Config struct {
 }
 
 var (
-	config         Config
-	devMode        bool
-	removeCommands bool
-	enableLogging  bool
-	enableTracking bool
+	config          Config
+	devMode         bool
+	removeCommands  bool
+	disableLogging  bool
+	disableTracking bool
 
 	createdConfig         = false
 	integerOptionMinValue = 1.0
 
 	commands = []*discordgo.ApplicationCommand{
 		{
-			Name: "basic-command",
-			// All commands and options must have a description
-			// Commands/options without description will fail the registration
-			// of the command.
-			Description: "Basic command",
+			Name:        "test",
+			Description: "A simple test commnand for the bot.",
 		},
 		{
 			Name:        "bot",
-			Description: "General bot command",
+			Description: "A command to ask the bot for a reposne from their infinite wisdom.",
 			Options: []*discordgo.ApplicationCommandOption{
 
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "prompt",
-					Description: "Propmt to send to the bot",
+					Description: "The actual prompt that the bot will ponder on.",
 					Required:    true,
 				},
 			},
 		},
-		// {
-		// 	Name:        "my-stats",
-		// 	Description: "Get yout tracking data",
-		// },
+		{
+			Name:        "my-stats",
+			Description: "Get yout tracking data.",
+		},
+		{
+			Name: "bot-stats",
+			Description: "Get global stats for the bot.",
+		},
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"basic-command": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		"test": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			logging.IncreametSlashCommandTracker(1, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -98,23 +100,32 @@ var (
 
 			var msg string
 
+			// Pulling the propt out of the optionsMap
 			if option, ok := optionMap["prompt"]; ok {
+
+				// Generating the response
 				placeholder := "Thinking about: " + option.StringValue()
 
+				// Immediately responding in the 3 second window before the interaciton times out
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					// Ignore type for now, they will be discussed in "responses"
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						// Flags:   uint64(discordgo.MessageFlagsEphemeral),
 						Content: placeholder,
 					},
 				})
 
+				// Going out to make the OpenAI call to get the proper response
 				msg = messages.ParseSlashCommand(s, option.StringValue(), config.OpenAIKey)
+
+				// Incrementint interaciton counter
+				logging.IncreametSlashCommandTracker(1, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+
+				// Updating the initial message with the response from the OpenAI API
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: msg,
 				})
 				if err != nil {
+					// Not 100% sure this is the approach I want to take with handling errors from the API
 					s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 						Content: "Something went wrong",
 					})
@@ -124,10 +135,18 @@ var (
 
 		},
 		"my-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			// Access options in the order provided by the user.
-
 			msg := logging.SlashGetUserStats(s, i)
-
+			logging.IncreametSlashCommandTracker(1, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: msg,
+				},
+			})
+		},
+		"bot-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			msg := logging.SlashGetBotStats(s)
+			logging.IncreametSlashCommandTracker(1, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -151,7 +170,7 @@ func readConfig() {
 	}
 
 	err = json.Unmarshal(bConfig, &config)
-	util.HandleFatalErrors(err, "Could not parse: config_old.json")
+	util.HandleFatalErrors(err, "Could not parse: config.json")
 
 	// Handling the case the config file has just been created
 	if config.DiscordToken == "" {
@@ -163,6 +182,8 @@ func readConfig() {
 		log.Println("Discord Token Set to: '" + config.DiscordToken + "'")
 	}
 
+	// TODO - Check to see if the user doesn't type in a command
+	// If they don't, ask them if they wish to continue without OpenAI responses
 	if config.OpenAIKey == "" {
 		createdConfig = true
 		reader := bufio.NewReader(os.Stdin)
@@ -178,6 +199,8 @@ func main() {
 	// https://gobyexample.com/command-line-flags
 	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
 	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
+	flag.BoolVar(&disableLogging, "diableLogging", false, "Flag for disabling file logging of commands passed into bot person")
+	flag.BoolVar(&disableTracking, "disableTracking", false, "Flag for disabling tracking of user interactions and bad bot messages")
 	flag.Parse()
 
 	readConfig()
@@ -188,16 +211,17 @@ func main() {
 		log.Fatalf("error opening file: %v", err)
 	}
 
-	mw := io.MultiWriter(os.Stdout, f)
-	defer f.Close()
+	if !disableLogging {
+		mw := io.MultiWriter(os.Stdout, f)
+		defer f.Close()
 
-	// This makes it print to both the console and to a file
-	log.SetOutput(mw)
+		// This makes it print to both the console and to a file
+		log.SetOutput(mw)
+	}
 
 	// Create the Discord client and add the handler to process messages
-	var discord *discordgo.Session
+	var discordSession *discordgo.Session
 
-	// TODO - Handle case where a user enters dev mode and there isnt a dev mode key
 	if devMode {
 		log.Println("Entering Dev Mode...")
 
@@ -210,26 +234,26 @@ func main() {
 			log.Println("Dev Discord Token Set to: '" + config.DevDiscordToken + "'")
 		}
 
-		discord, err = discordgo.New("Bot " + config.DevDiscordToken)
+		discordSession, err = discordgo.New("Bot " + config.DevDiscordToken)
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
 		}
 	} else {
-		discord, err = discordgo.New("Bot " + config.DiscordToken)
+		discordSession, err = discordgo.New("Bot " + config.DiscordToken)
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
 		}
 	}
 
-	discord.AddHandler(messageReceive)
+	discordSession.AddHandler(messageReceive)
 
-	err = discord.Open()
+	err = discordSession.Open()
 	if err != nil {
 		log.Fatal("Error opening bot websocket")
 		log.Fatal(err.Error())
 	}
 
-	registerCommands(discord)
+	registerSlashCommands(discordSession)
 	log.Println("Bot is now running")
 
 	// Pulled from the examples for discordgo, this lets the bot continue to run
@@ -238,7 +262,7 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
-	shutDown(discord)
+	shutDown(discordSession)
 }
 
 // TODO - Do this better
@@ -246,7 +270,7 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 	messages.ParseMessage(s, m, config.OpenAIKey)
 }
 
-func registerCommands(s *discordgo.Session) {
+func registerSlashCommands(s *discordgo.Session) {
 	// Used for adding slash commands
 	// Add the command and then add the handler for that command
 	// https://github.com/bwmarrin/discordgo/blob/master/examples/slash_commands/main.go
@@ -265,7 +289,7 @@ func registerCommands(s *discordgo.Session) {
 	})
 }
 
-func removeRegisteredCommands(s *discordgo.Session) {
+func removeRegisteredSlashCommands(s *discordgo.Session) {
 	log.Println("Removing Commands...")
 
 	registeredCommands, err := s.ApplicationCommands(s.State.User.ID, "")
@@ -300,7 +324,7 @@ func shutDown(discord *discordgo.Session) {
 	}
 
 	if removeCommands {
-		removeRegisteredCommands(discord)
+		removeRegisteredSlashCommands(discord)
 	}
 
 	logging.ShutDown()
