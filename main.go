@@ -73,14 +73,14 @@ var (
 			Description: "Get yout tracking data.",
 		},
 		{
-			Name: "bot-stats",
+			Name:        "bot-stats",
 			Description: "Get global stats for the bot.",
 		},
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"test": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			logging.IncreametSlashCommandTracker(1, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			logging.IncreametSlashCommandTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -136,7 +136,7 @@ var (
 		},
 		"my-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			msg := logging.SlashGetUserStats(s, i)
-			logging.IncreametSlashCommandTracker(1, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			logging.IncreametSlashCommandTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -146,7 +146,7 @@ var (
 		},
 		"bot-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			msg := logging.SlashGetBotStats(s)
-			logging.IncreametSlashCommandTracker(1, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			logging.IncreametSlashCommandTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -271,6 +271,7 @@ func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func registerSlashCommands(s *discordgo.Session) {
+	log.Println("Registering Commands...")
 	// Used for adding slash commands
 	// Add the command and then add the handler for that command
 	// https://github.com/bwmarrin/discordgo/blob/master/examples/slash_commands/main.go
