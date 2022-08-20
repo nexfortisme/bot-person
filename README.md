@@ -1,5 +1,5 @@
 # Bot Person
-Bot Person is a farily simple Discord bot written in Go. It started off as a fun side project by AltarCrystal (citation needed) and is now being maintained by Nex. The main feature that comes with Bot Person is integration with the OpenAI davinci chat bot. It allows users to send prompts to the API to see what kind of response it returns
+Bot Person is a farily simple Discord bot written in Go. It started off as a fun side project by [AltarCrystal](https://github.com/AltarCrystal) and is now being maintained by Nex. The main feature that comes with Bot Person is integration with the OpenAI davinci chat bot. It allows users to send prompts to the API to see what kind of response it returns
 
 ## Getting Started
 If an existing `config.json` doesn't exist, the command line will prompt you for an OpenAI key which can be optained from https://openai.com/api/ and for a Discord bot token which can be gotten from the discord developer page. From there the bot will start up as normal and the bot will be able to interact with users in any server its been invited to. The bot will also generate `botTracking.json` which keeps a count of how many interactions the bot has has, how many times its been called good, and how many times its been called bad. Along with the general statistics, it also keeps track of those 3 tallies on a per user basis.
