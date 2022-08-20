@@ -7,6 +7,7 @@ import (
 	"log"
 	"main/logging"
 	"main/util"
+	"math/rand"
 	"net/http"
 	"strings"
 
@@ -39,6 +40,13 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	}
 
 	var incomingMessage string
+	badBotResponses := make([]string, 0)
+	badBotResponses = append(badBotResponses, "I'm sorry")
+	badBotResponses = append(badBotResponses, "It won't happen again")
+	badBotResponses = append(badBotResponses, "Eat Shit")
+	badBotResponses = append(badBotResponses, "Ok.")
+	badBotResponses = append(badBotResponses, "Sure Thing.")
+	badBotResponses = append(badBotResponses, "Like you are the most perfect being in existance. Pound sand pal.")
 
 	if !strings.HasPrefix(m.Message.Content, "!") {
 		incomingMessage = strings.ToLower(m.Message.Content)
@@ -49,9 +57,10 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if strings.HasPrefix(incomingMessage, "bad bot") {
 		logging.IncrementTracker(2, m, s)
-		log.Printf("Bot Person > I'm Sorry")
-		// Have this have a list of responses that it pulls from randomly
-		_, err := s.ChannelMessageSend(m.ChannelID, "I'm Sorry.")
+		response := badBotResponses[rand.Intn(len(badBotResponses))]
+		// TODO - Here Too
+		log.Printf("Bot Person > " + response)
+		_, err := s.ChannelMessageSend(m.ChannelID, response)
 		util.HandleErrors(err)
 	} else if strings.HasPrefix(incomingMessage, "!botStats") {
 		logging.IncrementTracker(1, m, s)
@@ -74,12 +83,14 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	logging.IncrementTracker(1, m, s)
 	respTxt := getOpenAIResponse(msg, openAIKey)
 
+	// TODO - Here as well
 	log.Printf("Bot Person > %s \n", respTxt)
 	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
 	util.HandleErrors(err)
 
 }
 
+// TODO - Make the response that is being logged by the bot include the bot user's actual username instead of "Bot Person"
 func ParseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
 	respTxt := getOpenAIResponse(prompt, openAIKey)
 	respTxt = "Request: " + prompt + " " + respTxt
