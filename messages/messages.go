@@ -62,12 +62,17 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		log.Printf("Bot Person > " + response)
 		_, err := s.ChannelMessageSend(m.ChannelID, response)
 		util.HandleErrors(err)
-	} else if strings.HasPrefix(incomingMessage, "!botStats") {
+	} else if strings.HasPrefix(incomingMessage, "good bot") {
 		logging.IncrementTracker(1, m, s)
+		log.Printf("Bot Person > Thank You!")
+		_, err := s.ChannelMessageSend(m.ChannelID, "Thank You!")
+		util.HandleErrors(err)
+	} else if strings.HasPrefix(incomingMessage, "!botStats") {
+		logging.IncrementTracker(0, m, s)
 		logging.GetBotStats(s, m)
 	} else if strings.HasPrefix(incomingMessage, "!myStats") {
 		logging.GetUserStats(s, m)
-		logging.IncrementTracker(1, m, s)
+		logging.IncrementTracker(0, m, s)
 	}
 
 	// Only process messages that mention the bot
@@ -80,7 +85,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	// logging.LogIncomingMessage(s, m, msg)
 
-	logging.IncrementTracker(1, m, s)
+	logging.IncrementTracker(0, m, s)
 	respTxt := getOpenAIResponse(msg, openAIKey)
 
 	// TODO - Here as well
