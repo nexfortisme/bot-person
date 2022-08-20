@@ -76,6 +76,10 @@ var (
 			Name:        "bot-stats",
 			Description: "Get global stats for the bot.",
 		},
+		{
+			Name: "about",
+			Description: "Get information about Bot Person",
+		},
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -152,6 +156,15 @@ var (
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: msg,
+				},
+			})
+		},
+		"about": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Bot Person started off as a project by AltarCrystal and is now being maintained by Nex. You can see Bot Person's source code at: https://github.com/nexfortisme/bot-person",
 				},
 			})
 		},
