@@ -14,24 +14,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type Config struct {
-	OpenAIKey    string `json:"OpenAIKey"`
-	DiscordToken string `json:"DiscordToken"`
-}
-
-type OpenAIResponse struct {
-	ID      string         `json:"id"`
-	Object  string         `json:"object"`
-	Model   string         `json:"model"`
-	Choices []OpenAIChoice `json:"choices"`
-}
-
-type OpenAIChoice struct {
-	Text   string `json:"text"`
-	Index  int    `json:"index"`
-	Reason string `json:"finish_reason"`
-}
-
 func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey string) {
 
 	// Ignoring messages from self
