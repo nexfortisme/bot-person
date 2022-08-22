@@ -12,5 +12,10 @@ If an existing `config.json` doesn't exist, the command line will prompt you for
 
 ## Wishlist
 - Configurable Commands - Have commands be configurable in the config.json instead of hard coded into the application
+  - {command, response, token cost (see below)}
+  - A way to specify return elements in the command. ie. {user has <user.messages> sent messages}
 - Log File Rotation - The file isn't getting super huge at the moment but having the ability to generate a new file when the existing one reaches a certain length.
 - Web Manager - A more friendly way of interacting with the bot configurations through a web page
+- Tokens - Some kind of token to be able to use certain commands
+  - Transferring tokens to other users
+  - Some kind of games to get more tokens
