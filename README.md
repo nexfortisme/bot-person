@@ -1,8 +1,8 @@
 # Bot Person
-Bot Person is a farily simple Discord bot written in Go. It started off as a fun side project by [AltarCrystal](https://github.com/AltarCrystal) and is now being maintained by Nex. The main feature that comes with Bot Person is integration with the OpenAI davinci chat bot. It allows users to send prompts to the API to see what kind of response it returns
+Bot Person is a farily simple Discord bot written in Go. It started off as a fun side project by [AltarCrystal](https://github.com/AltarCrystal) and is now being maintained by Nex. The main feature that comes with Bot Person is integration with the [OpenAI Davinci](https://beta.openai.com/docs/models/davinci) chat bot. It allows users to send prompts to the API to see what kind of response it returns.
 
 ## Getting Started
-If an existing `config.json` doesn't exist, the command line will prompt you for an OpenAI key which can be optained from https://openai.com/api/ and for a Discord bot token which can be gotten from the discord developer page. From there the bot will start up as normal and the bot will be able to interact with users in any server its been invited to. The bot will also generate `botTracking.json` which keeps a count of how many interactions the bot has has, how many times its been called good, and how many times its been called bad. Along with the general statistics, it also keeps track of those 3 tallies on a per user basis.
+If an existing `config.json` doesn't exist, the command line will prompt you for an OpenAI key which can be optained from https://openai.com/api/ and for a Discord Bot token which can be gotten from the Discord developer page. From there the bot will start up as normal and the bot will be able to interact with users in any server its been invited to. The bot will also generate `botTracking.json` which keeps a count of how many interactions the bot has has, how many times its been called good, and how many times its been called bad. Along with the general statistics, it also keeps track of those 3 tallies on a per user basis.
 
 ## Flags
 - `-dev` - The dev flag will start up the bot in "dev" mode where it will use a dev discord bot token instead of the main token. Similar to the main token and the OpenAI key, it will prompt you for one if one doesn't exist in the `config.json`
@@ -19,3 +19,4 @@ If an existing `config.json` doesn't exist, the command line will prompt you for
 - Tokens - Some kind of token to be able to use certain commands
   - Transferring tokens to other users
   - Some kind of games to get more tokens
+- On Initialization of the bot when a new Discord bot token is added, have it log out an invite link for that bot user with the proper permissions
