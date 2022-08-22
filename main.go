@@ -345,7 +345,3 @@ func shutDown(discord *discordgo.Session) {
 	logging.ShutDown()
 	_ = discord.Close()
 }
-
-// Dev - https://discord.com/oauth2/authorize?client_id=1009233301778743457&scope=bot&permissions=2048
-// Prod - https://discord.com/oauth2/authorize?client_id=225979639657398272&scope=bot&permissions=2147485696
-// https://beta.openai.com/account/usage
