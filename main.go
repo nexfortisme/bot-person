@@ -110,7 +110,7 @@ var (
 
 				// Updating the initial message with the response from the OpenAI API
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-					Content: msg,
+					Content: &msg,
 				})
 				if err != nil {
 					// Not 100% sure this is the approach I want to take with handling errors from the API
