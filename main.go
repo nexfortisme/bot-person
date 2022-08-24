@@ -250,6 +250,10 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	if removeCommands {
+		removeRegisteredSlashCommands(discordSession)
+	}
+
 	registerSlashCommands(discordSession)
 	log.Println("Bot is now running")
 
@@ -321,9 +325,9 @@ func shutDown(discord *discordgo.Session) {
 		writeConfig()
 	}
 
-	if removeCommands {
-		removeRegisteredSlashCommands(discord)
-	}
+	// if removeCommands {
+	// 	removeRegisteredSlashCommands(discord)
+	// }
 
 	logging.ShutDown()
 	_ = discord.Close()
