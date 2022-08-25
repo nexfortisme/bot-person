@@ -72,7 +72,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	// Only process messages that mention the bot
 	id := s.State.User.ID
-	if !mentionsBot(m.Mentions, id) && !mentionsKeyphrase(m) {
+	if !mentionsBot(m.Mentions, id) {
 		return
 	}
 
@@ -143,12 +143,6 @@ func getOpenAIResponse(prompt string, openAIKey string) string {
 	} else {
 		return rspOAI.Choices[0].Text
 	}
-}
-
-// Checking for the !bot keyword
-// TODO - Replace with slash commands
-func mentionsKeyphrase(m *discordgo.MessageCreate) bool {
-	return strings.HasPrefix(m.Content, "!bot") && m.Content != "!botStats"
 }
 
 // Determine if the bot's ID is in the list of users mentioned
