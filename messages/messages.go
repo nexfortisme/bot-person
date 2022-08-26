@@ -72,7 +72,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	// Only process messages that mention the bot
 	id := s.State.User.ID
-	if !mentionsBot(m.Mentions, id) {
+	if !mentionsBot(m.Mentions, id) && !mentionsKeyphrase(m) {
 		return
 	}
 
@@ -85,6 +85,9 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	// TODO - Here as well
 	log.Printf("Bot Person > %s \n", respTxt)
+	if mentionsKeyphrase(m) {
+		s.ChannelMessageSend(m.ChannelID, "!bot is deprecated. Please at the bot or use /bot for further interactions")
+	}
 	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
 	util.HandleErrors(err)
 
@@ -143,6 +146,11 @@ func getOpenAIResponse(prompt string, openAIKey string) string {
 	} else {
 		return rspOAI.Choices[0].Text
 	}
+}
+
+func mentionsKeyphrase(m *discordgo.MessageCreate) bool {
+	fmt.Println(m.Content)
+	return strings.HasPrefix(m.Content, "!bot") && m.Content != "!botStats"
 }
 
 // Determine if the bot's ID is in the list of users mentioned
