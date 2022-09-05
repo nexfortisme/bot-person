@@ -149,7 +149,6 @@ func getOpenAIResponse(prompt string, openAIKey string) string {
 }
 
 func mentionsKeyphrase(m *discordgo.MessageCreate) bool {
-	fmt.Println(m.Content)
 	return strings.HasPrefix(m.Content, "!bot") && m.Content != "!botStats"
 }
 
