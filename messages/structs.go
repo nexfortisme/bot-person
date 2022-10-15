@@ -16,3 +16,20 @@ type OpenAIChoice struct {
 	Index  int    `json:"index"`
 	Reason string `json:"finish_reason"`
 }
+
+type SDResponse struct {
+	Status string `json:"status"`
+	Request interface{} `json:"request"`
+	Output []SDOutput `json:"output"`
+}
+
+type SDStep struct {
+	step int `json:"step"`
+	total_steps int `json:"total_steps"`
+}
+
+type SDOutput struct {
+	Data string `json:"data"`
+	Seed int `json:"seed"`
+	Path_abs interface{} `json:"path_abs"`
+}

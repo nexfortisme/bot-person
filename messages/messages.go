@@ -1,15 +1,34 @@
 package messages
 
 import (
+
+	// "encoding/base64"
+	"bytes"
+	"image"
+	"image/png"
+
+	// "encoding/base64"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+
+	// "image/png"
+	"os"
+	"strconv"
+
+	// "image/png"
+
+	// "io"
 	"io/ioutil"
 	"log"
 	"main/logging"
 	"main/util"
 	"math/rand"
 	"net/http"
+
+	// "os"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -81,15 +100,72 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	logging.LogIncomingMessage(s, m)
 
 	logging.IncrementTracker(0, m.Author.ID, m.Author.Username)
-	respTxt := getOpenAIResponse(msg, openAIKey)
-
-	// TODO - Here as well
-	log.Printf("Bot Person > %s \n", respTxt)
-	if mentionsKeyphrase(m) {
-		s.ChannelMessageSend(m.ChannelID, "!bot is deprecated. Please at the bot or use /bot for further interactions")
+	rsp := getSDResponse(msg)
+	if rsp == "" {
+		return
 	}
-	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
-	util.HandleErrors(err)
+
+	fmt.Println(rsp)
+
+	outputName := msg + ".png"
+
+	tmp := rsp[22:]
+	fmt.Println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+	fmt.Println(tmp)
+
+	unbased, err := base64.StdEncoding.DecodeString(tmp)
+	if err != nil {
+		panic("Cannot decode b64")
+	}
+
+	r := bytes.NewReader(unbased)
+	im, err := png.Decode(r)
+	if err != nil {
+		panic("Bad png")
+	}
+
+	f, err := os.OpenFile("example.png", os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		panic("Cannot open file")
+	}
+
+	png.Encode(f, im)
+
+	// f, err := os.Create(outputName);
+
+	// if err != nil {
+	// 	logging.LogError("Unable to Create File");
+	// }
+
+	// defer f.Close()
+	// f.Write([]byte(rsp));
+
+	// bar := []byte(rsp)
+
+	exp, err := os.OpenFile(outputName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		logging.LogError("Unable to Create File")
+	}
+	baz, _, err := image.Decode(strings.NewReader(rsp))
+	if err != nil {
+		fmt.Print(err)
+		logging.LogError("Unable to Create File")
+	}
+	png.Encode(exp, baz)
+
+	fle, err := ioutil.ReadFile(outputName)
+
+	s.ChannelFileSend(m.ChannelID, outputName, bytes.NewReader(fle))
+
+	// respTxt := getOpenAIResponse(msg, openAIKey)
+
+	// // TODO - Here as well
+	// log.Printf("Bot Person > %s \n", respTxt)
+	// if mentionsKeyphrase(m) {
+	// 	s.ChannelMessageSend(m.ChannelID, "!bot is deprecated. Please at the bot or use /bot for further interactions")
+	// }
+	// _, err := s.ChannelMessageSend(m.ChannelID, respTxt)
+	// util.HandleErrors(err)
 
 }
 
@@ -146,6 +222,57 @@ func getOpenAIResponse(prompt string, openAIKey string) string {
 	} else {
 		return rspOAI.Choices[0].Text
 	}
+}
+
+func getSDResponse(prompt string) string {
+	seed := rand.Int31n(10000000)
+	fmt.Println("Prompt: " + prompt + ". Seed: " + strconv.Itoa(int(seed)))
+
+	client := &http.Client{}
+
+	dataTemplate := `{
+		"guidance_scale": "7.5",
+		"height": "512",
+		"negative_prompt": "",
+		"num_inference_steps": 50,
+		"num_outputs": "1",
+		"prompt": "A Bear",
+		"sampler": "plms",
+		"seed": %d,
+		"session_id": %d,
+		"show_only_filtered_image": true,
+		"stream_image_progress": false,
+		"stream_progress_updates": false,
+		"turbo": true,
+		"use_cpu": false,
+		"use_full_precision": true,
+		"width": "512"
+	}`
+
+	data := fmt.Sprintf(dataTemplate, int(seed), time.Now().Unix())
+
+	req, err := http.NewRequest(http.MethodPost, "http://localhost:9000/image", strings.NewReader(data))
+	if err != nil {
+		logging.LogError("Error Creating POST Request")
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, _ := client.Do(req)
+	if resp == nil {
+		fmt.Println("Null Response From SD Backend")
+		return ""
+	}
+
+	buf, _ := ioutil.ReadAll(resp.Body)
+	sdRsp := SDResponse{}
+
+	err = json.Unmarshal([]byte(string(buf)), &sdRsp)
+	if err != nil {
+		logging.LogError("Error Unmarshalling response from SD Backend")
+	}
+
+	return sdRsp.Output[0].Data
 }
 
 func mentionsKeyphrase(m *discordgo.MessageCreate) bool {
