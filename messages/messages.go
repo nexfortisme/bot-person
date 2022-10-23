@@ -1,14 +1,11 @@
 package messages
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"main/logging"
+	"main/messages/external"
 	"main/util"
 	"math/rand"
-	"net/http"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -21,6 +18,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		return
 	}
 
+	// TODO - Add this to the config file
 	var incomingMessage string
 	badBotResponses := make([]string, 0)
 	badBotResponses = append(badBotResponses, "I'm sorry")
@@ -29,6 +27,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	badBotResponses = append(badBotResponses, "Ok.")
 	badBotResponses = append(badBotResponses, "Sure Thing.")
 	badBotResponses = append(badBotResponses, "Like you are the most perfect being in existance. Pound sand pal.")
+	badBotResponses = append(badBotResponses, "https://youtu.be/4X7q87RDSHI")
 
 	if !strings.HasPrefix(m.Message.Content, "!") {
 		incomingMessage = strings.ToLower(m.Message.Content)
@@ -81,7 +80,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	logging.LogIncomingMessage(s, m)
 
 	logging.IncrementTracker(0, m.Author.ID, m.Author.Username)
-	respTxt := getOpenAIResponse(msg, openAIKey)
+	respTxt := external.GetOpenAIResponse(msg, openAIKey)
 
 	// TODO - Here as well
 	log.Printf("Bot Person > %s \n", respTxt)
@@ -95,57 +94,10 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 // TODO - Make the response that is being logged by the bot include the bot user's actual username instead of "Bot Person"
 func ParseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
-	respTxt := getOpenAIResponse(prompt, openAIKey)
+	respTxt := external.GetOpenAIResponse(prompt, openAIKey)
 	respTxt = "Request: " + prompt + " " + respTxt
 	log.Printf("Bot Person > %s \n", respTxt)
 	return respTxt
-}
-
-func getOpenAIResponse(prompt string, openAIKey string) string {
-	client := &http.Client{}
-
-	dataTemplate := `{
-		"model": "text-davinci-002",
-		"prompt": "%s",
-		"temperature": 0.7,
-		"max_tokens": 256,
-		"top_p": 1,
-		"frequency_penalty": 0,
-		"presence_penalty": 0
-	  }`
-	data := fmt.Sprintf(dataTemplate, prompt)
-
-	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/completions", strings.NewReader(data))
-	if err != nil {
-		logging.LogError("Error creating POST request")
-		// log.Fatalf("Error creating POST request")
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+openAIKey)
-
-	resp, _ := client.Do(req)
-
-	if resp == nil {
-		return "Error Contacting OpenAI API. Please Try Again Later."
-	}
-
-	buf, _ := ioutil.ReadAll(resp.Body)
-	var rspOAI OpenAIResponse
-	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
-	// need to add proper error handling
-	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
-	if err != nil {
-		return ""
-	}
-
-	// It's possible that OpenAI returns no response, so
-	// fallback to a default one
-	if len(rspOAI.Choices) == 0 {
-		return "I'm sorry, I don't understand?"
-	} else {
-		return rspOAI.Choices[0].Text
-	}
 }
 
 func mentionsKeyphrase(m *discordgo.MessageCreate) bool {
