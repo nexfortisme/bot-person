@@ -20,3 +20,4 @@ If an existing `config.json` doesn't exist, the command line will prompt you for
   - Transferring tokens to other users
   - Some kind of games to get more tokens
 - On Initialization of the bot when a new Discord bot token is added, have it log out an invite link for that bot user with the proper permissions
+- Tracking of user activity (in chat channels or voice channels) to give out tokens for use for special commands or other future external applications
