@@ -16,3 +16,12 @@ type OpenAIChoice struct {
 	Index  int    `json:"index"`
 	Reason string `json:"finish_reason"`
 }
+
+type DalleResponse struct {
+	Created int           `json:"created"`
+	Data    []DalleImages `json:"data"`
+}
+
+type DalleImages struct {
+	URL string `json:"url"`
+}
