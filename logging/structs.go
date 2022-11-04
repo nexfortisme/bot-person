@@ -17,4 +17,5 @@ type UserStatsStruct struct {
 	MessageCount int `json:"MessageCount"`
 	GoodBotCount int `json:"GoodBotCount"`
 	BadBotCount  int `json:"BadBotCount"`
+	ImageCount int `json:"imageCount"`
 }

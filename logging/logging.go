@@ -71,7 +71,7 @@ func GetUserStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if element.UserId != m.Author.ID {
 			continue
 		} else {
-			msg := "You have interacted with the bot " + strconv.Itoa(element.UserStats.MessageCount) + " times, praised the bot " + strconv.Itoa(element.UserStats.GoodBotCount) + " times, and scolded the bot " + strconv.Itoa(element.UserStats.BadBotCount) + " times."
+			msg := "You have interacted with the bot " + strconv.Itoa(element.UserStats.MessageCount) + " times, praised the bot " + strconv.Itoa(element.UserStats.GoodBotCount) + " times, and scolded the bot " + strconv.Itoa(element.UserStats.BadBotCount) + " times. You have requested an image " + strconv.Itoa(element.UserStats.ImageCount) + " times."
 			_, err := s.ChannelMessageSend(m.ChannelID, msg)
 			util.HandleErrors(err)
 			LogOutGoingMessage(s, m, msg)
@@ -92,7 +92,7 @@ func SlashGetUserStats(s *discordgo.Session, i *discordgo.InteractionCreate) str
 		if element.UserId != userId {
 			continue
 		} else {
-			msg := "You have interacted with the bot " + strconv.Itoa(element.UserStats.MessageCount) + " times, praised the bot " + strconv.Itoa(element.UserStats.GoodBotCount) + " times, and scolded the bot " + strconv.Itoa(element.UserStats.BadBotCount) + " times."
+			msg := "You have interacted with the bot " + strconv.Itoa(element.UserStats.MessageCount) + " times, praised the bot " + strconv.Itoa(element.UserStats.GoodBotCount) + " times, and scolded the bot " + strconv.Itoa(element.UserStats.BadBotCount) + " times. You have requested an image " + strconv.Itoa(element.UserStats.ImageCount) + " times."
 			return msg
 		}
 	}
@@ -140,6 +140,9 @@ func handleUserStatIncrementing(flag int, userId string) bool {
 			} else if flag == 2 {
 				element.UserStats.MessageCount++
 				element.UserStats.BadBotCount++
+			} else if flag == 3 {
+				element.UserStats.MessageCount++
+				element.UserStats.ImageCount++
 			} else {
 				element.UserStats.MessageCount++
 			}
@@ -168,10 +171,12 @@ func incrementBotTracking(flag int) {
 func createNewUserTracking(userId string, username string, flag int) {
 	log.Println("Creating New User For: " + username)
 	if flag == 1 {
-		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{1, 1, 0}})
+		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{1, 1, 0, 0}})
 	} else if flag == 2 {
-		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{1, 0, 1}})
+		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{1, 0, 1, 0}})
+	}  else if flag == 2 {
+		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{1, 0, 1, 1}})
 	} else {
-		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{1, 0, 0}})
+		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{1, 0, 0, 0}})
 	}
 }

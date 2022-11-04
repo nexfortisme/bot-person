@@ -65,7 +65,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	} else if strings.HasPrefix(incomingMessage, "!image") {
 
 		logging.LogIncomingMessage(s, m);
-		logging.IncrementTracker(0, m.Author.ID, m.Author.Username);
+		logging.IncrementTracker(3, m.Author.ID, m.Author.Username);
 
 		req := strings.SplitAfterN(incomingMessage, " ", 2);
 		resp := external.GetDalleResponse(req[1], openAIKey);

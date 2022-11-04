@@ -46,7 +46,7 @@ func GetDalleResponse(prompt string, openAIKey string) string {
 	// It's possible that OpenAI returns no response, so
 	// fallback to a default one
 	if len(rspOAI.Data) == 0 {
-		return "I'm sorry, I don't understand?"
+		return "I'm sorry, I don't understand? (Most likely picked up by OpenAi query filter)."
 	} else {
 		return rspOAI.Data[0].URL
 	}
