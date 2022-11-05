@@ -6,6 +6,7 @@ import (
 	"main/messages/external"
 	"main/util"
 	"math/rand"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -64,13 +65,62 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		logging.IncrementTracker(0, m.Author.ID, m.Author.Username)
 	} else if strings.HasPrefix(incomingMessage, "!image") {
 
-		logging.LogIncomingMessage(s, m);
-		logging.IncrementTracker(3, m.Author.ID, m.Author.Username);
+		if !logging.UserHasTokens(m.Author.ID) {
+			s.ChannelMessageSend(m.ChannelID, "You do not have enough tokens to be able to generate an image")
+			return
+		}
 
-		req := strings.SplitAfterN(incomingMessage, " ", 2);
-		resp := external.GetDalleResponse(req[1], openAIKey);
+		logging.LogIncomingMessage(s, m)
+		logging.IncrementTracker(3, m.Author.ID, m.Author.Username)
+
+		req := strings.SplitAfterN(incomingMessage, " ", 2)
+		resp := external.GetDalleResponse(req[1], openAIKey)
 		_, err := s.ChannelMessageSend(m.ChannelID, resp)
-		util.HandleErrors(err);
+
+		logging.UseImageToken(m.Author.ID)
+
+		util.HandleErrors(err)
+	} else if strings.HasPrefix(incomingMessage, "!addTokens") {
+
+		// !addTokens @user #
+
+		if m.Author.ID != "92699061911580672" {
+			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
+			return
+		} else {
+			req := strings.Split(incomingMessage, " ")
+			tokenCount, _ := strconv.Atoi(req[2])
+			success := logging.AddImageTokens(tokenCount, req[1][2:len(req[1])-1])
+			if success {
+				s.ChannelMessageSend(m.ChannelID, "Tokens were successfully added.")
+			} else {
+				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
+			}
+		}
+
+	} else if strings.HasPrefix(incomingMessage, "!balance") {
+		tokenCount := logging.GetUserTokenCount(m.Author.ID)
+		resp := "You have " + strconv.Itoa(tokenCount) + " tokens"
+		s.ChannelMessageSend(m.ChannelID, resp)
+	} else if strings.HasPrefix(incomingMessage, "!sendTokens") {
+
+		// !sendTokens @user #
+
+		req := strings.Split(incomingMessage, " ")
+		tokenCount, _ := strconv.Atoi(req[2])
+
+		if (logging.GetUserTokenCount(m.Author.ID) - tokenCount) < 0 {
+			s.ChannelMessageSend(m.ChannelID, "You don't have enough tokens to send that many. You can check your balance with `!balance`")
+			return
+		} else {
+			result := logging.TransferrImageTokens(tokenCount, m.Author.ID, req[1][2:len(req[1])-1])
+			if result {
+				s.ChannelMessageSend(m.ChannelID, "Tokens were successfully sent.")
+			} else {
+				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not sent.")
+			}
+		}
+
 	}
 
 	// Commands to add
