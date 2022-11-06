@@ -2,6 +2,7 @@ package external
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"main/logging"
@@ -9,7 +10,7 @@ import (
 	"strings"
 )
 
-func GetDalleResponse(prompt string, openAIKey string) string {
+func GetDalleResponse(prompt string, openAIKey string) (string, error) {
 	client := &http.Client{}
 
 	dataTemplate := `{
@@ -22,7 +23,6 @@ func GetDalleResponse(prompt string, openAIKey string) string {
 	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/images/generations", strings.NewReader(data))
 	if err != nil {
 		logging.LogError("Error creating POST request")
-		// log.Fatalf("Error creating POST request")
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -31,7 +31,7 @@ func GetDalleResponse(prompt string, openAIKey string) string {
 	resp, _ := client.Do(req)
 
 	if resp == nil {
-		return "Error Contacting OpenAI API. Please Try Again Later."
+		return "Error Contacting OpenAI API. Please Try Again Later.", errors.New("API Error")
 	}
 
 	buf, _ := ioutil.ReadAll(resp.Body)
@@ -40,14 +40,14 @@ func GetDalleResponse(prompt string, openAIKey string) string {
 	// need to add proper error handling
 	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
 	if err != nil {
-		return ""
+		return "", errors.New("Parse Error")
 	}
 
 	// It's possible that OpenAI returns no response, so
 	// fallback to a default one
 	if len(rspOAI.Data) == 0 {
-		return "I'm sorry, I don't understand? (Most likely picked up by OpenAi query filter)."
+		return "I'm sorry, I don't understand? (Most likely picked up by OpenAi query filter).", errors.New("API Response Error")
 	} else {
-		return rspOAI.Data[0].URL
+		return rspOAI.Data[0].URL, nil
 	}
 }

@@ -1,10 +1,12 @@
 package messages
 
 import (
+	"fmt"
 	"log"
 	"main/logging"
 	"main/messages/external"
 	"main/util"
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -74,22 +76,23 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		logging.IncrementTracker(3, m.Author.ID, m.Author.Username)
 
 		req := strings.SplitAfterN(incomingMessage, " ", 2)
-		resp := external.GetDalleResponse(req[1], openAIKey)
-		_, err := s.ChannelMessageSend(m.ChannelID, resp)
+		resp, err := external.GetDalleResponse(req[1], openAIKey)
+		if err != nil {
+			_, err := s.ChannelMessageSend(m.ChannelID, resp)
+			util.HandleErrors(err)
+		} else {
+			_, err := s.ChannelMessageSend(m.ChannelID, resp)
+			util.HandleErrors(err)
+			logging.UseImageToken(m.Author.ID)
+		}
 
-		logging.UseImageToken(m.Author.ID)
-
-		util.HandleErrors(err)
 	} else if strings.HasPrefix(incomingMessage, "!addTokens") {
-
-		// !addTokens @user #
-
 		if m.Author.ID != "92699061911580672" {
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
 			return
 		} else {
 			req := strings.Split(incomingMessage, " ")
-			tokenCount, _ := strconv.Atoi(req[2])
+			tokenCount, _ := strconv.ParseFloat(req[2], 64)
 			success := logging.AddImageTokens(tokenCount, req[1][2:len(req[1])-1])
 			if success {
 				s.ChannelMessageSend(m.ChannelID, "Tokens were successfully added.")
@@ -100,14 +103,11 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	} else if strings.HasPrefix(incomingMessage, "!balance") {
 		tokenCount := logging.GetUserTokenCount(m.Author.ID)
-		resp := "You have " + strconv.Itoa(tokenCount) + " tokens"
+		resp := "You have " + fmt.Sprint(tokenCount) + " tokens"
 		s.ChannelMessageSend(m.ChannelID, resp)
 	} else if strings.HasPrefix(incomingMessage, "!sendTokens") {
-
-		// !sendTokens @user #
-
 		req := strings.Split(incomingMessage, " ")
-		tokenCount, _ := strconv.Atoi(req[2])
+		tokenCount, _ := strconv.ParseFloat(req[2], 64)
 
 		if (logging.GetUserTokenCount(m.Author.ID) - tokenCount) < 0 {
 			s.ChannelMessageSend(m.ChannelID, "You don't have enough tokens to send that many. You can check your balance with `!balance`")
@@ -120,8 +120,40 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not sent.")
 			}
 		}
+	} else if strings.HasPrefix(incomingMessage, "!gamble") {
+
+		req := strings.Split(incomingMessage, " ")
+		tokenCount, _ := strconv.ParseFloat(req[1], 64)
+		logging.RemoveUserTokens(m.Author.ID, tokenCount)
+
+		num := rand.Intn(100)
+
+		retStr := "Bot Person Rolled a " + strconv.Itoa(num) + "."
+
+		if num < 50 {
+			retStr += " Critical Failure. You lose the tokens you gambled. :("
+			s.ChannelMessageSend(m.ChannelID, retStr)
+			logging.RemoveUserTokens(m.Author.ID, tokenCount)
+		} else if num >= 50 && num < 75 {
+			retStr += " Nice Profit! You win 1.1x what you gambled."
+			s.ChannelMessageSend(m.ChannelID, retStr)
+			rewards := tokenCount * 1.1
+			logging.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+		} else if num >= 75 && num <= 99 {
+			retStr += " Good Profit! You win 1.4x what you gambled."
+			s.ChannelMessageSend(m.ChannelID, retStr)
+			rewards := tokenCount * 1.4
+			logging.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+		} else if num > 99 {
+			retStr += " Jackpot! You win 2x what you gambled."
+			s.ChannelMessageSend(m.ChannelID, retStr)
+			rewards := tokenCount * 2
+			logging.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+		}
 
 	}
+
+	// ! Add Help Command
 
 	// Commands to add
 	// about - list who made it and maybe a link to the git repo
