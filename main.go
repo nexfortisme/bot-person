@@ -273,6 +273,8 @@ var (
 				// Going out to make the OpenAI call to get the proper response
 				msg = messages.GetDalleResponseSlashCommand(s, option.StringValue(), config.OpenAIKey)
 
+				logging.UseImageToken(i.Interaction.Member.User.ID)
+
 				// Updating the initial message with the response from the OpenAI API
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: &msg,
