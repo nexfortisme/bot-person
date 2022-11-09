@@ -1,5 +1,7 @@
 package logging
 
+import "fmt"
+
 func AddImageTokens(tokenAmount float64, userId string) bool {
 
 	user, _ := getUser(userId)
@@ -57,7 +59,7 @@ func UseImageToken(userId string) bool {
 			return false
 		} else {
 			user.ImageTokens--
-			return updateUser(user, userId);
+			return updateUser(user, userId)
 		}
 	}
 
@@ -65,6 +67,8 @@ func UseImageToken(userId string) bool {
 
 func UserHasTokens(userId string) bool {
 	user, _ := getUser(userId)
+
+	fmt.Println(user)
 
 	if user.MessageCount == -1 {
 		return false
@@ -93,10 +97,10 @@ func SetUserTokenCount(userId string, tokenAmount float64) bool {
 
 	if user.MessageCount == -1 {
 		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{0, 0, 0, 0, tokenAmount}})
-		return true;
+		return true
 	} else {
-		user.ImageTokens = tokenAmount;
-		return updateUser(user, userId);
+		user.ImageTokens = tokenAmount
+		return updateUser(user, userId)
 	}
 }
 
@@ -105,14 +109,14 @@ func RemoveUserTokens(userId string, tokenAmount float64) bool {
 
 	if user.MessageCount == -1 {
 		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{0, 0, 0, 0, 0}})
-		return true;
+		return true
 	} else {
 		if (user.ImageTokens - tokenAmount) <= 0 {
-			user.ImageTokens = 0;
-			return updateUser(user, userId);
+			user.ImageTokens = 0
+			return updateUser(user, userId)
 		} else {
-			user.ImageTokens -= tokenAmount;
-			return updateUser(user, userId);
+			user.ImageTokens -= tokenAmount
+			return updateUser(user, userId)
 		}
 	}
 }

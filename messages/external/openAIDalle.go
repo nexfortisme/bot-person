@@ -5,49 +5,48 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"main/logging"
 	"net/http"
 	"strings"
 )
 
 func GetDalleResponse(prompt string, openAIKey string) (string, error) {
-	client := &http.Client{}
+	httpClient := &http.Client{}
 
-	dataTemplate := `{
+	requestDataTemplate := `{
 		"prompt": "%s",
 		"n": 1,
 		"size": "1024x1024"
 	  }`
-	data := fmt.Sprintf(dataTemplate, prompt)
+	requestData := fmt.Sprintf(requestDataTemplate, prompt)
 
-	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/images/generations", strings.NewReader(data))
+	postRequest, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/images/generations", strings.NewReader(requestData))
 	if err != nil {
-		logging.LogError("Error creating POST request")
+		return "Error creating POST request.", errors.New("POST Request Error")
 	}
 
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+openAIKey)
+	postRequest.Header.Add("Content-Type", "application/json")
+	postRequest.Header.Add("Authorization", "Bearer "+openAIKey)
 
-	resp, _ := client.Do(req)
+	httpResponse, _ := httpClient.Do(postRequest)
 
-	if resp == nil {
+	if httpResponse == nil {
 		return "Error Contacting OpenAI API. Please Try Again Later.", errors.New("API Error")
 	}
 
-	buf, _ := ioutil.ReadAll(resp.Body)
-	var rspOAI DalleResponse
-	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
-	// need to add proper error handling
-	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
+	responseBuffer, _ := ioutil.ReadAll(httpResponse.Body)
+	var openAIResponse DalleResponse
+	err = json.Unmarshal([]byte(string(responseBuffer)), &openAIResponse)
 	if err != nil {
-		return "", errors.New("Parse Error")
+		return "Error Parsing Response", errors.New("Parse Error")
 	}
 
 	// It's possible that OpenAI returns no response, so
 	// fallback to a default one
-	if len(rspOAI.Data) == 0 {
+	if len(openAIResponse.Data) == 0 {
+		fmt.Println(responseBuffer)
+		fmt.Println(openAIResponse)
 		return "I'm sorry, I don't understand? (Most likely picked up by OpenAi query filter).", errors.New("API Response Error")
 	} else {
-		return rspOAI.Data[0].URL, nil
+		return openAIResponse.Data[0].URL, nil
 	}
 }

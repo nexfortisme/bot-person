@@ -1,6 +1,5 @@
 package logging
 
-
 type BotTracking struct {
 	MessageCount int          `json:"MessageCount"`
 	GoodBotCount int          `json:"GoodBotCount"`
@@ -14,9 +13,9 @@ type UserStruct struct {
 }
 
 type UserStatsStruct struct {
-	MessageCount int `json:"MessageCount"`
-	GoodBotCount int `json:"GoodBotCount"`
-	BadBotCount  int `json:"BadBotCount"`
-	ImageCount int `json:"imageCount"`
-	ImageTokens float64 `json:"imageTokens"`
+	MessageCount int     `json:"MessageCount"`
+	GoodBotCount int     `json:"GoodBotCount"`
+	BadBotCount  int     `json:"BadBotCount"`
+	ImageCount   int     `json:"imageCount"`
+	ImageTokens  float64 `json:"imageTokens"`
 }

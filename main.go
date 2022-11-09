@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"main/logging"
@@ -35,14 +36,9 @@ var (
 
 	commands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "test",
-			Description: "A simple test commnand for the bot.",
-		},
-		{
 			Name:        "bot",
 			Description: "A command to ask the bot for a reposne from their infinite wisdom.",
 			Options: []*discordgo.ApplicationCommandOption{
-
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "prompt",
@@ -53,28 +49,96 @@ var (
 		},
 		{
 			Name:        "my-stats",
-			Description: "Get yout tracking data.",
+			Description: "Get usage stats.",
 		},
 		{
 			Name:        "bot-stats",
-			Description: "Get global stats for the bot.",
+			Description: "Get global usage stats.",
 		},
 		{
-			Name: "about",
-			Description: "Get information about Bot Person",
+			Name:        "about",
+			Description: "Get information about Bot Person.",
 		},
+		{
+			Name:        "donations",
+			Description: "List of the people who contributed to Bot Person's on-going service.",
+		},
+		{
+			Name:        "help",
+			Description: "List of commands to use with Bot Person.",
+		},
+		{
+			Name:        "image",
+			Description: "Ask Bot Person to generate an image for you. Costs 1 Token per image",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "prompt",
+					Description: "The actual prompt that Bot Person will generate an image from.",
+					Required:    true,
+				},
+				// TODO - Implement requesting multiple images at once
+				// {
+				// 	Type:        discordgo.ApplicationCommandOptionInteger,
+				// 	Name:        "number",
+				// 	Description: "The number of image you want Bot Person to generate. Cost = # of images generated",
+				// 	MinValue:    &integerOptionMinValue,
+				// 	MaxValue:    10,
+				// 	Required:    false,
+				// },
+			},
+		},
+		{
+			Name: "balance",
+			// TODO - Add flag for users to opt out of others being able to check their balance
+			Description: "Check your balance or the balance of another user.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "user",
+					Description: "The person you want to check the balance of.",
+					Required:    false,
+				},
+			},
+		},
+		{
+			Name:        "send",
+			Description: "A command to ask the bot for a reposne from their infinite wisdom.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "recepient",
+					Description: "The person you want to send tokens to.",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "amount",
+					Description: "The amount of tokens you want to send.",
+					Required:    true,
+				},
+			},
+		},
+		// {
+		// 	Name:        "gamba",
+		// 	Description: "Try your luck and see if you can win some extra Image Tokens.",
+		// 	Options: []*discordgo.ApplicationCommandOption{
+		// 		{
+		// 			Type:        discordgo.ApplicationCommandOptionNumber,
+		// 			Name:        "amount",
+		// 			Description: "The amount of tokens you want to gamba.",
+		// 			MinValue:    &integerOptionMinValue,
+		// 			Required:    true,
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	Name:        "economy",
+		// 	Description: "Check the overall number of tokens in the economy",
+		// },
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"test": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "eat shit",
-				},
-			})
-		},
 		// TODO - Handle logging of the incoming request by the user
 		"bot": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			// Access options in the order provided by the user.
@@ -120,11 +184,11 @@ var (
 					return
 				}
 			}
-
 		},
 		"my-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			msg := logging.SlashGetUserStats(s, i)
 			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			msg = msg + "\n" + "Stats may be inaccurate pending rewrite of tracking system."
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -135,6 +199,7 @@ var (
 		"bot-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			msg := logging.SlashGetBotStats(s)
 			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			msg = msg + "\n" + "Stats may be inaccurate pending rewrite of tracking system"
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -151,6 +216,227 @@ var (
 				},
 			})
 		},
+		"donations": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Thanks PsychoPhyr for $20 to keep the lights on for Bot Person!",
+				},
+			})
+		},
+		"help": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "// TODO",
+				},
+			})
+		},
+		"image": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			// Access options in the order provided by the user.
+			options := i.ApplicationCommandData().Options
+
+			// Or convert the slice into a map
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+
+			var msg string
+
+			if !logging.UserHasTokens(i.Interaction.Member.User.ID) {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "You don't have enough tokens to generate an image.",
+					},
+				})
+				return
+			}
+
+			// Pulling the propt out of the optionsMap
+			if option, ok := optionMap["prompt"]; ok {
+
+				// Generating the response
+				placeholder := "Prompt: " + option.StringValue()
+
+				// Immediately responding in the 3 second window before the interaciton times out
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: placeholder,
+					},
+				})
+
+				// Going out to make the OpenAI call to get the proper response
+				msg = messages.GetDalleResponseSlashCommand(s, option.StringValue(), config.OpenAIKey)
+
+				// Updating the initial message with the response from the OpenAI API
+				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &msg,
+				})
+				if err != nil {
+					// Not 100% sure this is the approach I want to take with handling errors from the API
+					s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+						Content: "Something went wrong.",
+					})
+					return
+				}
+			}
+		},
+		"balance": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+			var tokenCount float64
+			var balanceResponse string
+
+			// Access options in the order provided by the user.
+			options := i.ApplicationCommandData().Options
+
+			// Or convert the slice into a map
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+
+			if option, ok := optionMap["user"]; ok {
+				user := option.UserValue(s)
+				tokenCount = logging.GetUserTokenCount(user.ID)
+				balanceResponse = user.Username + " has " + fmt.Sprint(tokenCount) + " tokens."
+			} else {
+				tokenCount = logging.GetUserTokenCount(i.Interaction.Member.User.ID)
+				balanceResponse = "You have " + fmt.Sprint(tokenCount) + " tokens."
+			}
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: balanceResponse,
+				},
+			})
+		},
+		"send": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+			senderBalance := logging.GetUserTokenCount(i.Interaction.Member.User.ID)
+
+			var transferrAmount float64
+
+			// Access options in the order provided by the user.
+			options := i.ApplicationCommandData().Options
+
+			// Or convert the slice into a map
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+
+			// Checking to see that the user has the number of tokens needed to send
+			if option, ok := optionMap["amount"]; ok {
+
+				transferrAmount = float64(option.IntValue())
+
+				if senderBalance < transferrAmount {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "Oops! You do not have the tokens needed to complete the transaction.",
+						},
+					})
+					return
+				}
+			}
+
+			if option, ok := optionMap["recepient"]; ok {
+				recepient := option.UserValue(s)
+				sendResponse := logging.TransferrImageTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
+
+				newBalance := logging.GetUserTokenCount(i.Interaction.Member.User.ID)
+
+				if sendResponse {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "Tokens were successfully sent. New balance is: " + fmt.Sprint(newBalance),
+						},
+					})
+					return
+				} else {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "Oops! Something went wrong. Tokens were not sent.",
+						},
+					})
+					return
+				}
+			}
+		},
+		// "gamba": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+		// 	var gambaResponseString string
+
+		// 	// Access options in the order provided by the user.
+		// 	options := i.ApplicationCommandData().Options
+
+		// 	// Or convert the slice into a map
+		// 	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+		// 	for _, opt := range options {
+		// 		optionMap[opt.Name] = opt
+		// 	}
+
+		// 	if option, ok := optionMap["amount"]; ok {
+		// 		gambaWager := option.FloatValue()
+		// 		userBalance := logging.GetUserTokenCount(i.Interaction.Member.User.ID)
+
+		// 		if userBalance < gambaWager {
+		// 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		// 				Type: discordgo.InteractionResponseChannelMessageWithSource,
+		// 				Data: &discordgo.InteractionResponseData{
+		// 					Content: "Oops! You do not have the tokens needed to complete the gamba. You degen.",
+		// 				},
+		// 			})
+		// 			return
+		// 		} else {
+
+		// 			logging.RemoveUserTokens(i.Interaction.Member.User.ID, gambaWager)
+
+		// 			rand.Seed(time.Now().UnixNano())
+		// 			num := rand.Intn(101)
+
+		// 			gambaResponseString := "Bot Person Rolled a " + strconv.Itoa(num) + "."
+
+		// 			if num < 50 {
+		// 				gambaResponseString += " OOF. You lose the tokens you gambled. :("
+		// 				logging.RemoveUserTokens(i.Interaction.Member.User.ID, gambaWager)
+		// 			} else if num >= 50 && num < 80 {
+		// 				gambaResponseString += " Nice Profit! You win 1.1x what you gambled."
+		// 				rewards := gambaWager * 1.1
+		// 				logging.AddImageTokens(math.Floor(rewards*100)/100, i.Interaction.Member.User.ID)
+		// 			} else if num >= 80 && num < 90 {
+		// 				gambaResponseString += " Good Profit! You win 1.2x what you gambled."
+		// 				rewards := gambaWager * 1.2
+		// 				logging.AddImageTokens(math.Floor(rewards*100)/100, i.Interaction.Member.User.ID)
+		// 			} else if num >= 90 && num <= 99 {
+		// 				gambaResponseString += " Great Profit! You win 1.4x what you gambled."
+		// 				rewards := gambaWager * 1.4
+		// 				logging.AddImageTokens(math.Floor(rewards*100)/100, i.Interaction.Member.User.ID)
+		// 			} else if num > 99 {
+		// 				gambaResponseString += " Jackpot! You win 2x what you gambled."
+		// 				rewards := gambaWager * 2
+		// 				logging.AddImageTokens(math.Floor(rewards*100)/100, i.Interaction.Member.User.ID)
+		// 			}
+
+		// 		}
+		// 	}
+
+		// 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		// 		Data: &discordgo.InteractionResponseData{
+		// 			Content: gambaResponseString,
+		// 		},
+		// 	})
+		// },
 	}
 )
 

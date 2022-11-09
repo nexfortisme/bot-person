@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -55,22 +56,14 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		log.Println("Bot Person > Thank You!")
 		_, err := s.ChannelMessageSend(m.ChannelID, "Thank You!")
 		util.HandleErrors(err)
-	} else if strings.HasPrefix(incomingMessage, "!botStats") {
-		logging.LogIncomingMessage(s, m)
-
-		logging.GetBotStats(s, m)
-		logging.IncrementTracker(0, m.Author.ID, m.Author.Username)
-	} else if strings.HasPrefix(incomingMessage, "!myStats") {
-		logging.LogIncomingMessage(s, m)
-
-		logging.GetUserStats(s, m)
-		logging.IncrementTracker(0, m.Author.ID, m.Author.Username)
 	} else if strings.HasPrefix(incomingMessage, "!image") {
 
 		if !logging.UserHasTokens(m.Author.ID) {
 			s.ChannelMessageSend(m.ChannelID, "You do not have enough tokens to be able to generate an image")
 			return
 		}
+
+		s.ChannelMessageSend(m.ChannelID, "This command is deprecated and will be removed at a later date. Please use /image instead.")
 
 		logging.LogIncomingMessage(s, m)
 		logging.IncrementTracker(3, m.Author.ID, m.Author.Username)
@@ -101,46 +94,33 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 			}
 		}
 
-	} else if strings.HasPrefix(incomingMessage, "!balance") {
-		tokenCount := logging.GetUserTokenCount(m.Author.ID)
-		resp := "You have " + fmt.Sprint(tokenCount) + " tokens"
-		s.ChannelMessageSend(m.ChannelID, resp)
-	} else if strings.HasPrefix(incomingMessage, "!sendTokens") {
-		req := strings.Split(incomingMessage, " ")
-		tokenCount, _ := strconv.ParseFloat(req[2], 64)
-
-		if (logging.GetUserTokenCount(m.Author.ID) - tokenCount) < 0 {
-			s.ChannelMessageSend(m.ChannelID, "You don't have enough tokens to send that many. You can check your balance with `!balance`")
-			return
-		} else {
-			result := logging.TransferrImageTokens(tokenCount, m.Author.ID, req[1][2:len(req[1])-1])
-			if result {
-				s.ChannelMessageSend(m.ChannelID, "Tokens were successfully sent.")
-			} else {
-				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not sent.")
-			}
-		}
 	} else if strings.HasPrefix(incomingMessage, "!gamble") {
 
 		req := strings.Split(incomingMessage, " ")
 		tokenCount, _ := strconv.ParseFloat(req[1], 64)
 		logging.RemoveUserTokens(m.Author.ID, tokenCount)
 
-		num := rand.Intn(100)
+		rand.Seed(time.Now().UnixNano())
+		num := rand.Intn(101)
 
 		retStr := "Bot Person Rolled a " + strconv.Itoa(num) + "."
 
 		if num < 50 {
-			retStr += " Critical Failure. You lose the tokens you gambled. :("
+			retStr += " OOF. You lose the tokens you gambled. :("
 			s.ChannelMessageSend(m.ChannelID, retStr)
 			logging.RemoveUserTokens(m.Author.ID, tokenCount)
-		} else if num >= 50 && num < 75 {
+		} else if num >= 50 && num < 80 {
 			retStr += " Nice Profit! You win 1.1x what you gambled."
 			s.ChannelMessageSend(m.ChannelID, retStr)
 			rewards := tokenCount * 1.1
 			logging.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
-		} else if num >= 75 && num <= 99 {
-			retStr += " Good Profit! You win 1.4x what you gambled."
+		} else if num >= 80 && num < 90 {
+			retStr += " Good Profit! You win 1.2x what you gambled."
+			s.ChannelMessageSend(m.ChannelID, retStr)
+			rewards := tokenCount * 1.2
+			logging.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+		} else if num >= 90 && num <= 99 {
+			retStr += " Great Profit! You win 1.4x what you gambled."
 			s.ChannelMessageSend(m.ChannelID, retStr)
 			rewards := tokenCount * 1.4
 			logging.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
@@ -189,6 +169,19 @@ func ParseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) st
 	respTxt = "Request: " + prompt + " " + respTxt
 	log.Printf("Bot Person > %s \n", respTxt)
 	return respTxt
+}
+
+// TODO - Rename, I don't like this
+// TODO - Add Logging
+func GetDalleResponseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
+	dalleResponse, err := external.GetDalleResponse(prompt, openAIKey)
+
+	if err != nil {
+		return dalleResponse
+	}
+
+	// dalleResponse = "Prompt: " + prompt + "\n" + dalleResponse
+	return dalleResponse
 }
 
 func mentionsKeyphrase(m *discordgo.MessageCreate) bool {
