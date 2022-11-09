@@ -1,46 +1,46 @@
-package logging
+package persistance
 
 func AddImageTokens(tokenAmount float64, userId string) bool {
 
-	user, _ := getUser(userId)
+	user, err := getUser(userId)
 
-	if user.MessageCount == -1 {
+	if err != nil {
 		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{0, 0, 0, 0, tokenAmount}})
 		return true
 	} else {
-		user.ImageTokens += tokenAmount
-		return updateUser(user, userId)
+		user.UserStats.ImageTokens += tokenAmount
+		return updateUser(user)
 	}
 
 }
 
 func TransferrImageTokens(tokenAmount float64, fromUserId string, toUserId string) bool {
 
-	fromUser, _ := getUser(fromUserId)
-	toUser, _ := getUser(toUserId)
+	fromUser, fromErr := getUser(fromUserId)
+	toUser, toErr := getUser(toUserId)
 
 	// Checking to see if user exists
-	if fromUser.MessageCount == -1 {
+	if fromErr != nil {
 		return false
 	} else {
 
 		// The User exists but is trying to transferr more tokens then they have
-		if fromUser.ImageTokens < tokenAmount {
+		if fromUser.UserStats.ImageTokens < tokenAmount {
 			return false
 		}
 
 		// Checking to see if the toUser exists
-		if toUser.MessageCount == -1 {
+		if toErr != nil {
 
 			// toUser doesn't exist
 			// Creates user and assigns them the number of tokens that is being transferred
 			botTracking.UserStats = append(botTracking.UserStats, UserStruct{toUserId, UserStatsStruct{0, 0, 0, 0, tokenAmount}})
-			fromUser.ImageTokens -= tokenAmount
-			return updateUser(fromUser, fromUserId)
+			fromUser.UserStats.ImageTokens -= tokenAmount
+			return updateUser(fromUser)
 		} else {
-			toUser.ImageTokens += tokenAmount
-			fromUser.ImageTokens -= tokenAmount
-			return updateUser(toUser, toUserId) && updateUser(fromUser, fromUserId)
+			toUser.UserStats.ImageTokens += tokenAmount
+			fromUser.UserStats.ImageTokens -= tokenAmount
+			return updateUser(toUser) && updateUser(fromUser)
 		}
 	}
 
@@ -48,30 +48,29 @@ func TransferrImageTokens(tokenAmount float64, fromUserId string, toUserId strin
 
 func UseImageToken(userId string) bool {
 
-	user, _ := getUser(userId)
+	user, err := getUser(userId)
 
-	if user.MessageCount == -1 {
+	if err != nil {
 		return false
 	} else {
-		if user.ImageTokens < 1 {
+		if user.UserStats.ImageTokens < 1 {
 			return false
 		} else {
-			user.ImageTokens--
-			return updateUser(user, userId)
+			user.UserStats.ImageTokens--
+			return updateUser(user)
 		}
 	}
 
 }
 
+// Is this needed, can be canned
 func UserHasTokens(userId string) bool {
-	user, _ := getUser(userId)
+	user, err := getUser(userId)
 
-	// fmt.Println(user)
-
-	if user.MessageCount == -1 {
+	if err != nil {
 		return false
 	} else {
-		if user.ImageTokens <= 0 {
+		if user.UserStats.ImageTokens <= 0 {
 			return false
 		} else {
 			return true
@@ -81,40 +80,40 @@ func UserHasTokens(userId string) bool {
 }
 
 func GetUserTokenCount(userId string) float64 {
-	user, _ := getUser(userId)
+	user, err := getUser(userId)
 
-	if user.MessageCount == -1 {
+	if err != nil {
 		return 0
 	} else {
-		return user.ImageTokens
+		return user.UserStats.ImageTokens
 	}
 }
 
 func SetUserTokenCount(userId string, tokenAmount float64) bool {
-	user, _ := getUser(userId)
+	user, err := getUser(userId)
 
-	if user.MessageCount == -1 {
+	if err != nil {
 		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{0, 0, 0, 0, tokenAmount}})
 		return true
 	} else {
-		user.ImageTokens = tokenAmount
-		return updateUser(user, userId)
+		user.UserStats.ImageTokens = tokenAmount
+		return updateUser(user)
 	}
 }
 
 func RemoveUserTokens(userId string, tokenAmount float64) bool {
-	user, _ := getUser(userId)
+	user, err := getUser(userId)
 
-	if user.MessageCount == -1 {
+	if err != nil {
 		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{0, 0, 0, 0, 0}})
 		return true
 	} else {
-		if (user.ImageTokens - tokenAmount) <= 0 {
-			user.ImageTokens = 0
-			return updateUser(user, userId)
+		if (user.UserStats.ImageTokens - tokenAmount) <= 0 {
+			user.UserStats.ImageTokens = 0
+			return updateUser(user)
 		} else {
-			user.ImageTokens -= tokenAmount
-			return updateUser(user, userId)
+			user.UserStats.ImageTokens -= tokenAmount
+			return updateUser(user)
 		}
 	}
 }

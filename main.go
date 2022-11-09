@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"main/logging"
 	"main/messages"
+	"main/persistance"
 	"main/util"
 	"os"
 	"os/signal"
@@ -136,6 +136,10 @@ var (
 		// 	Name:        "economy",
 		// 	Description: "Check the overall number of tokens in the economy",
 		// },
+		// {
+		// 	Name: "invite",
+		// 	Description: "Get an invite link to add Bot Person to another server.",
+		// },
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -170,7 +174,7 @@ var (
 				msg = messages.ParseSlashCommand(s, option.StringValue(), config.OpenAIKey)
 
 				// Incrementint interaciton counter
-				logging.IncrementTracker(1, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+				persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *i.Interaction.Member.User)
 
 				// Updating the initial message with the response from the OpenAI API
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
@@ -186,29 +190,27 @@ var (
 			}
 		},
 		"my-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			msg := logging.SlashGetUserStats(s, i)
-			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
-			msg = msg + "\n" + "Stats may be inaccurate pending rewrite of tracking system."
+			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: msg,
+					Content: persistance.SlashGetUserStats(*i.Interaction.Member.User),
 				},
 			})
 		},
 		"bot-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			msg := logging.SlashGetBotStats(s)
-			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
-			msg = msg + "\n" + "Stats may be inaccurate pending rewrite of tracking system"
+			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: msg,
+					Content: persistance.SlashGetBotStats(s),
 				},
 			})
 		},
 		"about": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -217,7 +219,7 @@ var (
 			})
 		},
 		"donations": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -226,7 +228,7 @@ var (
 			})
 		},
 		"help": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			logging.IncrementTracker(0, i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -246,7 +248,10 @@ var (
 
 			var msg string
 
-			if !logging.UserHasTokens(i.Interaction.Member.User.ID) {
+			if !persistance.UserHasTokens(i.Interaction.Member.User.ID) {
+
+				persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
@@ -273,7 +278,8 @@ var (
 				// Going out to make the OpenAI call to get the proper response
 				msg = messages.GetDalleResponseSlashCommand(s, option.StringValue(), config.OpenAIKey)
 
-				logging.UseImageToken(i.Interaction.Member.User.ID)
+				persistance.UseImageToken(i.Interaction.Member.User.ID)
+				persistance.IncrementInteractionTracking(persistance.BPImageRequest, *i.Interaction.Member.User)
 
 				// Updating the initial message with the response from the OpenAI API
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
@@ -304,12 +310,14 @@ var (
 
 			if option, ok := optionMap["user"]; ok {
 				user := option.UserValue(s)
-				tokenCount = logging.GetUserTokenCount(user.ID)
+				tokenCount = persistance.GetUserTokenCount(user.ID)
 				balanceResponse = user.Username + " has " + fmt.Sprint(tokenCount) + " tokens."
 			} else {
-				tokenCount = logging.GetUserTokenCount(i.Interaction.Member.User.ID)
+				tokenCount = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
 				balanceResponse = "You have " + fmt.Sprint(tokenCount) + " tokens."
 			}
+
+			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -320,7 +328,7 @@ var (
 		},
 		"send": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
-			senderBalance := logging.GetUserTokenCount(i.Interaction.Member.User.ID)
+			senderBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
 
 			var transferrAmount float64
 
@@ -339,6 +347,9 @@ var (
 				transferrAmount = float64(option.IntValue())
 
 				if senderBalance < transferrAmount {
+
+					persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
 						Data: &discordgo.InteractionResponseData{
@@ -351,11 +362,15 @@ var (
 
 			if option, ok := optionMap["recepient"]; ok {
 				recepient := option.UserValue(s)
-				sendResponse := logging.TransferrImageTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
+				sendResponse := persistance.TransferrImageTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
 
-				newBalance := logging.GetUserTokenCount(i.Interaction.Member.User.ID)
+				newBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
 
 				if sendResponse {
+
+					// TODO - Switch to use BPSystemInteraction
+					persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
 						Data: &discordgo.InteractionResponseData{
@@ -364,6 +379,9 @@ var (
 					})
 					return
 				} else {
+
+					persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
 						Data: &discordgo.InteractionResponseData{
@@ -489,7 +507,7 @@ func main() {
 	flag.Parse()
 
 	readConfig()
-	logging.InitBotStatistics()
+	persistance.InitBotStatistics()
 
 	f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -617,6 +635,6 @@ func shutDown(discord *discordgo.Session) {
 	// 	removeRegisteredSlashCommands(discord)
 	// }
 
-	logging.ShutDown()
+	persistance.ShutDown()
 	_ = discord.Close()
 }

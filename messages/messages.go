@@ -4,6 +4,7 @@ import (
 	"log"
 	"main/logging"
 	"main/messages/external"
+	"main/persistance"
 	"main/util"
 	"math"
 	"math/rand"
@@ -42,7 +43,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	if strings.HasPrefix(incomingMessage, "bad bot") {
 		logging.LogIncomingMessage(s, m)
 
-		logging.IncrementTracker(2, m.Author.ID, m.Author.Username)
+		persistance.IncrementInteractionTracking(persistance.BPBadBotInteraction, *m.Author)
 		badBotRetort := badBotResponses[rand.Intn(len(badBotResponses))]
 		// TODO - Here Too
 		log.Println("Bot Person > " + badBotRetort)
@@ -51,13 +52,13 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	} else if strings.HasPrefix(incomingMessage, "good bot") {
 		logging.LogIncomingMessage(s, m)
 
-		logging.IncrementTracker(1, m.Author.ID, m.Author.Username)
+		persistance.IncrementInteractionTracking(persistance.BPGoodBotInteraction, *m.Author)
 		log.Println("Bot Person > Thank You!")
 		_, err := s.ChannelMessageSend(m.ChannelID, "Thank You!")
 		util.HandleErrors(err)
 	} else if strings.HasPrefix(incomingMessage, "!image") {
 
-		if !logging.UserHasTokens(m.Author.ID) {
+		if !persistance.UserHasTokens(m.Author.ID) {
 			s.ChannelMessageSend(m.ChannelID, "You do not have enough tokens to be able to generate an image")
 			return
 		}
@@ -65,7 +66,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		s.ChannelMessageSend(m.ChannelID, "This command is deprecated and will be removed at a later date. Please use /image instead.")
 
 		logging.LogIncomingMessage(s, m)
-		logging.IncrementTracker(3, m.Author.ID, m.Author.Username)
+		persistance.IncrementInteractionTracking(persistance.BPImageRequest, *m.Author)
 
 		req := strings.SplitAfterN(incomingMessage, " ", 2)
 		resp, err := external.GetDalleResponse(req[1], openAIKey)
@@ -75,17 +76,21 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		} else {
 			_, err := s.ChannelMessageSend(m.ChannelID, resp)
 			util.HandleErrors(err)
-			logging.UseImageToken(m.Author.ID)
+			persistance.UseImageToken(m.Author.ID)
 		}
 
 	} else if strings.HasPrefix(incomingMessage, "!addTokens") {
+
+		// TODO - Switch to use BPSystemInteraction
+		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
+
 		if m.Author.ID != "92699061911580672" {
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
 			return
 		} else {
 			req := strings.Split(incomingMessage, " ")
 			tokenCount, _ := strconv.ParseFloat(req[2], 64)
-			success := logging.AddImageTokens(tokenCount, req[1][2:len(req[1])-1])
+			success := persistance.AddImageTokens(tokenCount, req[1][2:len(req[1])-1])
 			if success {
 				s.ChannelMessageSend(m.ChannelID, "Tokens were successfully added.")
 			} else {
@@ -95,9 +100,11 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	} else if strings.HasPrefix(incomingMessage, "!gamble") {
 
+		// !TODO - FIX ISSUE WITH FLOATING POINT
+
 		req := strings.Split(incomingMessage, " ")
 		tokenCount, _ := strconv.ParseFloat(req[1], 64)
-		logging.RemoveUserTokens(m.Author.ID, tokenCount)
+		persistance.RemoveUserTokens(m.Author.ID, tokenCount)
 
 		rand.Seed(time.Now().UnixNano())
 		num := rand.Intn(101)
@@ -107,27 +114,27 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		if num < 50 {
 			retStr += " OOF. You lose the tokens you gambled. :("
 			s.ChannelMessageSend(m.ChannelID, retStr)
-			logging.RemoveUserTokens(m.Author.ID, tokenCount)
+			persistance.RemoveUserTokens(m.Author.ID, tokenCount)
 		} else if num >= 50 && num < 80 {
 			retStr += " Nice Profit! You win 1.1x what you gambled."
 			s.ChannelMessageSend(m.ChannelID, retStr)
 			rewards := tokenCount * 1.1
-			logging.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+			persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
 		} else if num >= 80 && num < 90 {
 			retStr += " Good Profit! You win 1.2x what you gambled."
 			s.ChannelMessageSend(m.ChannelID, retStr)
 			rewards := tokenCount * 1.2
-			logging.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+			persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
 		} else if num >= 90 && num <= 99 {
 			retStr += " Great Profit! You win 1.4x what you gambled."
 			s.ChannelMessageSend(m.ChannelID, retStr)
 			rewards := tokenCount * 1.4
-			logging.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+			persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
 		} else if num > 99 {
 			retStr += " Jackpot! You win 2x what you gambled."
 			s.ChannelMessageSend(m.ChannelID, retStr)
 			rewards := tokenCount * 2
-			logging.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+			persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
 		}
 
 	}
@@ -149,7 +156,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	logging.LogIncomingMessage(s, m)
 
-	logging.IncrementTracker(0, m.Author.ID, m.Author.Username)
+	persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *m.Author)
 	respTxt := external.GetOpenAIResponse(msg, openAIKey)
 
 	// TODO - Here as well
