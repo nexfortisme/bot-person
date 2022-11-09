@@ -1,7 +1,5 @@
 package logging
 
-import "fmt"
-
 func AddImageTokens(tokenAmount float64, userId string) bool {
 
 	user, _ := getUser(userId)
@@ -68,7 +66,7 @@ func UseImageToken(userId string) bool {
 func UserHasTokens(userId string) bool {
 	user, _ := getUser(userId)
 
-	fmt.Println(user)
+	// fmt.Println(user)
 
 	if user.MessageCount == -1 {
 		return false

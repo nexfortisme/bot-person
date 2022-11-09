@@ -179,7 +179,7 @@ func GetDalleResponseSlashCommand(s *discordgo.Session, prompt string, openAIKey
 		return dalleResponse
 	}
 
-	// dalleResponse = "Prompt: " + prompt + "\n" + dalleResponse
+	dalleResponse = "Prompt: " + "[" + prompt + "](" + dalleResponse + ")"
 	return dalleResponse
 }
 
