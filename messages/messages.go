@@ -1,7 +1,6 @@
 package messages
 
 import (
-	"fmt"
 	"log"
 	"main/logging"
 	"main/messages/external"
