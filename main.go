@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"main/logging"
 	"main/messages"
 	"main/persistance"
 	"main/util"
@@ -30,9 +31,10 @@ var (
 	removeCommands  bool
 	disableLogging  bool
 	disableTracking bool
+	disableCmdReg   bool
 
 	createdConfig         = false
-	integerOptionMinValue = 1.0
+	integerOptionMinValue = 0.1
 
 	commands = []*discordgo.ApplicationCommand{
 		{
@@ -112,9 +114,10 @@ var (
 					Required:    true,
 				},
 				{
-					Type:        discordgo.ApplicationCommandOptionInteger,
+					Type:        discordgo.ApplicationCommandOptionNumber,
 					Name:        "amount",
 					Description: "The amount of tokens you want to send.",
+					MinValue:    &integerOptionMinValue,
 					Required:    true,
 				},
 			},
@@ -145,6 +148,7 @@ var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		// TODO - Handle logging of the incoming request by the user
 		"bot": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
 			// Access options in the order provided by the user.
 			options := i.ApplicationCommandData().Options
 
@@ -158,6 +162,9 @@ var (
 
 			// Pulling the propt out of the optionsMap
 			if option, ok := optionMap["prompt"]; ok {
+
+				// Logging the interaction to the log file
+				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, option.StringValue())
 
 				// Generating the response
 				placeholder := "Thinking about: " + option.StringValue()
@@ -176,14 +183,20 @@ var (
 				// Incrementint interaciton counter
 				persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *i.Interaction.Member.User)
 
+				// Logging outgoing bot response
+				logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
+
 				// Updating the initial message with the response from the OpenAI API
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: &msg,
 				})
 				if err != nil {
+
+					logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "Something went wrong.")
+
 					// Not 100% sure this is the approach I want to take with handling errors from the API
 					s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-						Content: "Something went wrong",
+						Content: "Something went wrong.",
 					})
 					return
 				}
@@ -192,47 +205,95 @@ var (
 		"my-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
+			// Logging incoming user request
+			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< USER_GET_STATS >")
+
+			// Getting user stat data
+			msg := persistance.SlashGetUserStats(*i.Interaction.Member.User)
+
+			// Logging outgoing bot response
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: persistance.SlashGetUserStats(*i.Interaction.Member.User),
+					Content: msg,
 				},
 			})
 		},
 		"bot-stats": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
+			// Logging incoming user request
+			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_STATS >")
+
+			// Getting user stat data
+			msg := persistance.SlashGetBotStats(s)
+
+			// Logging outgoing bot response
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: persistance.SlashGetBotStats(s),
+					Content: msg,
 				},
 			})
 		},
 		"about": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+			// Logging incoming user request
+			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_ABOUT >")
+
+			// Getting user stat data
+			msg := "Bot Person started off as a project by AltarCrystal and is now being maintained by Nex. You can see Bot Person's source code at: https://github.com/nexfortisme/bot-person"
+
+			// Logging outgoing bot response
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Bot Person started off as a project by AltarCrystal and is now being maintained by Nex. You can see Bot Person's source code at: https://github.com/nexfortisme/bot-person",
+					Content: msg,
 				},
 			})
 		},
 		"donations": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+			// Logging incoming user request
+			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_DONATIONS >")
+
+			// Getting user stat data
+			msg := "Thanks PsychoPhyr for $20 to keep the lights on for Bot Person!"
+
+			// Logging outgoing bot response
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Thanks PsychoPhyr for $20 to keep the lights on for Bot Person!",
+					Content: msg,
 				},
 			})
 		},
 		"help": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+			// Logging incoming user request
+			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_HELP >")
+
+			// Getting user stat data
+			msg := "// TODO"
+
+			// Logging outgoing bot response
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
+
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "// TODO",
+					Content: msg,
 				},
 			})
 		},
@@ -252,10 +313,19 @@ var (
 
 				persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
+				// Logging incoming user request
+				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< BOT_PERSON_GET_IMAGE >")
+
+				// Getting user stat data
+				msg := "You don't have enough tokens to generate an image."
+
+				// Logging outgoing bot response
+				logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
+
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Content: "You don't have enough tokens to generate an image.",
+						Content: msg,
 					},
 				})
 				return
@@ -266,6 +336,9 @@ var (
 
 				// Generating the response
 				placeholder := "Prompt: " + option.StringValue()
+
+				// Logging incoming user request
+				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "/image "+option.StringValue())
 
 				// Immediately responding in the 3 second window before the interaciton times out
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -281,11 +354,16 @@ var (
 				persistance.UseImageToken(i.Interaction.Member.User.ID)
 				persistance.IncrementInteractionTracking(persistance.BPImageRequest, *i.Interaction.Member.User)
 
+				logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
+
 				// Updating the initial message with the response from the OpenAI API
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: &msg,
 				})
 				if err != nil {
+
+					logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "Something went wrong.")
+
 					// Not 100% sure this is the approach I want to take with handling errors from the API
 					s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 						Content: "Something went wrong.",
@@ -309,15 +387,23 @@ var (
 			}
 
 			if option, ok := optionMap["user"]; ok {
+
+				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_BALANCE > "+option.UserValue(s).Username)
+
 				user := option.UserValue(s)
 				tokenCount = persistance.GetUserTokenCount(user.ID)
-				balanceResponse = user.Username + " has " + fmt.Sprint(tokenCount) + " tokens."
+				balanceResponse = user.Username + " has " + fmt.Sprintf("%.2f", tokenCount) + " tokens."
 			} else {
+
+				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_BALANCE >")
+
 				tokenCount = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
-				balanceResponse = "You have " + fmt.Sprint(tokenCount) + " tokens."
+				balanceResponse = "You have " + fmt.Sprintf("%.2f", tokenCount) + " tokens."
 			}
 
 			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, balanceResponse)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -344,11 +430,15 @@ var (
 			// Checking to see that the user has the number of tokens needed to send
 			if option, ok := optionMap["amount"]; ok {
 
-				transferrAmount = float64(option.IntValue())
+				transferrAmount = option.FloatValue()
+
+				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_SEND_TOKENS > Amount: "+fmt.Sprintf("%f", transferrAmount))
 
 				if senderBalance < transferrAmount {
 
 					persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+					logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "Oops! You do not have the tokens needed to complete the transaction.")
 
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -366,21 +456,27 @@ var (
 
 				newBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
 
+				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_SEND_TOKENS > Amount: "+fmt.Sprintf("%f", transferrAmount)+" Recepient: "+recepient.Username)
+
 				if sendResponse {
 
 					// TODO - Switch to use BPSystemInteraction
 					persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
+					logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "Tokens were successfully sent. Your new balance is: "+fmt.Sprint(newBalance))
+
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
 						Data: &discordgo.InteractionResponseData{
-							Content: "Tokens were successfully sent. New balance is: " + fmt.Sprint(newBalance),
+							Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprint(newBalance),
 						},
 					})
 					return
 				} else {
 
 					persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+					logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "Oops! Something went wrong. Tokens were not sent.")
 
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -504,6 +600,7 @@ func main() {
 	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
 	flag.BoolVar(&disableLogging, "diableLogging", false, "Flag for disabling file logging of commands passed into bot person")
 	flag.BoolVar(&disableTracking, "disableTracking", false, "Flag for disabling tracking of user interactions and bad bot messages")
+	flag.BoolVar(&disableCmdReg, "disableCmdReg", false, "Flag for disabling registering of commands on startup")
 	flag.Parse()
 
 	readConfig()
@@ -560,7 +657,10 @@ func main() {
 		removeRegisteredSlashCommands(discordSession)
 	}
 
-	registerSlashCommands(discordSession)
+	if !disableCmdReg {
+		registerSlashCommands(discordSession)
+	}
+
 	log.Println("Bot is now running")
 
 	// Pulled from the examples for discordgo, this lets the bot continue to run

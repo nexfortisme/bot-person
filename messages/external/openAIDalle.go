@@ -43,8 +43,8 @@ func GetDalleResponse(prompt string, openAIKey string) (string, error) {
 	// It's possible that OpenAI returns no response, so
 	// fallback to a default one
 	if len(openAIResponse.Data) == 0 {
-		fmt.Println(responseBuffer)
-		fmt.Println(openAIResponse)
+		// fmt.Println(responseBuffer)
+		// fmt.Println(openAIResponse)
 		return "I'm sorry, I don't understand? (Most likely picked up by OpenAi query filter).", errors.New("API Response Error")
 	} else {
 		return openAIResponse.Data[0].URL, nil

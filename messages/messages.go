@@ -1,16 +1,13 @@
 package messages
 
 import (
-	"log"
 	"main/logging"
 	"main/messages/external"
 	"main/persistance"
 	"main/util"
-	"math"
 	"math/rand"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -42,43 +39,17 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if strings.HasPrefix(incomingMessage, "bad bot") {
 		logging.LogIncomingMessage(s, m)
-
 		persistance.IncrementInteractionTracking(persistance.BPBadBotInteraction, *m.Author)
 		badBotRetort := badBotResponses[rand.Intn(len(badBotResponses))]
-		// TODO - Here Too
-		log.Println("Bot Person > " + badBotRetort)
+		logging.LogOutgoingUserInteraction(s, m.Author.Username, m.GuildID, badBotRetort)
 		_, err := s.ChannelMessageSend(m.ChannelID, badBotRetort)
 		util.HandleErrors(err)
 	} else if strings.HasPrefix(incomingMessage, "good bot") {
 		logging.LogIncomingMessage(s, m)
-
 		persistance.IncrementInteractionTracking(persistance.BPGoodBotInteraction, *m.Author)
-		log.Println("Bot Person > Thank You!")
+		logging.LogOutgoingUserInteraction(s, m.Author.Username, m.GuildID, "Thank You!")
 		_, err := s.ChannelMessageSend(m.ChannelID, "Thank You!")
 		util.HandleErrors(err)
-	} else if strings.HasPrefix(incomingMessage, "!image") {
-
-		if !persistance.UserHasTokens(m.Author.ID) {
-			s.ChannelMessageSend(m.ChannelID, "You do not have enough tokens to be able to generate an image")
-			return
-		}
-
-		s.ChannelMessageSend(m.ChannelID, "This command is deprecated and will be removed at a later date. Please use /image instead.")
-
-		logging.LogIncomingMessage(s, m)
-		persistance.IncrementInteractionTracking(persistance.BPImageRequest, *m.Author)
-
-		req := strings.SplitAfterN(incomingMessage, " ", 2)
-		resp, err := external.GetDalleResponse(req[1], openAIKey)
-		if err != nil {
-			_, err := s.ChannelMessageSend(m.ChannelID, resp)
-			util.HandleErrors(err)
-		} else {
-			_, err := s.ChannelMessageSend(m.ChannelID, resp)
-			util.HandleErrors(err)
-			persistance.UseImageToken(m.Author.ID)
-		}
-
 	} else if strings.HasPrefix(incomingMessage, "!addTokens") {
 
 		// TODO - Switch to use BPSystemInteraction
@@ -97,52 +68,54 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
 			}
 		}
-
-	} else if strings.HasPrefix(incomingMessage, "!gamble") {
-
-		// !TODO - FIX ISSUE WITH FLOATING POINT
-
-		req := strings.Split(incomingMessage, " ")
-		tokenCount, _ := strconv.ParseFloat(req[1], 64)
-		persistance.RemoveUserTokens(m.Author.ID, tokenCount)
-
-		rand.Seed(time.Now().UnixNano())
-		num := rand.Intn(101)
-
-		retStr := "Bot Person Rolled a " + strconv.Itoa(num) + "."
-
-		if num < 50 {
-			retStr += " OOF. You lose the tokens you gambled. :("
-			s.ChannelMessageSend(m.ChannelID, retStr)
-			persistance.RemoveUserTokens(m.Author.ID, tokenCount)
-		} else if num >= 50 && num < 80 {
-			retStr += " Nice Profit! You win 1.1x what you gambled."
-			s.ChannelMessageSend(m.ChannelID, retStr)
-			rewards := tokenCount * 1.1
-			persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
-		} else if num >= 80 && num < 90 {
-			retStr += " Good Profit! You win 1.2x what you gambled."
-			s.ChannelMessageSend(m.ChannelID, retStr)
-			rewards := tokenCount * 1.2
-			persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
-		} else if num >= 90 && num <= 99 {
-			retStr += " Great Profit! You win 1.4x what you gambled."
-			s.ChannelMessageSend(m.ChannelID, retStr)
-			rewards := tokenCount * 1.4
-			persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
-		} else if num > 99 {
-			retStr += " Jackpot! You win 2x what you gambled."
-			s.ChannelMessageSend(m.ChannelID, retStr)
-			rewards := tokenCount * 2
-			persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
-		}
-
 	}
+	// } else if strings.HasPrefix(incomingMessage, "!gamble") {
+
+	// 	// !TODO - FIX ISSUE WITH FLOATING POINT
+
+	// 	persistance.IncrementInteractionTracking(persistance.BPBadBotInteraction, *m.Author)
+	// 	s.ChannelMessageSend(m.ChannelID, "Fuck Off.")
+
+	// 	// req := strings.Split(incomingMessage, " ")
+	// 	// tokenCount, _ := strconv.ParseFloat(req[1], 64)
+	// 	// persistance.RemoveUserTokens(m.Author.ID, tokenCount)
+
+	// 	// rand.Seed(time.Now().UnixNano())
+	// 	// num := rand.Intn(101)
+
+	// 	// retStr := "Bot Person Rolled a " + strconv.Itoa(num) + "."
+
+	// 	// if num < 50 {
+	// 	// 	retStr += " OOF. You lose the tokens you gambled. :("
+	// 	// 	s.ChannelMessageSend(m.ChannelID, retStr)
+	// 	// 	persistance.RemoveUserTokens(m.Author.ID, tokenCount)
+	// 	// } else if num >= 50 && num < 80 {
+	// 	// 	retStr += " Nice Profit! You win 1.1x what you gambled."
+	// 	// 	s.ChannelMessageSend(m.ChannelID, retStr)
+	// 	// 	rewards := tokenCount * 1.1
+	// 	// 	persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+	// 	// } else if num >= 80 && num < 90 {
+	// 	// 	retStr += " Good Profit! You win 1.2x what you gambled."
+	// 	// 	s.ChannelMessageSend(m.ChannelID, retStr)
+	// 	// 	rewards := tokenCount * 1.2
+	// 	// 	persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+	// 	// } else if num >= 90 && num <= 99 {
+	// 	// 	retStr += " Great Profit! You win 1.4x what you gambled."
+	// 	// 	s.ChannelMessageSend(m.ChannelID, retStr)
+	// 	// 	rewards := tokenCount * 1.4
+	// 	// 	persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+	// 	// } else if num > 99 {
+	// 	// 	retStr += " Jackpot! You win 2x what you gambled."
+	// 	// 	s.ChannelMessageSend(m.ChannelID, retStr)
+	// 	// 	rewards := tokenCount * 2
+	// 	// 	persistance.AddImageTokens(math.Floor(rewards*100)/100, m.Author.ID)
+	// 	// }
+
+	// }
 
 	// ! Add Help Command
 
 	// Commands to add
-	// about - list who made it and maybe a link to the git repo
 	// invite - Generates an invite link to be able to invite the bot to differnet servers
 	// stopTracking - Allows uers to opt out of data collection
 
@@ -159,8 +132,8 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *m.Author)
 	respTxt := external.GetOpenAIResponse(msg, openAIKey)
 
-	// TODO - Here as well
-	log.Printf("Bot Person > %s \n", respTxt)
+	logging.LogOutgoingUserInteraction(s, m.Author.Username, m.GuildID, respTxt)
+
 	if mentionsKeyphrase(m) {
 		s.ChannelMessageSend(m.ChannelID, "!bot is deprecated. Please at the bot or use /bot for further interactions")
 	}
@@ -169,16 +142,13 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 }
 
-// TODO - Make the response that is being logged by the bot include the bot user's actual username instead of "Bot Person"
 func ParseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
 	respTxt := external.GetOpenAIResponse(prompt, openAIKey)
 	respTxt = "Request: " + prompt + " " + respTxt
-	log.Printf("Bot Person > %s \n", respTxt)
 	return respTxt
 }
 
 // TODO - Rename, I don't like this
-// TODO - Add Logging
 func GetDalleResponseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
 	dalleResponse, err := external.GetDalleResponse(prompt, openAIKey)
 

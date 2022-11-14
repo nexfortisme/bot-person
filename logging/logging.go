@@ -7,19 +7,38 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func LogOutGoingMessage(s *discordgo.Session, m *discordgo.MessageCreate, message string) {
-
-}
-
-func LogError(err string) {
-	log.Fatalf(err)
-}
-
 func LogIncomingMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	requestUser := m.Author.Username
 	rGuild, _ := s.State.Guild(m.GuildID)
 	rGuildName := rGuild.Name
 	message := util.ReplaceIDsWithNames(m, s)
 
+	log.Printf("%s (%s) > %s\n", requestUser, rGuildName, message)
+}
+
+func LogIncomingUserInteraction(s *discordgo.Session, requestUser string, guildId string, message string) {
+	rGuild, _ := s.State.Guild(guildId)
+	rGuildName := rGuild.Name
+
+	log.Printf("%s (%s) > %s\n", requestUser, rGuildName, message)
+}
+
+func LogOutgoingMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+	requestUser := m.Author.Username
+	rGuild, _ := s.State.Guild(m.GuildID)
+	rGuildName := rGuild.Name
+	message := util.ReplaceIDsWithNames(m, s)
+
 	log.Printf("%s (%s) < %s\n", requestUser, rGuildName, message)
+}
+
+func LogOutgoingUserInteraction(s *discordgo.Session, requestUser string, guildId string, message string) {
+	rGuild, _ := s.State.Guild(guildId)
+	rGuildName := rGuild.Name
+
+	log.Printf("%s (%s) < %s\n", requestUser, rGuildName, message)
+}
+
+func LogError(err string) {
+	log.Fatalf(err)
 }
