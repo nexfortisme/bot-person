@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"fmt"
 	"main/logging"
 	"main/messages/external"
 	"main/persistance"
@@ -35,6 +36,14 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	} else {
 		incomingMessage = m.Message.Content
 	}
+
+	// Looking at messages in the channel and returning WORD_COUNT / 1000 number of tokens
+	// ie. A picture is worth 1000 words
+	wordCount := len(strings.Fields(incomingMessage))
+	tokenValue := fmt.Sprintf("%.2f", (float64(wordCount) / 1000.0))
+	tokenAddAmount, _ := strconv.ParseFloat(tokenValue, 64)
+
+	persistance.AddImageTokens(tokenAddAmount, *&m.Author.ID)
 
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if strings.HasPrefix(incomingMessage, "bad bot") {

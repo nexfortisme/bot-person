@@ -285,7 +285,7 @@ var (
 			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_HELP >")
 
 			// Getting user stat data
-			msg := "// TODO"
+			msg := "A picture is worth 1000 words"
 
 			// Logging outgoing bot response
 			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
