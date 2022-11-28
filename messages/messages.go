@@ -77,6 +77,9 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
 			}
 		}
+	} else if strings.HasPrefix(incomingMessage, ";;lenny"){
+		persistance.IncrementInteractionTracking(persistance.BPLennyFaceInteracton, *m.Author)
+		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)");
 	}
 	// } else if strings.HasPrefix(incomingMessage, "!gamble") {
 

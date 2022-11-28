@@ -17,6 +17,7 @@ const (
 	BPBasicInteraction                           // any basic bot interaction
 	BPSystemInteraction                          // TODO - Figure out what this means
 	BPCreateUserInteraction                      // used by system for creating users
+	BPLennyFaceInteracton
 )
 
 func IncrementInteractionTracking(flag BPInteraction, user discordgo.User) {
@@ -54,6 +55,7 @@ func createNewUserTracking(flag BPInteraction, userId string, username string) {
 
 	switch interaction := flag; interaction {
 	case BPChatInteraction:
+	case BPLennyFaceInteracton:
 	case BPBasicInteraction:
 		createUser(userId, 1, 0, 0, 0, 25)
 	case BPImageRequest:
@@ -77,6 +79,7 @@ func handleUserStatIncrementing(flag BPInteraction, userId string) bool {
 
 	switch interaction := flag; interaction {
 	case BPChatInteraction:
+	case BPLennyFaceInteracton:
 	case BPBasicInteraction:
 		incrementUser.UserStats.MessageCount++
 	case BPImageRequest:
