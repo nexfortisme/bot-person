@@ -122,6 +122,10 @@ var (
 				},
 			},
 		},
+		{
+			Name:        "bonus",
+			Description: "Use this command every 24 hours for a small bundle of tokens",
+		},
 		// {
 		// 	Name:        "gamba",
 		// 	Description: "Try your luck and see if you can win some extra Image Tokens.",
@@ -487,6 +491,32 @@ var (
 					return
 				}
 			}
+		},
+		"bonus": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+			// Logging incoming user request
+			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_BONUS >")
+
+			reward, err := persistance.GetUserReward(i.Interaction.Member.User.ID)
+			var msg string
+
+			if err != nil {
+				msg = err.Error()
+			} else {
+				// Getting user stat data
+				msg = fmt.Sprintf("Congrats! You are awarded %.2f tokens", reward)
+			}
+
+			// Logging outgoing bot response
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: msg,
+				},
+			})
 		},
 		// "gamba": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
