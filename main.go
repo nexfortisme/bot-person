@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -517,72 +518,14 @@ var (
 					Content: msg,
 				},
 			})
+
+			// Cleaning up the bonus message if the user is on cooldown
+			if err != nil {
+				time.Sleep(time.Second * 15)
+				s.InteractionResponseDelete(i.Interaction)
+			}
+
 		},
-		// "gamba": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-
-		// 	var gambaResponseString string
-
-		// 	// Access options in the order provided by the user.
-		// 	options := i.ApplicationCommandData().Options
-
-		// 	// Or convert the slice into a map
-		// 	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
-		// 	for _, opt := range options {
-		// 		optionMap[opt.Name] = opt
-		// 	}
-
-		// 	if option, ok := optionMap["amount"]; ok {
-		// 		gambaWager := option.FloatValue()
-		// 		userBalance := logging.GetUserTokenCount(i.Interaction.Member.User.ID)
-
-		// 		if userBalance < gambaWager {
-		// 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		// 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-		// 				Data: &discordgo.InteractionResponseData{
-		// 					Content: "Oops! You do not have the tokens needed to complete the gamba. You degen.",
-		// 				},
-		// 			})
-		// 			return
-		// 		} else {
-
-		// 			logging.RemoveUserTokens(i.Interaction.Member.User.ID, gambaWager)
-
-		// 			rand.Seed(time.Now().UnixNano())
-		// 			num := rand.Intn(101)
-
-		// 			gambaResponseString := "Bot Person Rolled a " + strconv.Itoa(num) + "."
-
-		// 			if num < 50 {
-		// 				gambaResponseString += " OOF. You lose the tokens you gambled. :("
-		// 				logging.RemoveUserTokens(i.Interaction.Member.User.ID, gambaWager)
-		// 			} else if num >= 50 && num < 80 {
-		// 				gambaResponseString += " Nice Profit! You win 1.1x what you gambled."
-		// 				rewards := gambaWager * 1.1
-		// 				logging.AddImageTokens(math.Floor(rewards*100)/100, i.Interaction.Member.User.ID)
-		// 			} else if num >= 80 && num < 90 {
-		// 				gambaResponseString += " Good Profit! You win 1.2x what you gambled."
-		// 				rewards := gambaWager * 1.2
-		// 				logging.AddImageTokens(math.Floor(rewards*100)/100, i.Interaction.Member.User.ID)
-		// 			} else if num >= 90 && num <= 99 {
-		// 				gambaResponseString += " Great Profit! You win 1.4x what you gambled."
-		// 				rewards := gambaWager * 1.4
-		// 				logging.AddImageTokens(math.Floor(rewards*100)/100, i.Interaction.Member.User.ID)
-		// 			} else if num > 99 {
-		// 				gambaResponseString += " Jackpot! You win 2x what you gambled."
-		// 				rewards := gambaWager * 2
-		// 				logging.AddImageTokens(math.Floor(rewards*100)/100, i.Interaction.Member.User.ID)
-		// 			}
-
-		// 		}
-		// 	}
-
-		// 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		// 		Data: &discordgo.InteractionResponseData{
-		// 			Content: gambaResponseString,
-		// 		},
-		// 	})
-		// },
 	}
 )
 
