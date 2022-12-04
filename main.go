@@ -127,6 +127,10 @@ var (
 			Name:        "bonus",
 			Description: "Use this command every 24 hours for a small bundle of tokens",
 		},
+		{
+			Name:        "lootbox",
+			Description: "Spend 2.5 tokens to get an RNG box",
+		},
 		// {
 		// 	Name:        "gamba",
 		// 	Description: "Try your luck and see if you can win some extra Image Tokens.",
@@ -507,6 +511,51 @@ var (
 			} else {
 				// Getting user stat data
 				msg = fmt.Sprintf("Congrats! You are awarded %.2f tokens", reward)
+			}
+
+			// Logging outgoing bot response
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, msg)
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: msg,
+				},
+			})
+
+			// Cleaning up the bonus message if the user is on cooldown
+			if err != nil {
+				time.Sleep(time.Second * 15)
+				s.InteractionResponseDelete(i.Interaction)
+			}
+
+		},
+		"lootbox": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+			// Logging incoming user request
+			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_OPEN_LOOTBOX >")
+
+			reward, seed, err := persistance.BuyLootbox(i.Interaction.Member.User.ID)
+			var msg string
+
+			if err != nil {
+				msg = err.Error()
+			} else {
+				// Getting user stat data
+
+				if reward == 1 {
+					msg = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
+				} else if reward == 3 {
+					msg = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
+				} else if reward == 10 {
+					msg = fmt.Sprintf("Congrats! You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
+				} else if reward == 50 {
+					msg = fmt.Sprintf("Woah! You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
+				} else if reward == 250 {
+					msg = fmt.Sprintf("Stop Hacking. You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
+				}
+
 			}
 
 			// Logging outgoing bot response
