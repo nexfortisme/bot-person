@@ -545,7 +545,7 @@ var (
 				// Getting user stat data
 
 				if reward == 1 {
-					msg = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
+					msg = fmt.Sprintf("oof. You purchased a lootbox with the seed: %d and it contained %d token", seed, reward)
 				} else if reward == 3 {
 					msg = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
 				} else if reward == 10 {
