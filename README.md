@@ -10,14 +10,26 @@ If an existing `config.json` doesn't exist, the command line will prompt you for
 - `-disableLogging` - WIP. This stops the bot from logging all interactions to the `logfile`.
 - `-disableTracking` - WIP. This will stop the bot from keeping track of the number of messages on a global and per-user basis.
 
+## Notable Features
+- Token System
+  - Ability for users to get tokens to spend on Dall-E image requests
+  - Daily bonus for Tokens that ranges from between .5 and 5 tokens
+  - Ability to transferr tokens to other users
+  - Lootbox game where a user can spend 2.5 tokens and gets 1 to 250 tokens back on an RNG roll from a randomly generated seed
+
 ## Wishlist
 - Configurable Commands - Have commands be configurable in the config.json instead of hard coded into the application
   - {command, response, token cost (see below)}
   - A way to specify return elements in the command. ie. {user has <user.messages> sent messages}
 - Log File Rotation - The file isn't getting super huge at the moment but having the ability to generate a new file when the existing one reaches a certain length.
 - Web Manager - A more friendly way of interacting with the bot configurations through a web page
-- Tokens - Some kind of token to be able to use certain commands
-  - Transferring tokens to other users
+- Tokens
   - Some kind of games to get more tokens
+  - Logging of token balance for users to be able to see how their balance changed
 - On Initialization of the bot when a new Discord bot token is added, have it log out an invite link for that bot user with the proper permissions
 - Tracking of user activity (in chat channels or voice channels) to give out tokens for use for special commands or other future external applications
+- Custom Commands
+  - Ability to add custom, call-and-response, commands inside discord
+    - Expose some custom tags for the user to add to their custom commands
+- Save Images from Dall-E to disk before serving
+  - Images from the Dall-E CDN endpoint have a shockingly short life, by serving them up from the disk, the images will then be handled by Discord's CDN and have an exponentially longer life
