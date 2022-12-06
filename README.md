@@ -30,3 +30,13 @@ If an existing `config.json` doesn't exist, the command line will prompt you for
 - Tracking of user activity (in chat channels or voice channels) to give out tokens for use for special commands or other future external applications
 - Save Images from Dall-E to disk before serving
   - Images from the Dall-E CDN endpoint have a shockingly short life, by serving them up from the disk, the images will then be handled by Discord's CDN and have an exponentially longer life
+- Search Game
+  - Every x number of minutes/hours the user can /search and see what they can get
+    - They can find tokens, lootboxes, or something else (placeholder for when I actually have ideas of what that something else could be)
+- RNG Breakpoints
+  - Allow for RNG to be broken up into ranges and from there have it pull a result from a pre-defined loot table
+- Better Logging of transactions
+  - Allow for users to see where they have spent their tokens and where they have gotten them from
+- User Inventory
+  - Allow for users to purchase multiple loot boxes or other items (when I figure out what they are) and store them for later
+  - Allow for trading of items between players
