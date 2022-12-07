@@ -21,4 +21,5 @@ type UserStatsStruct struct {
 	ImageCount   int       `json:"imageCount"`
 	ImageTokens  float64   `json:"imageTokens"`
 	LastBonus    time.Time `json:"lastBonus"`
+	BonusStreak  int       `json:"bonusStreak"`
 }

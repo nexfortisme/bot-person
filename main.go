@@ -369,6 +369,7 @@ var (
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: &msg,
 				})
+
 				if err != nil {
 
 					logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "Something went wrong.")
@@ -378,6 +379,10 @@ var (
 						Content: "Something went wrong.",
 					})
 					return
+				} else {
+					time.AfterFunc(time.Hour*8, func() {
+						s.InteractionResponseDelete(i.Interaction)
+					})
 				}
 			}
 		},
@@ -503,14 +508,18 @@ var (
 			// Logging incoming user request
 			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_BONUS >")
 
-			reward, err := persistance.GetUserReward(i.Interaction.Member.User.ID)
+			reward, returnMessage, err := persistance.GetUserReward(i.Interaction.Member.User.ID)
 			var msg string
 
 			if err != nil {
 				msg = err.Error()
 			} else {
 				// Getting user stat data
-				msg = fmt.Sprintf("Congrats! You are awarded %.2f tokens", reward)
+				if returnMessage != ""{
+					msg = fmt.Sprintf("%s \nCongrats! You are awarded %.2f tokens", returnMessage, reward)
+				} else {
+					msg = fmt.Sprintf("Congrats! You are awarded %.2f tokens", reward)
+				}
 			}
 
 			// Logging outgoing bot response

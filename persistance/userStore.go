@@ -15,8 +15,9 @@ func getUser(userId string) (UserStruct, error) {
 			return element, nil
 		}
 	}
-	
-	return UserStruct{"bad user", UserStatsStruct{-1, -1, -1, -1, -1, time.Time{}}}, errors.New("unable to find user")
+
+	return getNewUser("bad user", -1, -1, -1, -1, -1), errors.New("unable to find user")
+	// return UserStruct{"bad user", UserStatsStruct{-1, -1, -1, -1, -1, time.Time{}}}, errors.New("unable to find user")
 }
 
 func updateUser(updateUser UserStruct) bool {
@@ -32,9 +33,13 @@ func updateUser(updateUser UserStruct) bool {
 	return false
 }
 
-func createUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens int) bool {
-	botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{messageCount, goodBotCount, badBotCount, imageCount, float64(imageTokens), time.Time{}}})
+func createAndAddUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) bool {
+	botTracking.UserStats = append(botTracking.UserStats, getNewUser(userId, messageCount, goodBotCount, badBotCount, imageCount, imageTokens))
 	return true
+}
+
+func getNewUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) UserStruct {
+	return UserStruct{userId, UserStatsStruct{messageCount, goodBotCount, badBotCount, imageCount, imageTokens, time.Time{}, 0}}
 }
 
 // TODO - Delete User Function

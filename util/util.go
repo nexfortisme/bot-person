@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -20,15 +21,14 @@ func HandleFatalErrors(err error, message string) {
 	}
 }
 
-func ReplaceIDsWithNames(m *discordgo.MessageCreate, s *discordgo.Session) string{
-	id := s.State.User.ID;
+func ReplaceIDsWithNames(m *discordgo.MessageCreate, s *discordgo.Session) string {
+	id := s.State.User.ID
 	toReplace := fmt.Sprintf("<@%s> ", id)
 	msg := strings.Replace(m.Message.Content, toReplace, "", 1)
 	msg = replaceMentionsWithNames(m.Mentions, msg)
 
-	return msg;
+	return msg
 }
-
 
 // The message string that the bot receives reads mentions of other users as
 // an ID in the form of "<@000000000000>", instead iterate over each mention and
@@ -40,4 +40,14 @@ func replaceMentionsWithNames(mentions []*discordgo.User, message string) string
 		retStr = strings.ReplaceAll(retStr, idStr, mention.Username)
 	}
 	return retStr
+}
+
+func LowerFloatPrecision(num float64) float64 {
+	floatString := fmt.Sprintf("%.2f", num)
+	returnFloatValue, _ := strconv.ParseFloat(floatString, 64)
+	return returnFloatValue
+}
+
+func IntToFloat(num int) float64 {
+	return LowerFloatPrecision(float64(num))
 }

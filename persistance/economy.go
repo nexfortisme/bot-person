@@ -3,9 +3,11 @@ package persistance
 import (
 	"errors"
 	"fmt"
+	"main/util"
 	"math/rand"
-	"strconv"
 	"time"
+
+	"github.com/hako/durafmt"
 )
 
 func AddImageTokens(tokenAmount float64, userId string) bool {
@@ -13,7 +15,7 @@ func AddImageTokens(tokenAmount float64, userId string) bool {
 	user, err := getUser(userId)
 
 	if err != nil {
-		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{0, 0, 0, 0, tokenAmount, time.Time{}}})
+		createAndAddUser(userId, 0, 0, 0, 0, util.LowerFloatPrecision(tokenAmount))
 		return true
 	} else {
 		user.UserStats.ImageTokens += tokenAmount
@@ -42,7 +44,7 @@ func TransferrImageTokens(tokenAmount float64, fromUserId string, toUserId strin
 
 			// toUser doesn't exist
 			// Creates user and assigns them the number of tokens that is being transferred
-			botTracking.UserStats = append(botTracking.UserStats, UserStruct{toUserId, UserStatsStruct{0, 0, 0, 0, tokenAmount, time.Time{}}})
+			createAndAddUser(toUserId, 0, 0, 0, 0, util.LowerFloatPrecision(tokenAmount))
 			fromUser.UserStats.ImageTokens -= tokenAmount
 			return updateUser(fromUser)
 		} else {
@@ -101,7 +103,7 @@ func SetUserTokenCount(userId string, tokenAmount float64) bool {
 	user, err := getUser(userId)
 
 	if err != nil {
-		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{0, 0, 0, 0, tokenAmount, time.Time{}}})
+		createAndAddUser(userId, 0, 0, 0, 0, util.LowerFloatPrecision(tokenAmount))
 		return true
 	} else {
 		user.UserStats.ImageTokens = tokenAmount
@@ -113,7 +115,7 @@ func RemoveUserTokens(userId string, tokenAmount float64) bool {
 	user, err := getUser(userId)
 
 	if err != nil {
-		botTracking.UserStats = append(botTracking.UserStats, UserStruct{userId, UserStatsStruct{0, 0, 0, 0, 0, time.Time{}}})
+		createAndAddUser(userId, 0, 0, 0, 0, 0)
 		return true
 	} else {
 		if (user.UserStats.ImageTokens - tokenAmount) <= 0 {
@@ -126,9 +128,12 @@ func RemoveUserTokens(userId string, tokenAmount float64) bool {
 	}
 }
 
-func GetUserReward(userId string) (float64, error) {
+func GetUserReward(userId string) (float64, string, error) {
 
 	user, err := getUser(userId)
+	returnString := ""
+
+	modifier := 1
 
 	// Checking for error and setting userId on returned user struct as needed
 	if err != nil {
@@ -147,30 +152,60 @@ func GetUserReward(userId string) (float64, error) {
 			// Doing math to for countdown to next bonus
 			nextBonus := user.UserStats.LastBonus.AddDate(0, 0, 1)
 			timeToNextBonus := nextBonus.Sub(time.Now())
+			formattedString := durafmt.Parse(timeToNextBonus).LimitFirstN(3)
 
-			// TODO - Parse timeToNextBonus better
-			errString := "Please try again in: " + timeToNextBonus.String()
+			errString := "Please try again in: " + formattedString.String()
 
 			// returning error
-			return -1.0, errors.New(errString)
+			return -1.0, "", errors.New(errString)
 		}
+
+		timeWindow := user.UserStats.LastBonus.Add(time.Hour * 48)
+		timeWindowDiff := time.Now().Sub(timeWindow)
+
+		// Missed Window
+		if timeWindowDiff > 0 {
+			returnString = fmt.Sprintf("Bonus Not Redeemed within 24 hours. Streak Reset. \nCurrent Streak: %d", 1)
+			user.UserStats.BonusStreak = 1
+		} else {
+			user.UserStats.BonusStreak++
+			streak := user.UserStats.BonusStreak
+			returnString = fmt.Sprintf("Current Bonus Streak: %d", streak)
+
+			if streak%10 == 0 && streak%100 != 0 && streak%50 != 0 {
+				returnString = fmt.Sprintf("Congrats on keeping the streak alive. Current Streak: %d. Bonus Modifier: 2x", streak)
+				modifier = 2
+			} else if streak%25 == 0 && streak%50 != 0 && streak%100 != 0 {
+				returnString = fmt.Sprintf("Great work on keeping the streak alive! Current Streak: %d. Bonus Modifier: 5x", streak)
+				modifier = 5
+			} else if streak%50 == 0 && streak%100 != 0 {
+				returnString = fmt.Sprintf("Wow! That's a long time. Current Streak: %d. Bonus Modifier: 10x", streak)
+				modifier = 10
+			} else if streak%100 == 0 {
+				returnString = fmt.Sprintf("Few people ever reach is this far, Congratulations! Current Streak: %d. Bonus Modifier: 50x", streak)
+				modifier = 50
+			} else {
+				returnString = fmt.Sprintf("Current Bonus Streak: %d", streak)
+			}
+		}
+
 	}
 
 	// Setting random seed and generating a, value safe, token amount
 	randomizer := rand.New(rand.NewSource(time.Now().UnixMilli()))
 	reward := randomizer.Intn(45) + 5
+	reward *= modifier
 	rewardf64 := float64(reward) / 10.0
-	rewardString := fmt.Sprintf("%.2f", rewardf64)
-	finalReward, _ := strconv.ParseFloat(rewardString, 64)
+	finalReward := util.LowerFloatPrecision(rewardf64)
 
 	// Updating User Record
 	user.UserStats.LastBonus = time.Now()
 	user.UserStats.ImageTokens += finalReward
 
 	if !updateUser(user) {
-		return -1, errors.New("Error updating user record")
+		return -1, "", errors.New("Error updating user record")
 	} else {
-		return finalReward, nil
+		return finalReward, returnString, nil
 	}
 
 }

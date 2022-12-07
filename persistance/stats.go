@@ -57,15 +57,15 @@ func createNewUserTracking(flag BPInteraction, userId string, username string) {
 	case BPChatInteraction:
 	case BPLennyFaceInteracton:
 	case BPBasicInteraction:
-		createUser(userId, 1, 0, 0, 0, 25)
+		createAndAddUser(userId, 1, 0, 0, 0, 25)
 	case BPImageRequest:
-		createUser(userId, 1, 0, 0, 1, 25)
+		createAndAddUser(userId, 1, 0, 0, 1, 25)
 	case BPBadBotInteraction:
-		createUser(userId, 1, 0, 1, 0, 25)
+		createAndAddUser(userId, 1, 0, 1, 0, 25)
 	case BPGoodBotInteraction:
-		createUser(userId, 1, 1, 0, 0, 25)
+		createAndAddUser(userId, 1, 1, 0, 0, 25)
 	default:
-		createUser(userId, 1, 0, 0, 0, 25)
+		createAndAddUser(userId, 1, 0, 0, 0, 25)
 	}
 }
 
