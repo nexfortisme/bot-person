@@ -170,7 +170,6 @@ func GetUserReward(userId string) (float64, string, error) {
 		} else {
 			user.UserStats.BonusStreak++
 			streak := user.UserStats.BonusStreak
-			returnString = fmt.Sprintf("Current Bonus Streak: %d", streak)
 
 			if streak%10 == 0 && streak%100 != 0 && streak%50 != 0 {
 				returnString = fmt.Sprintf("Congrats on keeping the streak alive. Current Streak: %d. Bonus Modifier: 2x", streak)
@@ -203,7 +202,7 @@ func GetUserReward(userId string) (float64, string, error) {
 	user.UserStats.ImageTokens += finalReward
 
 	if !updateUser(user) {
-		return -1, "", errors.New("Error updating user record")
+		return -1, "", errors.New("error updating user record")
 	} else {
 		return finalReward, returnString, nil
 	}
@@ -219,7 +218,7 @@ func BuyLootbox(userId string) (int, int, error) {
 	}
 
 	if user.UserStats.ImageTokens < 2.5 {
-		return -1, -1, errors.New("You do not have the 2.5 tokens needed to purchase a lootbox")
+		return -1, -1, errors.New("you do not have the 2.5 tokens needed to purchase a lootbox")
 	} else {
 		user.UserStats.ImageTokens -= 2.5
 	}
@@ -245,7 +244,7 @@ func BuyLootbox(userId string) (int, int, error) {
 	user.UserStats.ImageTokens += float64(reward)
 
 	if !updateUser(user) {
-		return -1, -1, errors.New("Error updating user record")
+		return -1, -1, errors.New("error updating user record")
 	} else {
 		return reward, lootboxSeed, nil
 	}
