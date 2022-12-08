@@ -1,6 +1,7 @@
 package persistance
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 
@@ -39,7 +40,7 @@ func SlashGetUserStats(user discordgo.User) string {
 	if err != nil {
 		return "Sorry, you don't have any recorded interactions with the bot."
 	} else {
-		return "You have interacted with the bot " + strconv.Itoa(bpUser.UserStats.MessageCount) + " times, praised the bot " + strconv.Itoa(bpUser.UserStats.GoodBotCount) + " times, and scolded the bot " + strconv.Itoa(bpUser.UserStats.BadBotCount) + " times. You have requested an image " + strconv.Itoa(bpUser.UserStats.ImageCount) + " times."
+		return fmt.Sprintf("You have interacted with the bot %d times.\n You praised the bot %d times and scolded the bot %d times.\nYou have requested %d images.\n Your current bonus streak is %d.", bpUser.UserStats.MessageCount, bpUser.UserStats.GoodBotCount, bpUser.UserStats.BadBotCount, bpUser.UserStats.ImageCount, bpUser.UserStats.BonusStreak)
 	}
 }
 
