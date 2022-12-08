@@ -131,6 +131,25 @@ var (
 			Name:        "lootbox",
 			Description: "Spend 2.5 tokens to get an RNG box",
 		},
+		{
+			Name:  "headsOrTails",
+			Description: "Gamble some tokens with a simple games of heads or tails",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "option",
+					Description: "Choose which option you want to pick.",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionNumber,
+					Name:        "amount",
+					Description: "The amount of tokens you want to gamble.",
+					MinValue:    &integerOptionMinValue,
+					Required:    true,
+				},
+			},
+		},
 		// {
 		// 	Name:        "gamba",
 		// 	Description: "Try your luck and see if you can win some extra Image Tokens.",
