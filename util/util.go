@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"strconv"
 	"strings"
 
@@ -50,4 +51,23 @@ func LowerFloatPrecision(num float64) float64 {
 
 func IntToFloat(num int) float64 {
 	return LowerFloatPrecision(float64(num))
+}
+
+func GetOofResponse() string {
+	options := [4]string{"oof.", "That sucks.", "Should have rolled better.", "I saw a person roll a better number once. It wasn't you but I saw someone else do it. \n"}
+
+	return options[rand.Intn(len(options))]
+}
+
+func GetBadBotResponse() string {
+	badBotResponses := make([]string, 0)
+	badBotResponses = append(badBotResponses, "I'm sorry")
+	badBotResponses = append(badBotResponses, "It won't happen again")
+	badBotResponses = append(badBotResponses, "Eat Shit")
+	badBotResponses = append(badBotResponses, "Ok.")
+	badBotResponses = append(badBotResponses, "Sure Thing.")
+	badBotResponses = append(badBotResponses, "Like you are the most perfect being in existance. Pound sand pal.")
+	badBotResponses = append(badBotResponses, "https://youtu.be/4X7q87RDSHI")
+
+	return badBotResponses[rand.Intn(len(badBotResponses))]
 }

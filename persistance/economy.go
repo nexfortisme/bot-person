@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"main/util"
 	"math/rand"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/hako/durafmt"
 )
 
@@ -287,4 +290,15 @@ func hashLootBoxSeed(bar int) int {
 	}
 
 	return total % 10000
+}
+
+func APictureIsWorthAThousand(incomingMessage string, m *discordgo.MessageCreate) {
+
+	// Looking at messages in the channel and returning WORD_COUNT / 1000 number of tokens
+	// ie. A picture is worth 1000 words
+	wordCount := len(strings.Fields(incomingMessage))
+	tokenValue := fmt.Sprintf("%.2f", (float64(wordCount) / 1000.0))
+	tokenAddAmount, _ := strconv.ParseFloat(tokenValue, 64)
+
+	AddImageTokens(tokenAddAmount, m.Author.ID)
 }

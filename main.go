@@ -131,25 +131,25 @@ var (
 			Name:        "lootbox",
 			Description: "Spend 2.5 tokens to get an RNG box",
 		},
-		{
-			Name:  "headsOrTails",
-			Description: "Gamble some tokens with a simple games of heads or tails",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "option",
-					Description: "Choose which option you want to pick.",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionNumber,
-					Name:        "amount",
-					Description: "The amount of tokens you want to gamble.",
-					MinValue:    &integerOptionMinValue,
-					Required:    true,
-				},
-			},
-		},
+		// {
+		// 	Name:        "headsOrTails",
+		// 	Description: "Gamble some tokens with a simple games of heads or tails",
+		// 	Options: []*discordgo.ApplicationCommandOption{
+		// 		{
+		// 			Type:        discordgo.ApplicationCommandOptionString,
+		// 			Name:        "option",
+		// 			Description: "Choose which option you want to pick.",
+		// 			Required:    true,
+		// 		},
+		// 		{
+		// 			Type:        discordgo.ApplicationCommandOptionNumber,
+		// 			Name:        "amount",
+		// 			Description: "The amount of tokens you want to gamble.",
+		// 			MinValue:    &integerOptionMinValue,
+		// 			Required:    true,
+		// 		},
+		// 	},
+		// },
 		// {
 		// 	Name:        "gamba",
 		// 	Description: "Try your luck and see if you can win some extra Image Tokens.",
@@ -420,14 +420,12 @@ var (
 			}
 
 			if option, ok := optionMap["user"]; ok {
-
 				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_BALANCE > "+option.UserValue(s).Username)
 
 				user := option.UserValue(s)
 				tokenCount = persistance.GetUserTokenCount(user.ID)
 				balanceResponse = user.Username + " has " + fmt.Sprintf("%.2f", tokenCount) + " tokens."
 			} else {
-
 				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_BALANCE >")
 
 				tokenCount = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
@@ -465,7 +463,7 @@ var (
 
 				transferrAmount = option.FloatValue()
 
-				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_SEND_TOKENS > Amount: "+fmt.Sprintf("%f", transferrAmount))
+				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_SEND_TOKENS > Amount: "+fmt.Sprintf("%.2f", transferrAmount))
 
 				if senderBalance < transferrAmount {
 
@@ -496,7 +494,7 @@ var (
 					// TODO - Switch to use BPSystemInteraction
 					persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
-					logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "Tokens were successfully sent. Your new balance is: "+fmt.Sprint(newBalance))
+					logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "Tokens were successfully sent. Your new balance is: "+fmt.Sprintf("%.2f", newBalance))
 
 					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 						Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -534,7 +532,7 @@ var (
 				msg = err.Error()
 			} else {
 				// Getting user stat data
-				if returnMessage != ""{
+				if returnMessage != "" {
 					msg = fmt.Sprintf("%s \nCongrats! You are awarded %.2f tokens", returnMessage, reward)
 				} else {
 					msg = fmt.Sprintf("Congrats! You are awarded %.2f tokens", reward)
@@ -573,7 +571,7 @@ var (
 				// Getting user stat data
 
 				if reward == 1 {
-					msg = fmt.Sprintf("oof. You purchased a lootbox with the seed: %d and it contained %d token", seed, reward)
+					msg = fmt.Sprintf("%s You purchased a lootbox with the seed: %d and it contained %d token", util.GetOofResponse(), seed, reward)
 				} else if reward == 3 {
 					msg = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
 				} else if reward == 10 {
