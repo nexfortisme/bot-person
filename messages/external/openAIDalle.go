@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -33,11 +33,11 @@ func GetDalleResponse(prompt string, openAIKey string) (string, error) {
 		return "Error Contacting OpenAI API. Please Try Again Later.", errors.New("API Error")
 	}
 
-	responseBuffer, _ := ioutil.ReadAll(httpResponse.Body)
+	responseBuffer, _ := io.ReadAll(httpResponse.Body)
 	var openAIResponse DalleResponse
 	err = json.Unmarshal([]byte(string(responseBuffer)), &openAIResponse)
 	if err != nil {
-		return "Error Parsing Response", errors.New("Parse Error")
+		return "Error Parsing Response", errors.New("paree response error")
 	}
 
 	// It's possible that OpenAI returns no response, so

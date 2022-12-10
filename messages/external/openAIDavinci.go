@@ -3,7 +3,7 @@ package external
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"main/logging"
 	"net/http"
 	"strings"
@@ -38,7 +38,7 @@ func GetOpenAIResponse(prompt string, openAIKey string) string {
 		return "Error Contacting OpenAI API. Please Try Again Later."
 	}
 
-	buf, _ := ioutil.ReadAll(resp.Body)
+	buf, _ := io.ReadAll(resp.Body)
 	var rspOAI OpenAIResponse
 	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
 	// need to add proper error handling
