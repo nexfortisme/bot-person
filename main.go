@@ -399,7 +399,7 @@ var (
 					})
 					return
 				} else {
-					util.CleanUpImages(s, i);
+					go util.CleanUpImages(s, i);
 				}
 			}
 		},
