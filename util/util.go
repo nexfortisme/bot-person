@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -70,4 +71,14 @@ func GetBadBotResponse() string {
 	badBotResponses = append(badBotResponses, "https://youtu.be/4X7q87RDSHI")
 
 	return badBotResponses[rand.Intn(len(badBotResponses))]
+}
+
+func CleanUpImages(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+	// time.Sleep(time.Hour * 8);
+	// i.Interaction.Intre
+
+	time.AfterFunc(time.Hour*8, func() {
+		s.InteractionResponseDelete(i.Interaction)
+	})
 }

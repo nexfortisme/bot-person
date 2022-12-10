@@ -233,15 +233,15 @@ func BuyLootbox(userId string) (int, int, error) {
 	reward := 0
 
 	if val <= 7992 {
-		reward += 1
+		reward += 2
 	} else if val > 7992 && val <= 9590 {
-		reward += 3
+		reward += 5
 	} else if val > 9590 && val <= 9910 {
-		reward += 10
+		reward += 20
 	} else if val > 9910 && val <= 9974 {
-		reward += 50
+		reward += 100
 	} else if val > 9974 && val <= 10000 {
-		reward += 250
+		reward += 500
 	}
 
 	user.UserStats.ImageTokens += float64(reward)

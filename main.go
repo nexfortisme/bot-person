@@ -399,9 +399,7 @@ var (
 					})
 					return
 				} else {
-					time.AfterFunc(time.Hour*8, func() {
-						s.InteractionResponseDelete(i.Interaction)
-					})
+					util.CleanUpImages(s, i);
 				}
 			}
 		},
