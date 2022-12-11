@@ -399,7 +399,7 @@ var (
 					})
 					return
 				} else {
-					go util.CleanUpImages(s, i);
+					util.CleanUpImages(s, i)
 				}
 			}
 		},
@@ -568,15 +568,17 @@ var (
 			} else {
 				// Getting user stat data
 
-				if reward == 1 {
-					msg = fmt.Sprintf("%s You purchased a lootbox with the seed: %d and it contained %d token", util.GetOofResponse(), seed, reward)
-				} else if reward == 3 {
+				// TODO - Refactor this so a change in rates doesn't break the command
+				if reward == 2 {
+					// msg = util.GetOofResponse()
+					msg = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %d token", seed, reward)
+				} else if reward == 5 {
 					msg = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
-				} else if reward == 10 {
+				} else if reward == 20 {
 					msg = fmt.Sprintf("Congrats! You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
-				} else if reward == 50 {
+				} else if reward == 100 {
 					msg = fmt.Sprintf("Woah! You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
-				} else if reward == 250 {
+				} else if reward == 500 {
 					msg = fmt.Sprintf("Stop Hacking. You purchased a lootbox with the seed: %d and it contained %d tokens", seed, reward)
 				}
 

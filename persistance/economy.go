@@ -183,6 +183,9 @@ func GetUserReward(userId string) (float64, string, error) {
 			} else if streak%50 == 0 && streak%100 != 0 {
 				returnString = fmt.Sprintf("Wow! That's a long time. Current Streak: %d. Bonus Modifier: 10x", streak)
 				modifier = 10
+			} else if streak%69 == 0 {
+				returnString = fmt.Sprintf("Nice, Congratulations! Current Streak: %d. Bonus Modifier: 15x", streak)
+				modifier = 15
 			} else if streak%100 == 0 {
 				returnString = fmt.Sprintf("Few people ever reach is this far, Congratulations! Current Streak: %d. Bonus Modifier: 50x", streak)
 				modifier = 50
