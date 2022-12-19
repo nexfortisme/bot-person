@@ -486,6 +486,17 @@ var (
 
 			if option, ok := optionMap["recepient"]; ok {
 				recepient := option.UserValue(s)
+
+				if i.Interaction.Member.User.ID == recepient.ID {
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "You cannot send tokens to yourself.",
+						},
+					})
+					return
+				}
+
 				sendResponse := persistance.TransferrImageTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
 
 				newBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
