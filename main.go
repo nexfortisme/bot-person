@@ -584,7 +584,7 @@ var (
 
 				// TODO - Refactor this so a change in rates doesn't break the command
 				if lootboxReward == 2 {
-					lootboxReturnMessage = fmt.Sprintf("%s You purchased a lootbox with the seed: %d and it contained %d token", util.GetOofResponse(), lootboxSeed, lootboxReward)
+					lootboxReturnMessage = fmt.Sprintf("%s You purchased a lootbox with the seed: %d and it contained %d tokens", util.GetOofResponse(), lootboxSeed, lootboxReward)
 				} else if lootboxReward == 5 {
 					lootboxReturnMessage = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
 				} else if lootboxReward == 20 {
