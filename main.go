@@ -135,6 +135,10 @@ var (
 			Name:        "lootbox",
 			Description: "Spend 2.5 tokens to get an RNG box",
 		},
+		{
+			Name: "broken",
+			Description: "Get more information if something about bot person is broken",
+		},
 		// {
 		// 	Name:        "headsOrTails",
 		// 	Description: "Gamble some tokens with a simple games of heads or tails",
@@ -613,6 +617,25 @@ var (
 				s.InteractionResponseDelete(i.Interaction)
 			}
 
+		},
+		"broken": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+			// Logging incoming user request
+			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_BROKEN >")
+
+			// Getting user stat data
+			aboutMessage := "If you have something that is broken about Bot Person, you can create an issue describing what you found here: https://github.com/nexfortisme/bot-person/issues/new"
+
+			// Logging outgoing bot response
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, aboutMessage)
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: aboutMessage,
+				},
+			})
 		},
 	}
 )
