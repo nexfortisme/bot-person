@@ -3,7 +3,6 @@ package persistance
 import (
 	"fmt"
 	"log"
-	"strconv"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -44,11 +43,34 @@ func SlashGetUserStats(user discordgo.User) string {
 	}
 }
 
-// TODO - Rewrite using new global stat tracking
 func SlashGetBotStats(s *discordgo.Session) string {
+
 	guildCount := len(s.State.Guilds)
-	msg := "Across " + strconv.Itoa(guildCount) + " servers, the bot has been interacted with " + strconv.Itoa(botTracking.MessageCount) + " times, praised " + strconv.Itoa(botTracking.GoodBotCount) + " times and has been bad " + strconv.Itoa(botTracking.BadBotCount) + " times."
-	return msg
+
+	var globalMessageCount int = 0
+	var globalGoodBotCount int = 0
+	var globalBadBotCount int = 0
+	var globalImageCount int = 0
+	// var globalLongestBonusStreak int = 0
+
+	var globalTokenCirculation float64 = 0.0
+
+	var returnMessage string
+
+	for _, element := range botTracking.UserStats {
+
+		globalMessageCount += element.UserStats.MessageCount
+		globalGoodBotCount += element.UserStats.GoodBotCount
+		globalBadBotCount += element.UserStats.BadBotCount
+		globalImageCount += element.UserStats.ImageCount
+
+		globalTokenCirculation += element.UserStats.ImageTokens
+	}
+
+
+	returnMessage = fmt.Sprintf("Across %d servers, Bot Person has/is/did:\nInteractions: %d\nBeen Good: %d\nBeen Bad: %d\nGenerated Images: %d\nTotal Tokens In Circulation: %.2f", guildCount, globalMessageCount, globalGoodBotCount, globalGoodBotCount, globalImageCount, globalTokenCirculation)
+
+	return returnMessage;
 }
 
 func createNewUserTracking(flag BPInteraction, userId string, username string) {
