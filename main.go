@@ -110,7 +110,7 @@ var (
 		},
 		{
 			Name:        "send",
-			Description: "A command to ask the bot for a reposne from their infinite wisdom.",
+			Description: "Send tokens to another user",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionUser,
@@ -136,49 +136,33 @@ var (
 			Description: "Spend 2.5 tokens to get an RNG box",
 		},
 		{
-			Name: "broken",
+			Name:        "broken",
 			Description: "Get more information if something about bot person is broken",
 		},
-		// {
-		// 	Name:        "headsOrTails",
-		// 	Description: "Gamble some tokens with a simple games of heads or tails",
-		// 	Options: []*discordgo.ApplicationCommandOption{
-		// 		{
-		// 			Type:        discordgo.ApplicationCommandOptionString,
-		// 			Name:        "option",
-		// 			Description: "Choose which option you want to pick.",
-		// 			Required:    true,
-		// 		},
-		// 		{
-		// 			Type:        discordgo.ApplicationCommandOptionNumber,
-		// 			Name:        "amount",
-		// 			Description: "The amount of tokens you want to gamble.",
-		// 			MinValue:    &integerOptionMinValue,
-		// 			Required:    true,
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	Name:        "gamba",
-		// 	Description: "Try your luck and see if you can win some extra Image Tokens.",
-		// 	Options: []*discordgo.ApplicationCommandOption{
-		// 		{
-		// 			Type:        discordgo.ApplicationCommandOptionNumber,
-		// 			Name:        "amount",
-		// 			Description: "The amount of tokens you want to gamba.",
-		// 			MinValue:    &integerOptionMinValue,
-		// 			Required:    true,
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	Name:        "economy",
-		// 	Description: "Check the overall number of tokens in the economy",
-		// },
-		// {
-		// 	Name: "invite",
-		// 	Description: "Get an invite link to add Bot Person to another server.",
-		// },
+		{
+			Name:        "burn",
+			Description: "A way, for whatever reason, you can burn tokens.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionNumber,
+					Name:        "amount",
+					Description: "The amount of tokens you want to send.",
+					MinValue:    &integerOptionMinValue,
+					Required:    true,
+				},
+			},
+		},
+		/*
+			Todo:
+				headsOrTails
+					Bet tokens and get an RNG roll of heads or tails
+				gamble
+					Same as the previous gamble
+				economy
+					A way to see the status of the bot person economy
+				invite
+					Generate an invite link for the bot that is specific to whatever token is being used for the bot
+		*/
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -625,17 +609,67 @@ var (
 			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_BROKEN >")
 
 			// Getting user stat data
-			aboutMessage := "If you have something that is broken about Bot Person, you can create an issue describing what you found here: https://github.com/nexfortisme/bot-person/issues/new"
+			brokenMessage := "If you have something that is broken about Bot Person, you can create an issue describing what you found here: https://github.com/nexfortisme/bot-person/issues/new"
 
 			// Logging outgoing bot response
-			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, aboutMessage)
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, brokenMessage)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: aboutMessage,
+					Content: brokenMessage,
 				},
 			})
+		},
+		"burn": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+			var burnAmount float64
+			senderBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+
+			// Access options in the order provided by the user.
+			options := i.ApplicationCommandData().Options
+
+			// Or convert the slice into a map
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+
+			// Checking to see that the user has the number of tokens needed to send
+			if option, ok := optionMap["amount"]; ok {
+
+				burnAmount = option.FloatValue()
+
+				logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_BURN_TOKENS > Amount: "+fmt.Sprintf("%.2f", burnAmount))
+
+				if senderBalance < burnAmount {
+
+					persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+					logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "Oops! You do not have the tokens needed to complete the transaction.")
+
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "Oops! You do not have the tokens needed to complete the transaction.",
+						},
+					})
+					return
+				} else {
+					persistance.RemoveUserTokens(i.Interaction.Member.User.ID, burnAmount)
+					senderBalance = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+
+					removeTokenResponse := fmt.Sprintf("%.2f tokens removed. New Balance: %.2f", burnAmount, senderBalance)
+
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: removeTokenResponse,
+						},
+					})
+				}
+			}
+
 		},
 	}
 )
