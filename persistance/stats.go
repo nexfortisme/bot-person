@@ -117,6 +117,6 @@ func handleUserStatIncrementing(flag BPInteraction, userId string) bool {
 		incrementUser.UserStats.MessageCount++
 	}
 
-	updateUser(incrementUser)
+	UpdateUser(incrementUser)
 	return true
 }

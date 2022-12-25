@@ -22,7 +22,7 @@ func AddImageTokens(tokenAmount float64, userId string) bool {
 		return true
 	} else {
 		user.UserStats.ImageTokens += tokenAmount
-		return updateUser(user)
+		return UpdateUser(user)
 	}
 
 }
@@ -49,11 +49,11 @@ func TransferrImageTokens(tokenAmount float64, fromUserId string, toUserId strin
 			// Creates user and assigns them the number of tokens that is being transferred
 			createAndAddUser(toUserId, 0, 0, 0, 0, util.LowerFloatPrecision(tokenAmount))
 			fromUser.UserStats.ImageTokens -= tokenAmount
-			return updateUser(fromUser)
+			return UpdateUser(fromUser)
 		} else {
 			toUser.UserStats.ImageTokens += tokenAmount
 			fromUser.UserStats.ImageTokens -= tokenAmount
-			return updateUser(toUser) && updateUser(fromUser)
+			return UpdateUser(toUser) && UpdateUser(fromUser)
 		}
 	}
 
@@ -70,7 +70,7 @@ func UseImageToken(userId string) bool {
 			return false
 		} else {
 			user.UserStats.ImageTokens--
-			return updateUser(user)
+			return UpdateUser(user)
 		}
 	}
 
@@ -110,7 +110,7 @@ func SetUserTokenCount(userId string, tokenAmount float64) bool {
 		return true
 	} else {
 		user.UserStats.ImageTokens = tokenAmount
-		return updateUser(user)
+		return UpdateUser(user)
 	}
 }
 
@@ -123,10 +123,10 @@ func RemoveUserTokens(userId string, tokenAmount float64) bool {
 	} else {
 		if (user.UserStats.ImageTokens - tokenAmount) <= 0 {
 			user.UserStats.ImageTokens = 0
-			return updateUser(user)
+			return UpdateUser(user)
 		} else {
 			user.UserStats.ImageTokens -= tokenAmount
-			return updateUser(user)
+			return UpdateUser(user)
 		}
 	}
 }
@@ -207,7 +207,7 @@ func GetUserReward(userId string) (float64, string, error) {
 	user.UserStats.LastBonus = time.Now()
 	user.UserStats.ImageTokens += finalReward
 
-	if !updateUser(user) {
+	if !UpdateUser(user) {
 		return -1, "", errors.New("error updating user record")
 	} else {
 		return finalReward, returnString, nil
@@ -249,7 +249,7 @@ func BuyLootbox(userId string) (int, int, error) {
 
 	user.UserStats.ImageTokens += float64(reward)
 
-	if !updateUser(user) {
+	if !UpdateUser(user) {
 		return -1, -1, errors.New("error updating user record")
 	} else {
 		return reward, lootboxSeed, nil
