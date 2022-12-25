@@ -17,10 +17,9 @@ func getUser(userId string) (UserStruct, error) {
 	}
 
 	return getNewUser("bad user", -1, -1, -1, -1, -1), errors.New("unable to find user")
-	// return UserStruct{"bad user", UserStatsStruct{-1, -1, -1, -1, -1, time.Time{}}}, errors.New("unable to find user")
 }
 
-func updateUser(updateUser UserStruct) bool {
+func UpdateUser(updateUser UserStruct) bool {
 	// TODO - Change this to use a Map instead
 	for index, element := range botTracking.UserStats {
 		if element.UserId != updateUser.UserId {
@@ -40,6 +39,10 @@ func createAndAddUser(userId string, messageCount int, goodBotCount int, badBotC
 
 func getNewUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) UserStruct {
 	return UserStruct{userId, UserStatsStruct{messageCount, goodBotCount, badBotCount, imageCount, imageTokens, time.Time{}, 0}}
+}
+
+func GetUserStats() []UserStruct {
+	return botTracking.UserStats;
 }
 
 // TODO - Delete User Function
