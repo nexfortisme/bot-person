@@ -70,24 +70,6 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
 			}
 		}
-	} else if strings.HasPrefix(incomingMessage, "!merryChristmas") {
-
-		// TODO - Switch to use BPSystemInteraction
-		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
-
-		// TODO - Change this to pull from the config instead of being a hardcoded value
-		if m.Author.ID != "92699061911580672" {
-			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
-			return
-		} else {
-			for _, element := range persistance.GetUserStats() {
-				element.UserStats.ImageTokens += 25;
-				if !persistance.UpdateUser(element) {
-					return
-				}
-			}
-			s.ChannelMessageSend(m.ChannelID, "Merry Christmas! 25 Tokens Added To All Users")
-		}
 	} else if strings.HasPrefix(incomingMessage, ";;lenny") {
 		persistance.IncrementInteractionTracking(persistance.BPLennyFaceInteracton, *m.Author)
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")

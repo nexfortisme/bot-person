@@ -67,10 +67,9 @@ func SlashGetBotStats(s *discordgo.Session) string {
 		globalTokenCirculation += element.UserStats.ImageTokens
 	}
 
-
 	returnMessage = fmt.Sprintf("Across %d servers, Bot Person has/is/did:\nInteractions: %d\nBeen Good: %d\nBeen Bad: %d\nGenerated Images: %d\nTotal Tokens In Circulation: %.2f", guildCount, globalMessageCount, globalGoodBotCount, globalGoodBotCount, globalImageCount, globalTokenCirculation)
 
-	return returnMessage;
+	return returnMessage
 }
 
 func createNewUserTracking(flag BPInteraction, userId string, username string) {
@@ -117,6 +116,6 @@ func handleUserStatIncrementing(flag BPInteraction, userId string) bool {
 		incrementUser.UserStats.MessageCount++
 	}
 
-	UpdateUser(incrementUser)
+	updateUser(incrementUser)
 	return true
 }

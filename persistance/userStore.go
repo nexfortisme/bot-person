@@ -19,7 +19,7 @@ func getUser(userId string) (UserStruct, error) {
 	return getNewUser("bad user", -1, -1, -1, -1, -1), errors.New("unable to find user")
 }
 
-func UpdateUser(updateUser UserStruct) bool {
+func updateUser(updateUser UserStruct) bool {
 	// TODO - Change this to use a Map instead
 	for index, element := range botTracking.UserStats {
 		if element.UserId != updateUser.UserId {
