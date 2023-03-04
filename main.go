@@ -671,6 +671,37 @@ var (
 			}
 
 		},
+		"blackjack": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+			deck := New();
+			Shuffle(deck);
+
+			playerHand := Deal(deck, 2);
+			dealerHand := Deal(deck, 2);
+
+			// Both Have Black Jack
+			if (getHandScore(playerHand) == 21 && len(playerHand) == 2) && (getHandScore(dealerHand) == 21 && len(dealerHand) == 2) {
+				// Push. Both Blackjack.
+			}
+
+
+			// Logging incoming user request
+			logging.LogIncomingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, "< SYSTEM_GET_BROKEN >")
+
+			// Getting user stat data
+			brokenMessage := "If you have something that is broken about Bot Person, you can create an issue describing what you found here: https://github.com/nexfortisme/bot-person/issues/new"
+
+			// Logging outgoing bot response
+			logging.LogOutgoingUserInteraction(s, i.Interaction.Member.User.Username, i.Interaction.GuildID, brokenMessage)
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: brokenMessage,
+				},
+			})
+		},
 	}
 )
 
@@ -851,4 +882,78 @@ func shutDown(discord *discordgo.Session) {
 
 	persistance.ShutDown()
 	_ = discord.Close()
+}
+
+func printHand(cards []Card, userFlag bool, dealerFlag bool) {
+
+	var returnStatement string
+
+	if userFlag {
+		returnStatement = "Your Cards: "
+	}
+
+	if dealerFlag {
+		returnStatement = "The Dealers Cards: "
+		returnStatement += cards[0].String()
+		returnStatement += ", XXXXXXXX "
+		fmt.Println(returnStatement)
+		return
+	} else if !dealerFlag && !userFlag {
+		returnStatement = "The Dealers Cards: "
+	}
+
+	for index, element := range cards {
+		returnStatement += element.String()
+
+		if index+1 < len(cards) {
+			returnStatement += ", "
+		}
+
+	}
+
+	fmt.Println(returnStatement)
+}
+
+func getHandScore(cards []Card) int {
+
+	score := 0
+
+	for _, element := range cards {
+
+		switch element.Type {
+		case "Two":
+			score += 2
+		case "Three":
+			score += 3
+		case "Four":
+			score += 4
+		case "Five":
+			score += 5
+		case "Six":
+			score += 6
+		case "Seven":
+			score += 7
+		case "Eight":
+			score += 8
+		case "Nine":
+			score += 9
+		case "Ten":
+			fallthrough
+		case "Jack":
+			fallthrough
+		case "Queen":
+			fallthrough
+		case "King":
+			score += 10
+		default:
+			if score+11 > 21 {
+				score += 1
+			} else {
+				score += 11
+			}
+		}
+
+	}
+
+	return score
 }
