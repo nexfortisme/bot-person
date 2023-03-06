@@ -152,6 +152,30 @@ var (
 				},
 			},
 		},
+		{
+			Name:        "predict",
+			Description: "Bet on the outcome of an event.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionBoolean,
+					Name:        "setup",
+					Description: "Flag to tell bot person if you want to setup a bet or not.",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "option-one",
+					Description: "Option 1 of the event",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "option-two",
+					Description: "Option 2 of the event",
+					Required:    true,
+				},
+			},
+		},
 		/*
 			Todo:
 				headsOrTails
@@ -555,7 +579,6 @@ var (
 				time.Sleep(time.Second * 15)
 				s.InteractionResponseDelete(i.Interaction)
 			}
-
 		},
 		"lootbox": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
@@ -600,7 +623,6 @@ var (
 				time.Sleep(time.Second * 15)
 				s.InteractionResponseDelete(i.Interaction)
 			}
-
 		},
 		"broken": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
@@ -669,6 +691,61 @@ var (
 					})
 				}
 			}
+		},
+		"predict": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+			var setup bool
+
+			// var optionOne string
+			// var optionTwo string
+
+			// Access options in the order provided by the user.
+			options := i.ApplicationCommandData().Options
+
+			// Or convert the slice into a map
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+
+			if option, ok := optionMap["setup"]; ok {
+				setup = option.BoolValue()
+			}
+
+			if !setup {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "You did speficied you are not setting up. Go home.",
+					},
+				})
+
+				return
+			}
+
+			var optionOne string
+			var optionTwo string
+
+			if option, ok := optionMap["option-one"]; ok {
+				optionOne = option.StringValue()
+			}
+			if option, ok := optionMap["option-two"]; ok {
+				optionTwo = option.StringValue()
+			}
+
+			messageString := fmt.Sprintf("React 1️⃣ for: %s.\nReact 2️⃣ for: %s. \n", optionOne, optionTwo)
+
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: messageString,
+				},
+			})
+
+			s.MessageReactionAdd(i.ChannelID, i.Message.ID, "1️⃣")
+
+			// s.MessageReactionAdd(i.Message.ChannelID, i.Message.ID, "1️⃣")
+			// s.MessageReactionAdd(i.Message.ChannelID, i.Message.ID, "2️⃣")
 
 		},
 	}
