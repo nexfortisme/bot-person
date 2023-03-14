@@ -4,7 +4,9 @@ package external
 type OpenAIResponse struct {
 	ID      string         `json:"id"`
 	Object  string         `json:"object"`
+	Created int64          `json:"created"`
 	Model   string         `json:"model"`
+	Usage   OpenAIUsage    `json:"usage"`
 	Choices []OpenAIChoice `json:"choices"`
 }
 
@@ -12,9 +14,20 @@ type OpenAIResponse struct {
 // contains zero or more completions based on the provided
 // prompt
 type OpenAIChoice struct {
-	Text   string `json:"text"`
-	Index  int    `json:"index"`
-	Reason string `json:"finish_reason"`
+	Index         int           `json:"index"`
+	Message       OpenAIMessage `json:"message"`
+	Finish_Reason string        `json:"finish_reason"`
+}
+
+type OpenAIUsage struct {
+	Prompt_Tokens     int `json:"prompt_tokens"`
+	Completion_Tokens int `json:"completion_tokens"`
+	Total_Tokens      int `json:"total_tokens"`
+}
+
+type OpenAIMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
 type DalleResponse struct {
