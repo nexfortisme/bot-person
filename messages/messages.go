@@ -110,6 +110,12 @@ func ParseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) st
 	return respTxt
 }
 
+func ParseGPTSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
+	respTxt := external.GetOpenAIGPTResponse(prompt, openAIKey)
+	respTxt = "Request: " + prompt + " " + respTxt
+	return respTxt
+}
+
 // TODO - Rename, I don't like this
 func GetDalleResponseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
 	dalleResponse, err := external.GetDalleResponse(prompt, openAIKey)
