@@ -60,7 +60,7 @@ func GetOpenAIGPTResponse(prompt string, openAIKey string) string {
 	client := &http.Client{}
 
 	dataTemplate := `{
-		"model": "gpt-3.5-turbo",
+		"model": "gpt-4",
 		"messages": [{"role": "user", "content": "%s"}]
 	}`
 
