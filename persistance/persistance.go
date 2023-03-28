@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	botTracking BotTracking
+	botTracking  BotTracking
+	tempTracking BotTracking
 )
 
 func ReadBotStatistics() {
@@ -37,9 +38,27 @@ func ReadBotStatistics() {
 	log.Println("Done Reading botTracking.json")
 }
 
+func quickReadStats() {
+	var trackingFile []byte
+	trackingFile, err := ioutil.ReadFile("botTracking.json")
+	err = json.Unmarshal(trackingFile, &tempTracking)
+	if err != nil {
+		log.Fatalf("Could not parse: botTracking.json")
+	}
+}
+
 func SaveBotStatistics() {
 	log.Println("Writing botTracking.json...")
 	fle, _ := json.Marshal(botTracking)
 	os.WriteFile("botTracking.json", fle, 0666)
 	log.Println("Done Writing botTracking.json")
+}
+
+func GetBotTracking() BotTracking {
+	return botTracking
+}
+
+func GetTempTracking() BotTracking {
+	quickReadStats()
+	return tempTracking
 }

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/r3labs/diff/v3"
 )
 
 type Config struct {
@@ -58,7 +59,7 @@ var (
 		},
 		{
 			Name:        "bot-gpt",
-			Description: "A command to ask the bot for a reposne from their infinite wisdom.",
+			Description: "Interact with OpenAI's GPT-4 API and see what out future AI overlords have to say.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -937,9 +938,17 @@ func shutDown(discord *discordgo.Session) {
 
 // This is a function that will save the current contents of the bot statistics
 func saveBotStatistics() {
-	log.Println("Saving Bot Statistics...")
-	fsInterrupt = true // TODO - Implement interrupt checking for when a user may be doing something while the bot is saving
-	persistance.SaveBotStatistics()
-	persistance.ReadBotStatistics()
-	fsInterrupt = false
+
+	changeLog, _ := diff.Diff(persistance.GetTempTracking(), persistance.GetBotTracking())
+
+	if len(changeLog) > 0 {
+		log.Println("Saving Bot Statistics...")
+		fsInterrupt = true // TODO - Implement interrupt checking for when a user may be doing something while the bot is saving
+		persistance.SaveBotStatistics()
+		persistance.ReadBotStatistics()
+		fsInterrupt = false
+	} else {
+		log.Println("No Changes to Bot Statistics. Skipping Save...")
+	}
+
 }
