@@ -38,6 +38,8 @@ var (
 	disableTracking bool
 	disableCmdReg   bool
 
+	fsInterrupt bool
+
 	createdConfig         = false
 	integerOptionMinValue = 0.1
 
@@ -790,7 +792,9 @@ func main() {
 	flag.Parse()
 
 	readConfig()
-	persistance.InitBotStatistics()
+	persistance.ReadBotStatistics()
+
+	ticker := time.NewTicker(5 * time.Minute)
 
 	logFile, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -852,10 +856,21 @@ func main() {
 	// Pulled from the examples for discordgo, this lets the bot continue to run
 	// until an interrupt is received, at which point the bot disconnects from
 	// the server cleanly
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
-	shutDown(discordSession)
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill, os.Interrupt)
+
+	for {
+		select {
+		case <-ticker.C:
+			saveBotStatistics()
+		case <-interrupt:
+			fmt.Println("Interrupt received, stopping...")
+			ticker.Stop()
+			shutDown(discordSession)
+			return
+		}
+	}
+
 }
 
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -916,6 +931,15 @@ func shutDown(discord *discordgo.Session) {
 		writeConfig()
 	}
 
-	persistance.ShutDown()
+	persistance.SaveBotStatistics()
 	_ = discord.Close()
+}
+
+// This is a function that will save the current contents of the bot statistics
+func saveBotStatistics() {
+	log.Println("Saving Bot Statistics...")
+	fsInterrupt = true // TODO - Implement interrupt checking for when a user may be doing something while the bot is saving
+	persistance.SaveBotStatistics()
+	persistance.ReadBotStatistics()
+	fsInterrupt = false
 }

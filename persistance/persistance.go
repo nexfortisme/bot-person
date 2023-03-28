@@ -11,9 +11,11 @@ var (
 	botTracking BotTracking
 )
 
-func InitBotStatistics() {
-	var trackingFile []byte
+func ReadBotStatistics() {
 
+	log.Println("Reading botTracking.json...")
+
+	var trackingFile []byte
 	trackingFile, err := ioutil.ReadFile("botTracking.json")
 	if err != nil {
 
@@ -31,10 +33,13 @@ func InitBotStatistics() {
 	if err != nil {
 		log.Fatalf("Could not parse: botTracking.json")
 	}
+
+	log.Println("Done Reading botTracking.json")
 }
 
-func ShutDown() {
+func SaveBotStatistics() {
 	log.Println("Writing botTracking.json...")
 	fle, _ := json.Marshal(botTracking)
 	os.WriteFile("botTracking.json", fle, 0666)
+	log.Println("Done Writing botTracking.json")
 }
