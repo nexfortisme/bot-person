@@ -22,4 +22,10 @@ type UserStatsStruct struct {
 	ImageTokens  float64   `json:"imageTokens"`
 	LastBonus    time.Time `json:"lastBonus"`
 	BonusStreak  int       `json:"bonusStreak"`
+	Stocks       []UserStock `json:"stocks"`
+}
+
+type UserStock struct {
+	StockTicker string `json:"stockTicker"`
+	StockCount  float64    `json:"stockCount"`
 }

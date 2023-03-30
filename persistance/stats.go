@@ -39,8 +39,19 @@ func SlashGetUserStats(user discordgo.User) string {
 	if err != nil {
 		return "Sorry, you don't have any recorded interactions with the bot."
 	} else {
-		return fmt.Sprintf("You have interacted with the bot %d times.\nYou praised the bot %d times and scolded the bot %d times.\nYou have requested %d images.\nYour current bonus streak is %d.", bpUser.UserStats.MessageCount, bpUser.UserStats.GoodBotCount, bpUser.UserStats.BadBotCount, bpUser.UserStats.ImageCount, bpUser.UserStats.BonusStreak)
+		return fmt.Sprintf("You have interacted with the bot %d times.\nYou praised the bot %d times and scolded the bot %d times.\nYou have requested %d images.\nYour current bonus streak is %d.\n%s", bpUser.UserStats.MessageCount, bpUser.UserStats.GoodBotCount, bpUser.UserStats.BadBotCount, bpUser.UserStats.ImageCount, bpUser.UserStats.BonusStreak, PrintUserStocks(bpUser))
 	}
+}
+
+func PrintUserStocks(user UserStruct) string {
+
+	retString := "You have the following stocks:\n"
+
+	for _, element := range user.UserStats.Stocks {
+		retString += fmt.Sprintf("\t%s: %.2f\n", element.StockTicker, element.StockCount)
+	}
+
+	return retString
 }
 
 func SlashGetBotStats(s *discordgo.Session) string {
