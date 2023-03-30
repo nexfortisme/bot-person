@@ -13,7 +13,7 @@ import (
 	"github.com/hako/durafmt"
 )
 
-func AddImageTokens(tokenAmount float64, userId string) bool {
+func AddBotPersonTokens(tokenAmount float64, userId string) bool {
 
 	user, err := getUser(userId)
 
@@ -27,7 +27,7 @@ func AddImageTokens(tokenAmount float64, userId string) bool {
 
 }
 
-func TransferrImageTokens(tokenAmount float64, fromUserId string, toUserId string) bool {
+func TransferrBotPersonTokens(tokenAmount float64, fromUserId string, toUserId string) bool {
 
 	fromUser, fromErr := getUser(fromUserId)
 	toUser, toErr := getUser(toUserId)
@@ -303,5 +303,75 @@ func APictureIsWorthAThousand(incomingMessage string, m *discordgo.MessageCreate
 	tokenValue := fmt.Sprintf("%.2f", (float64(wordCount) / 1000.0))
 	tokenAddAmount, _ := strconv.ParseFloat(tokenValue, 64)
 
-	AddImageTokens(tokenAddAmount, m.Author.ID)
+	AddBotPersonTokens(tokenAddAmount, m.Author.ID)
 }
+
+func AddStock(userId string, stockTicker string, quantity float64) error {
+
+	user, err := getUser(userId)
+
+	if err != nil {
+		return err
+	}
+
+	userPortforlio := user.UserStats.Stocks;
+
+	for _, element := range userPortforlio {
+		if element.StockTicker == stockTicker {
+			element.StockCount += quantity
+			user.UserStats.Stocks = userPortforlio
+			updateUser(user)
+			return nil
+		}
+	}
+
+	newStock := UserStock{stockTicker, quantity};
+	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock);
+	updateUser(user)
+
+	return nil;
+}
+
+func RemoveStock(userId string, stockTicker string, quantity float64) error {
+
+	user, err := getUser(userId)
+
+	if err != nil {
+		return err
+	}
+
+	userPortforlio := user.UserStats.Stocks;
+
+	for index, element := range userPortforlio {
+		if element.StockTicker == stockTicker {
+			element.StockCount -= quantity
+			userPortforlio[index] = element
+			user.UserStats.Stocks = userPortforlio
+			updateUser(user)
+			return nil
+		}
+	}
+
+	return errors.New("stock not found")
+}
+
+func GetUserStock(userId string, stockTicker string) (UserStock, error) {
+
+	user, err := getUser(userId)
+
+	if err != nil {
+		return UserStock{}, err
+	}
+
+	userPortforlio := user.UserStats.Stocks;
+
+	for _, element := range userPortforlio {
+		if element.StockTicker == stockTicker {
+			return element, nil
+		}
+	}
+
+	return UserStock{}, errors.New("stock not found")
+
+}
+

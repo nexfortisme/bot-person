@@ -9,6 +9,7 @@ import (
 	"log"
 	"main/logging"
 	"main/messages"
+	"main/messages/external"
 	"main/persistance"
 	"main/util"
 	"os"
@@ -25,6 +26,7 @@ type Config struct {
 	OpenAIKey       string `json:"OpenAIKey"`
 	DiscordToken    string `json:"DiscordToken"`
 	DevDiscordToken string `json:"DevDiscordToken"`
+	FinnHubToken    string `json:"FinnHubToken"`
 }
 
 var (
@@ -167,6 +169,41 @@ var (
 				},
 			},
 		},
+		{
+			Name:        "stocks",
+			Description: "Buy and sell fake stocks with bot person tokens.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "action",
+					Description: "Action you want to complete",
+					Type:        discordgo.ApplicationCommandOptionString,
+					Choices: []*discordgo.ApplicationCommandOptionChoice{
+						{
+							Name:  "Buy",
+							Value: "buy",
+						},
+						{
+							Name:  "Sell",
+							Value: "sell",
+						},
+					},
+					Required: true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "stock",
+					Description: "The symbol of the stock you want to buy or sell",
+					Required:    true,
+				},
+				{
+					Name:        "quantity",
+					Description: "Number of stocks you want to buy or sell",
+					Type:        discordgo.ApplicationCommandOptionNumber,
+					MinValue:    &integerOptionMinValue,
+					Required:    true,
+				},
+			},
+		},
 		/*
 			Todo:
 				headsOrTails
@@ -181,7 +218,6 @@ var (
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		// TODO - Handle logging of the incoming request by the user
 		"bot": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 			// Access options in the order provided by the user.
@@ -555,7 +591,7 @@ var (
 					return
 				}
 
-				sendResponse := persistance.TransferrImageTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
+				sendResponse := persistance.TransferrBotPersonTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
 
 				newBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
 
@@ -741,6 +777,138 @@ var (
 			}
 
 		},
+		"stocks": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+			userBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+
+			var stockAction string
+			var stockTicker string
+			var purchaseAmount float64
+
+			// Access options in the order provided by the user.
+			options := i.ApplicationCommandData().Options
+
+			// Or convert the slice into a map
+			optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+			for _, opt := range options {
+				optionMap[opt.Name] = opt
+			}
+
+			// Checking to see that the user has the number of tokens needed to send
+			if option, ok := optionMap["action"]; ok {
+				stockAction = option.StringValue()
+			}
+
+			// Checking to see that the user has the number of tokens needed to send
+			if option, ok := optionMap["stock"]; ok {
+				stockTicker = option.StringValue()
+			}
+
+			// Checking to see that the user has the number of tokens needed to send
+			if option, ok := optionMap["quantity"]; ok {
+				purchaseAmount = option.FloatValue()
+			}
+
+			// Getting the current price of the stock
+			currentPrice, err := external.GetStockData(stockTicker, config.FinnHubToken)
+			currentPriceF64 := util.LowerFloatPrecision(float64(currentPrice))
+
+			// error with either the stock ticker or the API
+			if err != nil {
+				retString := fmt.Sprintf("Error getting stock data for ticker %s. Please try again.", stockTicker)
+
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: retString,
+					},
+				})
+				return
+			}
+
+			if stockAction == "buy" {
+
+				purchasePrice := currentPriceF64 * purchaseAmount
+
+				if userBalance < purchasePrice {
+
+					retString := fmt.Sprintf("You don't have the tokens needed to purchase %.2f shares of %s. Please try again with a lower amount.", purchaseAmount, stockTicker)
+
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: retString,
+						},
+					})
+					return
+
+				} else {
+
+					persistance.AddStock(i.Interaction.Member.User.ID, stockTicker, purchaseAmount)
+
+					persistance.RemoveUserTokens(i.Interaction.Member.User.ID, purchasePrice)
+
+					retString := fmt.Sprintf("You have purchased %f shares of %s for %.2f tokens. Your new balance is %.2f tokens.", purchaseAmount, stockTicker, purchasePrice, persistance.GetUserTokenCount(i.Interaction.Member.User.ID))
+
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: retString,
+						},
+					})
+					return
+				}
+
+			} else {
+
+				userStock, err := persistance.GetUserStock(i.Interaction.Member.User.ID, stockTicker)
+
+				if err != nil {
+					retString := fmt.Sprintf("You do not have any shares of %s. Please try again.", stockTicker)
+
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: retString,
+						},
+					})
+					return
+				}
+
+				if userStock.StockCount < purchaseAmount {
+
+					retString := fmt.Sprintf("You do not have enough shares of %s to sell %.2f shares. Please try again with a lower amount.", stockTicker, purchaseAmount)
+
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: retString,
+						},
+					})
+					return
+
+				} else {
+
+					sellPrice := currentPriceF64 * purchaseAmount
+
+					persistance.RemoveStock(i.Interaction.Member.User.ID, stockTicker, purchaseAmount)
+
+					persistance.AddBotPersonTokens(sellPrice, i.Interaction.Member.User.ID)
+
+					retString := fmt.Sprintf("You have sold %f shares of %s for %.2f tokens. Your new balance is %.2f tokens.", purchaseAmount, stockTicker, sellPrice, persistance.GetUserTokenCount(i.Interaction.Member.User.ID))
+
+					s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: retString,
+						},
+					})
+					return
+
+				}
+
+			}
+		},
 	}
 )
 
@@ -780,6 +948,9 @@ func readConfig() {
 		config.OpenAIKey = strings.TrimSuffix(config.OpenAIKey, "\r\n")
 		log.Println("Open AI Key Set to: '" + config.OpenAIKey + "'")
 	}
+
+	fmt.Printf("Config: %+v", config)
+
 }
 
 func main() {
@@ -858,7 +1029,7 @@ func main() {
 	// until an interrupt is received, at which point the bot disconnects from
 	// the server cleanly
 	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill, os.Interrupt)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
 	for {
 		select {
@@ -951,4 +1122,8 @@ func saveBotStatistics() {
 		log.Println("No Changes to Bot Statistics. Skipping Save...")
 	}
 
+}
+
+func GetFinnHubToken() string {
+	return config.FinnHubToken
 }

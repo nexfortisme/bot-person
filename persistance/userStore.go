@@ -38,7 +38,7 @@ func createAndAddUser(userId string, messageCount int, goodBotCount int, badBotC
 }
 
 func getNewUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) UserStruct {
-	return UserStruct{userId, UserStatsStruct{messageCount, goodBotCount, badBotCount, imageCount, imageTokens, time.Time{}, 0}}
+	return UserStruct{userId, UserStatsStruct{messageCount, goodBotCount, badBotCount, imageCount, imageTokens, time.Time{}, 0, []UserStock{}}}
 }
 
 func GetUserStats() []UserStruct {

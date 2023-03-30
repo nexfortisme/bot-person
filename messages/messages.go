@@ -63,7 +63,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		} else {
 			req := strings.Split(incomingMessage, " ")
 			tokenCount, _ := strconv.ParseFloat(req[2], 64)
-			success := persistance.AddImageTokens(tokenCount, req[1][2:len(req[1])-1])
+			success := persistance.AddBotPersonTokens(tokenCount, req[1][2:len(req[1])-1])
 			if success {
 				s.ChannelMessageSend(m.ChannelID, "Tokens were successfully added.")
 			} else {
