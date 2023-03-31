@@ -5,14 +5,14 @@ import (
 	"time"
 )
 
-func getUser(userId string) (UserStruct, error) {
+func getUser(userId string) (*UserStruct, error) {
 
 	// TODO - Change this to use a Map instead
 	for _, element := range botTracking.UserStats {
 		if element.UserId != userId {
 			continue
 		} else {
-			return element, nil
+			return &element, nil
 		}
 	}
 
@@ -33,12 +33,12 @@ func updateUser(updateUser UserStruct) bool {
 }
 
 func createAndAddUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) bool {
-	botTracking.UserStats = append(botTracking.UserStats, getNewUser(userId, messageCount, goodBotCount, badBotCount, imageCount, imageTokens))
+	botTracking.UserStats = append(botTracking.UserStats, *getNewUser(userId, messageCount, goodBotCount, badBotCount, imageCount, imageTokens))
 	return true
 }
 
-func getNewUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) UserStruct {
-	return UserStruct{userId, UserStatsStruct{messageCount, goodBotCount, badBotCount, imageCount, imageTokens, time.Time{}, 0, []UserStock{}}}
+func getNewUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) *UserStruct {
+	return &UserStruct{userId, UserStatsStruct{messageCount, goodBotCount, badBotCount, imageCount, imageTokens, time.Time{}, 0, []UserStock{}}}
 }
 
 func GetUserStats() []UserStruct {

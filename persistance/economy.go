@@ -21,8 +21,8 @@ func AddBotPersonTokens(tokenAmount float64, userId string) bool {
 		createAndAddUser(userId, 0, 0, 0, 0, util.LowerFloatPrecision(tokenAmount))
 		return true
 	} else {
-		user.UserStats.ImageTokens += tokenAmount
-		return updateUser(user)
+		user.UserStats.ImageTokens = user.UserStats.ImageTokens + tokenAmount
+		return true
 	}
 
 }
@@ -49,11 +49,11 @@ func TransferrBotPersonTokens(tokenAmount float64, fromUserId string, toUserId s
 			// Creates user and assigns them the number of tokens that is being transferred
 			createAndAddUser(toUserId, 0, 0, 0, 0, util.LowerFloatPrecision(tokenAmount))
 			fromUser.UserStats.ImageTokens -= tokenAmount
-			return updateUser(fromUser)
+			return true
 		} else {
 			toUser.UserStats.ImageTokens += tokenAmount
 			fromUser.UserStats.ImageTokens -= tokenAmount
-			return updateUser(toUser) && updateUser(fromUser)
+			return true
 		}
 	}
 
@@ -70,7 +70,7 @@ func UseImageToken(userId string) bool {
 			return false
 		} else {
 			user.UserStats.ImageTokens--
-			return updateUser(user)
+			return true
 		}
 	}
 
@@ -110,7 +110,7 @@ func SetUserTokenCount(userId string, tokenAmount float64) bool {
 		return true
 	} else {
 		user.UserStats.ImageTokens = tokenAmount
-		return updateUser(user)
+		return true
 	}
 }
 
@@ -123,10 +123,10 @@ func RemoveUserTokens(userId string, tokenAmount float64) bool {
 	} else {
 		if (user.UserStats.ImageTokens - tokenAmount) <= 0 {
 			user.UserStats.ImageTokens = 0
-			return updateUser(user)
+			return true
 		} else {
 			user.UserStats.ImageTokens -= tokenAmount
-			return updateUser(user)
+			return true
 		}
 	}
 }
@@ -207,11 +207,11 @@ func GetUserReward(userId string) (float64, string, error) {
 	user.UserStats.LastBonus = time.Now()
 	user.UserStats.ImageTokens += finalReward
 
-	if !updateUser(user) {
-		return -1, "", errors.New("error updating user record")
-	} else {
-		return finalReward, returnString, nil
-	}
+	// if !updateUser(user) {
+	// return -1, "", errors.New("error updating user record")
+	// } else {
+	return finalReward, returnString, nil
+	// }
 
 }
 
@@ -249,11 +249,11 @@ func BuyLootbox(userId string) (int, int, error) {
 
 	user.UserStats.ImageTokens += float64(reward)
 
-	if !updateUser(user) {
-		return -1, -1, errors.New("error updating user record")
-	} else {
-		return reward, lootboxSeed, nil
-	}
+	// if !updateUser(user) {
+	// return -1, -1, errors.New("error updating user record")
+	// } else {
+	return reward, lootboxSeed, nil
+	// }
 
 }
 
@@ -314,22 +314,22 @@ func AddStock(userId string, stockTicker string, quantity float64) error {
 		return err
 	}
 
-	userPortforlio := user.UserStats.Stocks;
+	userPortforlio := user.UserStats.Stocks
 
 	for _, element := range userPortforlio {
 		if element.StockTicker == stockTicker {
 			element.StockCount += quantity
 			user.UserStats.Stocks = userPortforlio
-			updateUser(user)
+			// updateUser(user)
 			return nil
 		}
 	}
 
-	newStock := UserStock{stockTicker, quantity};
-	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock);
-	updateUser(user)
+	newStock := UserStock{stockTicker, quantity}
+	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock)
+	// updateUser(user)
 
-	return nil;
+	return nil
 }
 
 func RemoveStock(userId string, stockTicker string, quantity float64) error {
@@ -340,14 +340,14 @@ func RemoveStock(userId string, stockTicker string, quantity float64) error {
 		return err
 	}
 
-	userPortforlio := user.UserStats.Stocks;
+	userPortforlio := user.UserStats.Stocks
 
 	for index, element := range userPortforlio {
 		if element.StockTicker == stockTicker {
 			element.StockCount -= quantity
 			userPortforlio[index] = element
 			user.UserStats.Stocks = userPortforlio
-			updateUser(user)
+			// updateUser(user)
 			return nil
 		}
 	}
@@ -363,7 +363,7 @@ func GetUserStock(userId string, stockTicker string) (UserStock, error) {
 		return UserStock{}, err
 	}
 
-	userPortforlio := user.UserStats.Stocks;
+	userPortforlio := user.UserStats.Stocks
 
 	for _, element := range userPortforlio {
 		if element.StockTicker == stockTicker {
@@ -374,4 +374,3 @@ func GetUserStock(userId string, stockTicker string) (UserStock, error) {
 	return UserStock{}, errors.New("stock not found")
 
 }
-

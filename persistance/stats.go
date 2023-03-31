@@ -39,7 +39,7 @@ func SlashGetUserStats(user discordgo.User) string {
 	if err != nil {
 		return "Sorry, you don't have any recorded interactions with the bot."
 	} else {
-		return fmt.Sprintf("You have interacted with the bot %d times.\nYou praised the bot %d times and scolded the bot %d times.\nYou have requested %d images.\nYour current bonus streak is %d.\n%s", bpUser.UserStats.MessageCount, bpUser.UserStats.GoodBotCount, bpUser.UserStats.BadBotCount, bpUser.UserStats.ImageCount, bpUser.UserStats.BonusStreak, PrintUserStocks(bpUser))
+		return fmt.Sprintf("You have interacted with the bot %d times.\nYou praised the bot %d times and scolded the bot %d times.\nYou have requested %d images.\nYour current bonus streak is %d.\n%s", bpUser.UserStats.MessageCount, bpUser.UserStats.GoodBotCount, bpUser.UserStats.BadBotCount, bpUser.UserStats.ImageCount, bpUser.UserStats.BonusStreak, PrintUserStocks(*bpUser))
 	}
 }
 
@@ -127,6 +127,6 @@ func handleUserStatIncrementing(flag BPInteraction, userId string) bool {
 		incrementUser.UserStats.MessageCount++
 	}
 
-	updateUser(incrementUser)
+	// updateUser(incrementUser)
 	return true
 }
