@@ -389,7 +389,7 @@ var (
 				userImageOptionMap[opt.Name] = opt
 			}
 
-			var imageReturnString string
+			// var imageReturnString string
 
 			if !persistance.UserHasTokens(i.Interaction.Member.User.ID) {
 
@@ -422,14 +422,21 @@ var (
 				})
 
 				// Going out to make the OpenAI call to get the proper response
-				imageReturnString = messages.GetDalleResponseSlashCommand(s, option.StringValue(), config.OpenAIKey)
+				returnFile := messages.GetDalleResponseSlashCommand(s, option.StringValue(), config.OpenAIKey)
+
+				// imageReturnString := option.StringValue();
 
 				persistance.UseImageToken(i.Interaction.Member.User.ID)
 				persistance.IncrementInteractionTracking(persistance.BPImageRequest, *i.Interaction.Member.User)
 
+				// embed := &discordgo.MessageEmbed{
+				// 	Title:       option.StringValue(),
+				// 	Description: option.StringValue(),
+				// }
+
 				// Updating the initial message with the response from the OpenAI API
 				_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-					Content: &imageReturnString,
+					Files:   []*discordgo.File{&returnFile},
 				})
 
 				if err != nil {

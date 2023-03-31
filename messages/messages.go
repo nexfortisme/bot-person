@@ -1,7 +1,6 @@
 package messages
 
 import (
-	"main/logging"
 	"main/messages/external"
 	"main/persistance"
 	"main/util"
@@ -41,7 +40,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	} else if strings.HasPrefix(incomingMessage, "good bot") {
 		persistance.IncrementInteractionTracking(persistance.BPGoodBotInteraction, *m.Author)
 
-		goodBotRetort := util.GetGoodBotResponse();
+		goodBotRetort := util.GetGoodBotResponse()
 
 		_, err := s.ChannelMessageSend(m.ChannelID, goodBotRetort)
 		util.HandleErrors(err)
@@ -58,7 +57,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 			req := strings.Split(incomingMessage, " ")
 
 			if len(req) != 3 {
-				return;
+				return
 			}
 
 			tokenCount, _ := strconv.ParseFloat(req[2], 64)
@@ -74,12 +73,6 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
 	}
 
-	// ! Add Help Command
-
-	// Commands to add
-	// invite - Generates an invite link to be able to invite the bot to differnet servers
-	// stopTracking - Allows uers to opt out of data collection
-
 	// Only process messages that mention the bot
 	id := s.State.User.ID
 	if !mentionsBot(m.Mentions, id) && !mentionsKeyphrase(m) {
@@ -88,19 +81,14 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 
 	msg := util.ReplaceIDsWithNames(m, s)
 
-	logging.LogIncomingMessage(s, m)
-
 	persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *m.Author)
 	respTxt := external.GetOpenAIResponse(msg, openAIKey)
-
-	logging.LogOutgoingUserInteraction(s, m.Author.Username, m.GuildID, respTxt)
 
 	if mentionsKeyphrase(m) {
 		s.ChannelMessageSend(m.ChannelID, "!bot is deprecated. Please at the bot or use /bot for further interactions")
 	}
 	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
 	util.HandleErrors(err)
-
 }
 
 func ParseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
@@ -116,14 +104,14 @@ func ParseGPTSlashCommand(s *discordgo.Session, prompt string, openAIKey string)
 }
 
 // TODO - Rename, I don't like this
-func GetDalleResponseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
+func GetDalleResponseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) discordgo.File {
 	dalleResponse, err := external.GetDalleResponse(prompt, openAIKey)
 
 	if err != nil {
 		return dalleResponse
 	}
 
-	dalleResponse = "Prompt: " + "[" + prompt + "](" + dalleResponse + ")"
+	// dalleResponse = "Prompt: " + "[" + prompt + "](" + dalleResponse + ")"
 	return dalleResponse
 }
 
