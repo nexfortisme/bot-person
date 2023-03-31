@@ -62,6 +62,11 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 			return
 		} else {
 			req := strings.Split(incomingMessage, " ")
+
+			if len(req) != 3 {
+				return;
+			}
+
 			tokenCount, _ := strconv.ParseFloat(req[2], 64)
 			success := persistance.AddBotPersonTokens(tokenCount, req[1][2:len(req[1])-1])
 			if success {
