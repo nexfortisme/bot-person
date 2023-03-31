@@ -32,25 +32,19 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if strings.HasPrefix(incomingMessage, "bad bot") {
 
-		logging.LogIncomingMessage(s, m)
 		persistance.IncrementInteractionTracking(persistance.BPBadBotInteraction, *m.Author)
 
 		badBotRetort := util.GetBadBotResponse()
 
-		logging.LogOutgoingUserInteraction(s, m.Author.Username, m.GuildID, badBotRetort)
-
 		_, err := s.ChannelMessageSend(m.ChannelID, badBotRetort)
 		util.HandleErrors(err)
-
 	} else if strings.HasPrefix(incomingMessage, "good bot") {
-		logging.LogIncomingMessage(s, m)
 		persistance.IncrementInteractionTracking(persistance.BPGoodBotInteraction, *m.Author)
 
-		logging.LogOutgoingUserInteraction(s, m.Author.Username, m.GuildID, "Thank You!")
+		goodBotRetort := util.GetGoodBotResponse();
 
-		_, err := s.ChannelMessageSend(m.ChannelID, "Thank You!")
+		_, err := s.ChannelMessageSend(m.ChannelID, goodBotRetort)
 		util.HandleErrors(err)
-
 	} else if strings.HasPrefix(incomingMessage, "!addTokens") {
 
 		// TODO - Switch to use BPSystemInteraction

@@ -60,6 +60,22 @@ func GetOofResponse() string {
 	return options[rand.Intn(len(options))]
 }
 
+func GetGoodBotResponse() string {
+	goodBotResponses := make([]string, 0)
+	goodBotResponses = append(goodBotResponses, "Thank you, I'm here to serve.")
+	goodBotResponses = append(goodBotResponses, "I'm glad I could assist you.")
+	goodBotResponses = append(goodBotResponses, "Your satisfaction is my top priority.")
+	goodBotResponses = append(goodBotResponses, "Thanks for the compliment, it means a lot.")
+	goodBotResponses = append(goodBotResponses, "It's my pleasure to be of help.")
+	goodBotResponses = append(goodBotResponses, "I strive to be the best bot I can be.")
+	goodBotResponses = append(goodBotResponses, "I appreciate the positive feedback.")
+	goodBotResponses = append(goodBotResponses, "I'm happy to hear that you found my service helpful.")
+	goodBotResponses = append(goodBotResponses, "Thanks for acknowledging my hard work.")
+	goodBotResponses = append(goodBotResponses, "I'm always here if you need me.")
+
+	return goodBotResponses[rand.Intn(len(goodBotResponses))]
+}
+
 func GetBadBotResponse() string {
 	badBotResponses := make([]string, 0)
 	badBotResponses = append(badBotResponses, "I'm sorry")
