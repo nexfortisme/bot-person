@@ -90,27 +90,27 @@ var (
 			Name:        "help",
 			Description: "List of commands to use with Bot Person.",
 		},
-		// {
-		// 	Name:        "image",
-		// 	Description: "Ask Bot Person to generate an image for you. Costs 1 Token per image",
-		// 	Options: []*discordgo.ApplicationCommandOption{
-		// 		{
-		// 			Type:        discordgo.ApplicationCommandOptionString,
-		// 			Name:        "prompt",
-		// 			Description: "The actual prompt that Bot Person will generate an image from.",
-		// 			Required:    true,
-		// 		},
-		// 		// TODO - Implement requesting multiple images at once
-		// 		// {
-		// 		// 	Type:        discordgo.ApplicationCommandOptionInteger,
-		// 		// 	Name:        "number",
-		// 		// 	Description: "The number of image you want Bot Person to generate. Cost = # of images generated",
-		// 		// 	MinValue:    &integerOptionMinValue,
-		// 		// 	MaxValue:    10,
-		// 		// 	Required:    false,
-		// 		// },
-		// 	},
-		// },
+		{
+			Name:        "image",
+			Description: "Ask Bot Person to generate an image for you. Costs 1 Token per image",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "prompt",
+					Description: "The actual prompt that Bot Person will generate an image from.",
+					Required:    true,
+				},
+				// TODO - Implement requesting multiple images at once
+				// {
+				// 	Type:        discordgo.ApplicationCommandOptionInteger,
+				// 	Name:        "number",
+				// 	Description: "The number of image you want Bot Person to generate. Cost = # of images generated",
+				// 	MinValue:    &integerOptionMinValue,
+				// 	MaxValue:    10,
+				// 	Required:    false,
+				// },
+			},
+		},
 		{
 			Name:        "balance",
 			Description: "Check your balance or the balance of another user.",
@@ -379,79 +379,84 @@ var (
 				},
 			})
 		},
-		// "image": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		// 	// Access options in the order provided by the user.
-		// 	userImageOptions := i.ApplicationCommandData().Options
+		"image": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			// Access options in the order provided by the user.
+			userImageOptions := i.ApplicationCommandData().Options
 
-		// 	// Or convert the slice into a map
-		// 	userImageOptionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(userImageOptions))
-		// 	for _, opt := range userImageOptions {
-		// 		userImageOptionMap[opt.Name] = opt
-		// 	}
+			// Or convert the slice into a map
+			userImageOptionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(userImageOptions))
+			for _, opt := range userImageOptions {
+				userImageOptionMap[opt.Name] = opt
+			}
 
-		// 	// var imageReturnString string
+			if !persistance.UserHasTokens(i.Interaction.Member.User.ID) {
 
-		// 	if !persistance.UserHasTokens(i.Interaction.Member.User.ID) {
+				persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
-		// 		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+				// Getting user stat data
+				imageReturnString := "You don't have enough tokens to generate an image."
 
-		// 		// Getting user stat data
-		// 		imageReturnString := "You don't have enough tokens to generate an image."
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: imageReturnString,
+					},
+				})
+				return
+			}
 
-		// 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		// 			Type: discordgo.InteractionResponseChannelMessageWithSource,
-		// 			Data: &discordgo.InteractionResponseData{
-		// 				Content: imageReturnString,
-		// 			},
-		// 		})
-		// 		return
-		// 	}
+			// Pulling the propt out of the optionsMap
+			if option, ok := userImageOptionMap["prompt"]; ok {
 
-		// 	// Pulling the propt out of the optionsMap
-		// 	if option, ok := userImageOptionMap["prompt"]; ok {
+				// Generating the response
+				placeholder := "Prompt: " + option.StringValue()
 
-		// 		// Generating the response
-		// 		placeholder := "Prompt: " + option.StringValue()
+				// Immediately responding in the 3 second window before the interaciton times out
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: placeholder,
+					},
+				})
 
-		// 		// Immediately responding in the 3 second window before the interaciton times out
-		// 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		// 			Type: discordgo.InteractionResponseChannelMessageWithSource,
-		// 			Data: &discordgo.InteractionResponseData{
-		// 				Content: placeholder,
-		// 			},
-		// 		})
+				// Going out to make the OpenAI call to get the proper response
+				returnFile, err := messages.GetDalleResponseSlashCommand(s, option.StringValue(), config.OpenAIKey)
 
-		// 		// Going out to make the OpenAI call to get the proper response
-		// 		returnFile := messages.GetDalleResponseSlashCommand(s, option.StringValue(), config.OpenAIKey)
+				if err != nil {
 
-		// 		// imageReturnString := option.StringValue();
+					errString := fmt.Sprintf("Something Went Wrong: %s", err.Error())
 
-		// 		persistance.UseImageToken(i.Interaction.Member.User.ID)
-		// 		persistance.IncrementInteractionTracking(persistance.BPImageRequest, *i.Interaction.Member.User)
+					// Not 100% sure this is the approach I want to take with handling errors from the API
+					_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+						Content: &errString,
+					})
 
-		// 		// embed := &discordgo.MessageEmbed{
-		// 		// 	Title:       option.StringValue(),
-		// 		// 	Description: option.StringValue(),
-		// 		// }
+					if err != nil {
+						s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+							Content: "Something went wrong. Send help.",
+						})
+					}
 
-		// 		// Updating the initial message with the response from the OpenAI API
-		// 		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		// 			Files:   []*discordgo.File{&returnFile},
-		// 		})
+					return
+				}
 
-		// 		if err != nil {
+				persistance.UseImageToken(i.Interaction.Member.User.ID)
+				persistance.IncrementInteractionTracking(persistance.BPImageRequest, *i.Interaction.Member.User)
 
-		// 			// Not 100% sure this is the approach I want to take with handling errors from the API
-		// 			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-		// 				Content: "Something went wrong.",
-		// 			})
-		// 			return
-		// 		} else {
-		// 			// TODO - Fix. This doesn't work
-		// 			util.CleanUpImages(s, i)
-		// 		}
-		// 	}
-		// },
+				// Updating the initial message with the response from the OpenAI API
+				_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Files: []*discordgo.File{&returnFile},
+				})
+
+				if err != nil {
+					// Not 100% sure this is the approach I want to take with handling errors from the API
+					s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+						Content: "Something went oopsie with sending the file.",
+					})
+					return
+				}
+			}
+		},
 		"balance": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 			var tokenCount float64

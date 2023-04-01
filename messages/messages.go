@@ -104,15 +104,14 @@ func ParseGPTSlashCommand(s *discordgo.Session, prompt string, openAIKey string)
 }
 
 // TODO - Rename, I don't like this
-func GetDalleResponseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) discordgo.File {
+func GetDalleResponseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) (discordgo.File, error) {
 	dalleResponse, err := external.GetDalleResponse(prompt, openAIKey)
 
 	if err != nil {
-		return dalleResponse
+		return discordgo.File{}, err
 	}
 
-	// dalleResponse = "Prompt: " + "[" + prompt + "](" + dalleResponse + ")"
-	return dalleResponse
+	return dalleResponse, nil
 }
 
 func mentionsKeyphrase(m *discordgo.MessageCreate) bool {

@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"regexp"
+	"path/filepath"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -32,7 +32,6 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 	postRequest.Header.Add("Authorization", "Bearer "+openAIKey)
 
 	httpResponse, _ := httpClient.Do(postRequest)
-
 	if httpResponse == nil {
 		return discordgo.File{}, errors.New("API Error")
 	}
@@ -47,22 +46,17 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 	// It's possible that OpenAI returns no response, so
 	// fallback to a default one
 	if len(openAIResponse.Data) == 0 {
-		// fmt.Println(responseBuffer)
-		// fmt.Println(openAIResponse)
-		// return "I'm sorry, I don't understand? (Most likely picked up by OpenAi query filter).", errors.New("API Response Error")
 		return discordgo.File{}, errors.New("API Response Error. (Most Likely Picked Up By OpenAI Query Filter)")
 	} else {
 
-		err := createDirectoryIfNotExists("images")
+		err = createDirectoryIfNotExists("img")
 		if err != nil {
 			fmt.Println("Error creating directory:", err)
 			return discordgo.File{}, errors.New("Error creating directory")
 		}
 
-		fileName := fmt.Sprintf("images/%s.jpg", stripPunctuation(prompt))
-
-		fmt.Printf("%s", fileName)
-
+		path := filepath.Join("img", fmt.Sprintf("%s.jpg", removePunctuation(prompt)))
+		
 		response, err := http.Get(openAIResponse.Data[0].URL)
 		if err != nil {
 			panic(err)
@@ -70,7 +64,7 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 		defer response.Body.Close()
 
 		// Create a new file to save the image to
-		file, err := os.Create(fileName)
+		file, err := os.Create(path)
 		if err != nil {
 			panic(err)
 		}
@@ -79,11 +73,10 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 		// Copy the image data to the file
 		_, err = io.Copy(file, response.Body)
 		if err != nil {
-			fmt.Println("here")
 			panic(err)
 		}
 
-		reader, err := os.Open(fileName)
+		reader, err := os.Open(path)
 		fileInfo, err := reader.Stat()
 		if err != nil {
 			return discordgo.File{}, errors.New("Error creating file")
@@ -91,7 +84,7 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 
 		fileObj := &discordgo.File{
 			Name:        fileInfo.Name(),
-			ContentType: "image/png",
+			ContentType: "image/jpg",
 			Reader:      reader,
 		}
 
@@ -99,15 +92,19 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 	}
 }
 
-func stripPunctuation(str string) string {
-	re := regexp.MustCompile(`[[:punct:]]`)
-	return re.ReplaceAllString(str, "")
+func removePunctuation(s string) string {
+	var result strings.Builder
+	for _, c := range s {
+		if !strings.ContainsAny(string(c), ",.?!;:-") {
+			result.WriteRune(c)
+		}
+	}
+	return result.String()
 }
 
-func createDirectoryIfNotExists(path string) error {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		err = os.MkdirAll(path, 0755)
+func createDirectoryIfNotExists(dirPath string) error {
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		err := os.MkdirAll(dirPath, os.ModePerm)
 		if err != nil {
 			return err
 		}
