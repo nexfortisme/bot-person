@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash/fnv"
 	"io"
 	"net/http"
 	"os"
-	"strconv"
+	"regexp"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -54,14 +53,16 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 		return discordgo.File{}, errors.New("API Response Error. (Most Likely Picked Up By OpenAI Query Filter)")
 	} else {
 
-		err := os.MkdirAll("images", os.ModePerm)
+		err := createDirectoryIfNotExists("images")
 		if err != nil {
 			fmt.Println("Error creating directory:", err)
 			return discordgo.File{}, errors.New("Error creating directory")
 		}
 
-		fName := hash(prompt);
-		fileName := fmt.Sprintf("images/%s.jpg", fName)
+		fileName := fmt.Sprintf("images/%s.jpg", stripPunctuation(prompt))
+
+		fmt.Printf("%s", fileName)
+
 		response, err := http.Get(openAIResponse.Data[0].URL)
 		if err != nil {
 			panic(err)
@@ -78,6 +79,7 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 		// Copy the image data to the file
 		_, err = io.Copy(file, response.Body)
 		if err != nil {
+			fmt.Println("here")
 			panic(err)
 		}
 
@@ -97,8 +99,18 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 	}
 }
 
-func hash(s string) string {
-	h := fnv.New32a()
-	h.Write([]byte(s))
-	return strconv.FormatUint(uint64(h.Sum32()), 10)
+func stripPunctuation(str string) string {
+	re := regexp.MustCompile(`[[:punct:]]`)
+	return re.ReplaceAllString(str, "")
+}
+
+func createDirectoryIfNotExists(path string) error {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(path, 0755)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
