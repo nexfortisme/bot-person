@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -58,7 +60,8 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 			return discordgo.File{}, errors.New("Error creating directory")
 		}
 
-		fileName := fmt.Sprintf("images/%s.jpg", prompt)
+		fName := hash(prompt);
+		fileName := fmt.Sprintf("images/%s.jpg", fName)
 		response, err := http.Get(openAIResponse.Data[0].URL)
 		if err != nil {
 			panic(err)
@@ -92,4 +95,10 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 
 		return *fileObj, nil
 	}
+}
+
+func hash(s string) string {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return strconv.FormatUint(uint64(h.Sum32()), 10)
 }
