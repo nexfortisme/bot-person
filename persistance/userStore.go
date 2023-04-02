@@ -42,7 +42,5 @@ func getNewUser(userId string, messageCount int, goodBotCount int, badBotCount i
 }
 
 func GetUserStats() []UserStruct {
-	return botTracking.UserStats;
+	return botTracking.UserStats
 }
-
-// TODO - Delete User Function
