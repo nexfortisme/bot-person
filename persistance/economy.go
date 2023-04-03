@@ -314,22 +314,22 @@ func AddStock(userId string, stockTicker string, quantity float64) error {
 		return err
 	}
 
-	userPortforlio := user.UserStats.Stocks;
+	userPortforlio := user.UserStats.Stocks
 
-	for _, element := range userPortforlio {
+	for index, element := range userPortforlio {
 		if element.StockTicker == stockTicker {
 			element.StockCount += quantity
-			user.UserStats.Stocks = userPortforlio
+			userPortforlio[index] = element
 			updateUser(user)
 			return nil
 		}
 	}
 
-	newStock := UserStock{stockTicker, quantity};
-	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock);
+	newStock := UserStock{stockTicker, quantity}
+	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock)
 	updateUser(user)
 
-	return nil;
+	return nil
 }
 
 func RemoveStock(userId string, stockTicker string, quantity float64) error {
@@ -340,13 +340,12 @@ func RemoveStock(userId string, stockTicker string, quantity float64) error {
 		return err
 	}
 
-	userPortforlio := user.UserStats.Stocks;
+	userPortforlio := user.UserStats.Stocks
 
 	for index, element := range userPortforlio {
 		if element.StockTicker == stockTicker {
 			element.StockCount -= quantity
 			userPortforlio[index] = element
-			user.UserStats.Stocks = userPortforlio
 			updateUser(user)
 			return nil
 		}
@@ -363,7 +362,7 @@ func GetUserStock(userId string, stockTicker string) (UserStock, error) {
 		return UserStock{}, err
 	}
 
-	userPortforlio := user.UserStats.Stocks;
+	userPortforlio := user.UserStats.Stocks
 
 	for _, element := range userPortforlio {
 		if element.StockTicker == stockTicker {
@@ -374,4 +373,3 @@ func GetUserStock(userId string, stockTicker string) (UserStock, error) {
 	return UserStock{}, errors.New("stock not found")
 
 }
-
