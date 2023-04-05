@@ -40,7 +40,7 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 	var openAIResponse DalleResponse
 	err = json.Unmarshal([]byte(string(responseBuffer)), &openAIResponse)
 	if err != nil {
-		return discordgo.File{}, errors.New("Error Parsing Response")
+		return discordgo.File{}, errors.New("error Parsing Response")
 	}
 
 	// It's possible that OpenAI returns no response, so
@@ -52,7 +52,7 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 		err = createDirectoryIfNotExists("img")
 		if err != nil {
 			fmt.Println("Error creating directory:", err)
-			return discordgo.File{}, errors.New("Error creating directory")
+			return discordgo.File{}, errors.New("error creating directory")
 		}
 
 		path := filepath.Join("img", fmt.Sprintf("%s.jpg", removePunctuation(prompt)))
@@ -77,9 +77,13 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 		}
 
 		reader, err := os.Open(path)
+		if err != nil {
+			return discordgo.File{}, errors.New("error opening file")
+		}
+
 		fileInfo, err := reader.Stat()
 		if err != nil {
-			return discordgo.File{}, errors.New("Error creating file")
+			return discordgo.File{}, errors.New("error creating file")
 		}
 
 		fileObj := &discordgo.File{

@@ -26,7 +26,6 @@ func GetOpenAIResponse(prompt string, openAIKey string) string {
 	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/completions", strings.NewReader(data))
 	if err != nil {
 		logging.LogError("Error creating POST request")
-		// log.Fatalf("Error creating POST request")
 	}
 
 	req.Header.Add("Content-Type", "application/json")
