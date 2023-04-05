@@ -2,9 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"main/messages"
+	"main/external"
 	"main/persistance"
-	"main/util"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -50,7 +49,7 @@ func Image(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 
 		// Going out to make the OpenAI call to get the proper response
-		returnFile, err := messages.GetDalleResponseSlashCommand(s, option.StringValue(), util.GetOpenAIKey())
+		returnFile, err := ParseDalleRequest(s, option.StringValue())
 
 		if err != nil {
 
@@ -86,4 +85,14 @@ func Image(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 	}
+}
+
+func ParseDalleRequest(s *discordgo.Session, prompt string) (discordgo.File, error) {
+	dalleResponse, err := external.GetDalleResponse(prompt)
+
+	if err != nil {
+		return discordgo.File{}, err
+	}
+
+	return dalleResponse, nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"main/logging"
+	"main/util"
 	"net/http"
 	"strings"
 )
@@ -13,7 +14,7 @@ var (
 	model = "gpt-4"
 )
 
-func GetOpenAIGPTResponse(prompt string, openAIKey string) string {
+func GetOpenAIGPTResponse(prompt string) string {
 	client := &http.Client{}
 
 	dataTemplate := `{
@@ -29,7 +30,7 @@ func GetOpenAIGPTResponse(prompt string, openAIKey string) string {
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+openAIKey)
+	req.Header.Add("Authorization", "Bearer "+util.GetOpenAIKey())
 
 	resp, _ := client.Do(req)
 	if resp == nil {

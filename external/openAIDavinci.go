@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"io"
 	"main/logging"
+	"main/util"
 	"net/http"
 	"strings"
 )
 
-func GetOpenAIResponse(prompt string, openAIKey string) string {
+func GetOpenAIResponse(prompt string) string {
 	client := &http.Client{}
 
 	dataTemplate := `{
@@ -29,7 +30,7 @@ func GetOpenAIResponse(prompt string, openAIKey string) string {
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+openAIKey)
+	req.Header.Add("Authorization", "Bearer "+util.GetOpenAIKey())
 
 	resp, _ := client.Do(req)
 
@@ -54,4 +55,3 @@ func GetOpenAIResponse(prompt string, openAIKey string) string {
 		return rspOAI.Choices[0].Text
 	}
 }
-

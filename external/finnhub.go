@@ -3,16 +3,17 @@ package external
 import (
 	"context"
 	"errors"
+	"main/util"
 
 	finnhub "github.com/Finnhub-Stock-API/finnhub-go/v2"
 )
 
-func GetStockData(ticker string, apiKey string) (float32, error) {
+func GetStockData(ticker string) (float32, error) {
 
 	// I don't like reinitializing this every time its called but it will stay for now
 	// TODO - Find a better way to do this
 	cfg := finnhub.NewConfiguration()
-	cfg.AddDefaultHeader("X-Finnhub-Token", apiKey)
+	cfg.AddDefaultHeader("X-Finnhub-Token", util.GetFinHubToken())
 	finnhubClient := finnhub.NewAPIClient(cfg).DefaultApi
 
 	// Quote

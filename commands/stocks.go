@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"main/messages/external"
+	"main/external"
 	"main/persistance"
 	"main/util"
 
@@ -42,7 +42,7 @@ func Stocks(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	// Getting the current price of the stock
-	currentPrice, err := external.GetStockData(stockTicker, util.GetFinHubToken())
+	currentPrice, err := external.GetStockData(stockTicker)
 	currentPriceF64 := util.LowerFloatPrecision(float64(currentPrice))
 
 	// error with either the stock ticker or the API

@@ -1,7 +1,7 @@
 package messages
 
 import (
-	"main/messages/external"
+	"main/external"
 	"main/persistance"
 	"main/util"
 	"strconv"
@@ -108,36 +108,13 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey st
 	msg := util.ReplaceIDsWithNames(m, s)
 
 	persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *m.Author)
-	respTxt := external.GetOpenAIResponse(msg, openAIKey)
+	respTxt := external.GetOpenAIResponse(msg)
 
 	if mentionsKeyphrase(m) {
 		s.ChannelMessageSend(m.ChannelID, "!bot is deprecated. Please at the bot or use /bot for further interactions")
 	}
 	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
 	util.HandleErrors(err)
-}
-
-func ParseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
-	respTxt := external.GetOpenAIResponse(prompt, openAIKey)
-	respTxt = "Request: " + prompt + " " + respTxt
-	return respTxt
-}
-
-func ParseGPTSlashCommand(s *discordgo.Session, prompt string, openAIKey string) string {
-	respTxt := external.GetOpenAIGPTResponse(prompt, openAIKey)
-	respTxt = "Request: " + prompt + " " + respTxt
-	return respTxt
-}
-
-// TODO - Rename, I don't like this
-func GetDalleResponseSlashCommand(s *discordgo.Session, prompt string, openAIKey string) (discordgo.File, error) {
-	dalleResponse, err := external.GetDalleResponse(prompt, openAIKey)
-
-	if err != nil {
-		return discordgo.File{}, err
-	}
-
-	return dalleResponse, nil
 }
 
 func mentionsKeyphrase(m *discordgo.MessageCreate) bool {

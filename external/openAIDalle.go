@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"main/util"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,7 +14,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
+func GetDalleResponse(prompt string) (discordgo.File, error) {
 	httpClient := &http.Client{}
 
 	requestDataTemplate := `{
@@ -29,7 +30,7 @@ func GetDalleResponse(prompt string, openAIKey string) (discordgo.File, error) {
 	}
 
 	postRequest.Header.Add("Content-Type", "application/json")
-	postRequest.Header.Add("Authorization", "Bearer "+openAIKey)
+	postRequest.Header.Add("Authorization", "Bearer "+util.GetOpenAIKey())
 
 	httpResponse, _ := httpClient.Do(postRequest)
 	if httpResponse == nil {

@@ -1,9 +1,8 @@
 package commands
 
 import (
-	"main/messages"
+	"main/external"
 	"main/persistance"
-	"main/util"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -36,7 +35,7 @@ func Bot(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 
 		// Going out to make the OpenAI call to get the proper response
-		botResponseString = messages.ParseSlashCommand(s, option.StringValue(), util.GetOpenAIKey())
+		botResponseString = ParseSlashCommand(s, option.StringValue())
 
 		// Incrementint interaciton counter
 		persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *i.Interaction.Member.User)
@@ -54,4 +53,10 @@ func Bot(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 	}
+}
+
+func ParseSlashCommand(s *discordgo.Session, prompt string) string {
+	respTxt := external.GetOpenAIResponse(prompt)
+	respTxt = "Request: " + prompt + " " + respTxt
+	return respTxt
 }
