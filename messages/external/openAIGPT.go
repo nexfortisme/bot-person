@@ -9,37 +9,35 @@ import (
 	"strings"
 )
 
-func GetOpenAIResponse(prompt string, openAIKey string) string {
+var (
+	model = "gpt-4"
+)
+
+func GetOpenAIGPTResponse(prompt string, openAIKey string) string {
 	client := &http.Client{}
 
 	dataTemplate := `{
-		"model": "text-davinci-003",
-		"prompt": "%s",
-		"temperature": 0.7,
-		"max_tokens": 256,
-		"top_p": 1,
-		"frequency_penalty": 0,
-		"presence_penalty": 0
-	  }`
-	data := fmt.Sprintf(dataTemplate, prompt)
+		"model": "%s",
+		"messages": [{"role": "user", "content": "%s"}]
+	}`
 
-	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/completions", strings.NewReader(data))
+	data := fmt.Sprintf(dataTemplate, model, prompt)
+
+	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", strings.NewReader(data))
 	if err != nil {
 		logging.LogError("Error creating POST request")
-		// log.Fatalf("Error creating POST request")
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+openAIKey)
 
 	resp, _ := client.Do(req)
-
 	if resp == nil {
 		return "Error Contacting OpenAI API. Please Try Again Later."
 	}
 
 	buf, _ := io.ReadAll(resp.Body)
-	var rspOAI OpenAIResponse
+	rspOAI := OpenAIGPTResponse{}
 	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
 	// need to add proper error handling
 	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
@@ -52,7 +50,14 @@ func GetOpenAIResponse(prompt string, openAIKey string) string {
 	if len(rspOAI.Choices) == 0 {
 		return "I'm sorry, I don't understand?"
 	} else {
-		return rspOAI.Choices[0].Text
+		return rspOAI.Choices[0].Message.Content
 	}
 }
 
+func SetGPT4() {
+	model = "gpt-4"
+}
+
+func SetGPT3() {
+	model = "gpt-3.5-turbo-0301"
+}
