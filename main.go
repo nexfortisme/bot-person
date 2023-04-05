@@ -284,7 +284,7 @@ func main() {
 			log.Fatal("Error connecting bot to server")
 		}
 	} else {
-		discordSession, err = discordgo.New("Bot " + util.GetDevDiscordToken())
+		discordSession, err = discordgo.New("Bot " + util.GetDiscordToken())
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
 		}
