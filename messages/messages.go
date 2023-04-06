@@ -10,7 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate, openAIKey string) {
+func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Ignoring messages from self
 	if m.Author.ID == s.State.User.ID {

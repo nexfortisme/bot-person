@@ -2,10 +2,10 @@ package external
 
 // The outer structure of the response from OpenAI
 type OpenAIGPTResponse struct {
-	ID      string         `json:"id"`
-	Object  string         `json:"object"`
-	Created int64          `json:"created"`
-	Model   string         `json:"model"`
+	ID      string            `json:"id"`
+	Object  string            `json:"object"`
+	Created int64             `json:"created"`
+	Model   string            `json:"model"`
 	Usage   OpenAIGPTUsage    `json:"usage"`
 	Choices []OpenAIGPTChoice `json:"choices"`
 }
@@ -14,9 +14,9 @@ type OpenAIGPTResponse struct {
 // contains zero or more completions based on the provided
 // prompt
 type OpenAIGPTChoice struct {
-	Index         int           `json:"index"`
+	Index         int              `json:"index"`
 	Message       OpenAIGPTMessage `json:"message"`
-	Finish_Reason string        `json:"finish_reason"`
+	Finish_Reason string           `json:"finish_reason"`
 }
 
 type OpenAIGPTUsage struct {

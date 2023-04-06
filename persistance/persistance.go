@@ -40,7 +40,12 @@ func ReadBotStatistics() {
 
 func quickReadStats() {
 	var trackingFile []byte
+	
 	trackingFile, err := ioutil.ReadFile("botTracking.json")
+	if err != nil {
+		log.Fatalf("Could Read: botTracking.json")
+	}
+
 	err = json.Unmarshal(trackingFile, &tempTracking)
 	if err != nil {
 		log.Fatalf("Could not parse: botTracking.json")

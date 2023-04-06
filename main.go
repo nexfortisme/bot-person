@@ -194,10 +194,10 @@ var (
 				},
 			},
 		},
-		// {
-		// 	Name:        "portfolio",
-		// 	Description: "View your portfolio of stocks.",
-		// },
+		{
+			Name:        "portfolio",
+			Description: "View your portfolio of stocks.",
+		},
 		/*
 			Todo:
 				headsOrTails
@@ -227,6 +227,7 @@ var (
 		"broken":    commands.Broken,
 		"burn":      commands.Burn,
 		"stocks":    commands.Stocks,
+		"portfolio": commands.Portfolio,
 	}
 )
 
@@ -329,7 +330,7 @@ func main() {
 }
 
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
-	messages.ParseMessage(s, m, util.GetOpenAIKey())
+	messages.ParseMessage(s, m)
 }
 
 func registerSlashCommands(s *discordgo.Session) {

@@ -39,11 +39,17 @@ func SlashGetUserStats(user discordgo.User) string {
 	if err != nil {
 		return "Sorry, you don't have any recorded interactions with the bot."
 	} else {
-		return fmt.Sprintf("You have interacted with the bot %d times.\nYou praised the bot %d times and scolded the bot %d times.\nYou have requested %d images.\nYour current bonus streak is %d.\n%s", bpUser.UserStats.MessageCount, bpUser.UserStats.GoodBotCount, bpUser.UserStats.BadBotCount, bpUser.UserStats.ImageCount, bpUser.UserStats.BonusStreak, PrintUserStocks(bpUser))
+		return fmt.Sprintf("You have interacted with the bot %d times.\nYou praised the bot %d times and scolded the bot %d times.\nYou have requested %d images.\nYour current bonus streak is %d.\n%s", bpUser.UserStats.MessageCount, bpUser.UserStats.GoodBotCount, bpUser.UserStats.BadBotCount, bpUser.UserStats.ImageCount, bpUser.UserStats.BonusStreak, printUserStocks(bpUser))
 	}
 }
 
-func PrintUserStocks(user UserStruct) string {
+func printUserStocks(user UserStruct) string {
+
+	fmt.Printf("User: %v\n", user)
+
+	if len(user.UserStats.Stocks) == 0 {
+		return "You don't have any stocks."
+	}
 
 	retString := "You have the following stocks:\n"
 
@@ -129,4 +135,15 @@ func handleUserStatIncrementing(flag BPInteraction, userId string) bool {
 
 	updateUser(incrementUser)
 	return true
+}
+
+func PrintUSerStocksHelper(user discordgo.User) (string, error) {
+	userStruct, err := getUser(user.ID)
+
+	if err != nil {
+		log.Println("Error getting user: " + err.Error())
+		return "", err
+	}
+
+	return printUserStocks(userStruct), nil
 }
