@@ -45,8 +45,6 @@ func SlashGetUserStats(user discordgo.User) string {
 
 func printUserStocks(user UserStruct) string {
 
-	fmt.Printf("User: %v\n", user)
-
 	if len(user.UserStats.Stocks) == 0 {
 		return "You don't have any stocks."
 	}
