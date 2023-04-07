@@ -2,7 +2,6 @@ package persistance
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 )
@@ -17,13 +16,13 @@ func ReadBotStatistics() {
 	log.Println("Reading botTracking.json...")
 
 	var trackingFile []byte
-	trackingFile, err := ioutil.ReadFile("botTracking.json")
+	trackingFile, err := os.ReadFile("botTracking.json")
 	if err != nil {
 
 		log.Printf("Error Reading botTracking. Creating File")
 		os.WriteFile("botTracking.json", []byte("{\"BadBotCount\":0,\"MessageCount\":0, \"UserStats\":[]}"), 0666)
 
-		trackingFile, err = ioutil.ReadFile("botTracking.json")
+		trackingFile, err = os.ReadFile("botTracking.json")
 		if err != nil {
 			log.Fatalf("Could not read config file: botTracking.json")
 		}
@@ -40,8 +39,8 @@ func ReadBotStatistics() {
 
 func quickReadStats() {
 	var trackingFile []byte
-	
-	trackingFile, err := ioutil.ReadFile("botTracking.json")
+
+	trackingFile, err := os.ReadFile("botTracking.json")
 	if err != nil {
 		log.Fatalf("Could Read: botTracking.json")
 	}

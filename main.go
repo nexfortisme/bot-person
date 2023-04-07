@@ -198,6 +198,10 @@ var (
 			Name:        "portfolio",
 			Description: "View your portfolio of stocks.",
 		},
+		{
+			Name:        "invite",
+			Description: "Get an invite link to invite Bot Person to your server.",
+		},
 		/*
 			Todo:
 				headsOrTails
@@ -206,8 +210,10 @@ var (
 					Same as the previous gamble
 				economy
 					A way to see the status of the bot person economy
-				invite
-					Generate an invite link for the bot that is specific to whatever token is being used for the bot
+				leaderboard
+					A way to see the top 10 users with the most tokens
+				Streaks
+					A way to see the top 10 users with the longest streaks
 		*/
 	}
 
@@ -228,6 +234,7 @@ var (
 		"burn":      commands.Burn,
 		"stocks":    commands.Stocks,
 		"portfolio": commands.Portfolio,
+		"invite":    commands.Invite,
 	}
 )
 
