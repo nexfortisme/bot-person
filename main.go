@@ -202,6 +202,28 @@ var (
 			Name:        "invite",
 			Description: "Get an invite link to invite Bot Person to your server.",
 		},
+		{
+			Name:        "leaderboard",
+			Description: "See the top 10 users with the most tokens or with the longest streak.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "action",
+					Description: "Which leaderboard you want to see",
+					Type:        discordgo.ApplicationCommandOptionString,
+					Choices: []*discordgo.ApplicationCommandOptionChoice{
+						{
+							Name:  "Tokens",
+							Value: "tokens",
+						},
+						{
+							Name:  "Streaks",
+							Value: "streaks",
+						},
+					},
+					Required: true,
+				},
+			},
+		},
 		/*
 			Todo:
 				headsOrTails
@@ -210,10 +232,6 @@ var (
 					Same as the previous gamble
 				economy
 					A way to see the status of the bot person economy
-				leaderboard
-					A way to see the top 10 users with the most tokens
-				Streaks
-					A way to see the top 10 users with the longest streaks
 		*/
 	}
 
