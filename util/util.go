@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+	"errors"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -97,4 +100,58 @@ func CleanUpImages(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	time.AfterFunc(time.Hour*8, func() {
 		s.InteractionResponseDelete(i.Interaction)
 	})
+}
+
+func CheckImageFolder() error {
+
+	folderPath := "img"
+	maxSize := 250 * 1024 * 1024 // 250MB in bytes
+
+	folderSize, err := getFolderSize(folderPath)
+	if err != nil {
+		fmt.Println("Error getting folder size:", err)
+		return errors.New("error getting folder size")
+	}
+	fmt.Printf("Folder size: %d bytes\n", folderSize)
+
+	if folderSize > int64(maxSize) {
+		err := deleteFolderContents(folderPath)
+		if err != nil {
+			fmt.Println("Error deleting folder contents:", err)
+			return errors.New("error deleting folder contents")
+		}
+		fmt.Println("Folder contents deleted.")
+	}
+
+	return nil
+}
+
+func getFolderSize(path string) (int64, error) {
+	var size int64
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			size += info.Size()
+		}
+		return nil
+	})
+	return size, err
+}
+
+func deleteFolderContents(path string) error {
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			err := os.Remove(path)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return err
 }

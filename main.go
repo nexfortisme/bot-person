@@ -252,6 +252,7 @@ func main() {
 	persistance.ReadBotStatistics()
 
 	fiveMinuteTicker := time.NewTicker(5 * time.Minute)
+	oneDayTicker := time.NewTicker(24 * time.Hour)
 
 	logFile, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -326,6 +327,8 @@ func main() {
 		select {
 		case <-fiveMinuteTicker.C:
 			saveBotStatistics()
+		case <-oneDayTicker.C:
+			util.CheckImageFolder()
 		case <-interrupt:
 			fmt.Println("Interrupt received, stopping...")
 			fiveMinuteTicker.Stop()
