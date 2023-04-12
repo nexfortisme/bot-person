@@ -168,8 +168,26 @@ func GetUserReward(userId string) (float64, string, error) {
 
 		// Missed Window
 		if timeWindowDiff > 0 {
-			returnString = fmt.Sprintf("Bonus Not Redeemed within 24 hours. Streak Reset. \nCurrent Streak: %d", 1)
-			user.UserStats.BonusStreak = 1
+
+			if (user.UserStats.HoldStreakTimer != time.Time{}) {
+				returnString = fmt.Sprintf("Streak Not Saved in time.. Streak Reset. \nCurrent Streak: %d", 1)
+				user.UserStats.BonusStreak = 1
+				user.UserStats.HoldStreakTimer = time.Time{}
+			} else {
+
+				inFiveMinutes := time.Now().Add(time.Minute * 5).Unix();
+
+				returnString = fmt.Sprintf("Bonus Not Redeemed within 24 hours. To save your streak, use `/saveStreak` <t:%d:R>. `/saveStreak` will use a save token or purchase one for 1/2 of your current tokens. \nCurrent Streak: %d", inFiveMinutes, user.UserStats.BonusStreak)
+
+				user.UserStats.HoldStreakTimer = time.Now();
+	
+				if !updateUser(user) {
+					return -1, "", errors.New("error updating user record")
+				} else {
+					return -1, returnString, nil
+				}
+			}
+
 		} else {
 			user.UserStats.BonusStreak++
 			streak := user.UserStats.BonusStreak
@@ -212,6 +230,10 @@ func GetUserReward(userId string) (float64, string, error) {
 	} else {
 		return finalReward, returnString, nil
 	}
+
+}
+
+func SaveUserStreak(userId string){
 
 }
 

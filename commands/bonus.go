@@ -17,9 +17,14 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if err != nil {
 		bonusReturnMessage = err.Error()
 	} else {
-		if returnMessage != "" {
+
+		if bonusReward == -1 {
+			bonusReturnMessage = returnMessage
+		}
+
+		if returnMessage != "" && bonusReward != -1 {
 			bonusReturnMessage = fmt.Sprintf("%s \nCongrats! You are awarded %.2f tokens", returnMessage, bonusReward)
-		} else {
+		} else if returnMessage == "" && bonusReward != -1 {
 			bonusReturnMessage = fmt.Sprintf("Congrats! You are awarded %.2f tokens", bonusReward)
 		}
 	}

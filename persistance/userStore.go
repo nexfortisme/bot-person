@@ -38,11 +38,34 @@ func createAndAddUser(userId string, messageCount int, goodBotCount int, badBotC
 }
 
 func getNewUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) UserStruct {
-	return UserStruct{userId, UserStatsStruct{messageCount, goodBotCount, badBotCount, imageCount, imageTokens, time.Time{}, 0, []UserStock{}}}
+
+	newUser := UserStruct{userId, UserStatsStruct{messageCount, goodBotCount, badBotCount, imageCount, imageTokens, time.Time{}, 0, time.Time{}, 0, []UserStock{}}}
+
+	return newUser
 }
 
-func GetUserStats() []UserStruct {
-	return botTracking.UserStats;
+func GetUserStats(userId string) (UserStatsStruct, error) {
+
+	user, err := getUser(userId)
+
+	if err != nil {
+		return UserStatsStruct{}, err
+	}
+
+	return user.UserStats, nil
+}
+
+func UpdateUserStats(userId string, stats UserStatsStruct) bool {
+
+	user, err := getUser(userId)
+
+	if err != nil {
+		return false
+	}
+
+	user.UserStats = stats
+
+	return updateUser(user)
 }
 
 // TODO - Delete User Function

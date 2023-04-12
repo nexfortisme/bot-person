@@ -202,6 +202,50 @@ var (
 			Name:        "invite",
 			Description: "Get an invite link to invite Bot Person to your server.",
 		},
+		{
+			Name:        "save-streak",
+			Description: "Save your streak with an save streak token or purchase one for 1/2 of your current tokens",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "action",
+					Description: "Action you want to complete",
+					Type:        discordgo.ApplicationCommandOptionString,
+					Choices: []*discordgo.ApplicationCommandOptionChoice{
+						{
+							Name:  "Use",
+							Value: "use",
+						},
+						{
+							Name:  "Buy",
+							Value: "buy",
+						},
+					},
+					Required: true,
+				},
+			},
+		},
+		{
+			Name:        "store",
+			Description: "Pre-purchase your save streak tokens here. And more to come!",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "item",
+					Description: "The item you wish to purchase",
+					Type:        discordgo.ApplicationCommandOptionString,
+					Choices: []*discordgo.ApplicationCommandOptionChoice{
+						{
+							Name:  "Help",
+							Value: "help",
+						},
+						{
+							Name:  "Save Streak Token",
+							Value: "save-streak-token",
+						},
+					},
+					Required: true,
+				},
+			},
+		},
 		/*
 			Todo:
 				headsOrTails
@@ -218,23 +262,25 @@ var (
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"bot":       commands.Bot,
-		"bot-gpt":   commands.BotGPT,
-		"my-stats":  commands.MyStats,
-		"bot-stats": commands.BotStats,
-		"about":     commands.About,
-		"donations": commands.Donations,
-		"help":      commands.Help,
-		"image":     commands.Image,
-		"balance":   commands.Balance,
-		"send":      commands.Send,
-		"bonus":     commands.Bonus,
-		"lootbox":   commands.Lootbox,
-		"broken":    commands.Broken,
-		"burn":      commands.Burn,
-		"stocks":    commands.Stocks,
-		"portfolio": commands.Portfolio,
-		"invite":    commands.Invite,
+		"bot":         commands.Bot,
+		"bot-gpt":     commands.BotGPT,
+		"my-stats":    commands.MyStats,
+		"bot-stats":   commands.BotStats,
+		"about":       commands.About,
+		"donations":   commands.Donations,
+		"help":        commands.Help,
+		"image":       commands.Image,
+		"balance":     commands.Balance,
+		"send":        commands.Send,
+		"bonus":       commands.Bonus,
+		"lootbox":     commands.Lootbox,
+		"broken":      commands.Broken,
+		"burn":        commands.Burn,
+		"stocks":      commands.Stocks,
+		"portfolio":   commands.Portfolio,
+		"invite":      commands.Invite,
+		"save-streak": commands.SaveStreak,
+		"store":       commands.Store,
 	}
 )
 
