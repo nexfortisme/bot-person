@@ -58,6 +58,8 @@ func SaveStreak(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// User timed out on saving streak. Reset the streak
 	if diff.Seconds() >= 300 {
 
+		// TODO - Break out this functionality into Util
+
 		// Setting random seed and generating a, value safe, token amount
 		randomizer := rand.New(rand.NewSource(time.Now().UnixMilli()))
 		reward := randomizer.Intn(45) + 5
@@ -170,6 +172,7 @@ func SaveStreak(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		user.BonusStreak++
 		streak := user.BonusStreak
 
+		// TODO - Break out this functionality into Util
 		if streak%10 == 0 && streak%100 != 0 && streak%50 != 0 {
 			returnString = fmt.Sprintf("Congrats on keeping the streak alive. Current Streak: %d. Bonus Modifier: 2x", streak)
 			modifier = 2

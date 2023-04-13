@@ -255,7 +255,7 @@ var (
 				economy
 					A way to see the status of the bot person economy
 				leaderboard
-					A way to see the top 10 users with the most tokens
+					A way to see the top 10 users with the most tokens				
 				Streaks
 					A way to see the top 10 users with the longest streaks
 		*/
