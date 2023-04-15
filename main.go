@@ -40,7 +40,7 @@ var (
 	slashCommands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "bot",
-			Description: "A command to ask the bot for a reposne from their infinite wisdom.",
+			Description: "A command to ask the bot for a response from their infinite wisdom.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
@@ -81,6 +81,88 @@ var (
 		{
 			Name:        "help",
 			Description: "List of commands to use with Bot Person.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "command",
+					Description: "Which command you want to get help with.",
+					Type:        discordgo.ApplicationCommandOptionString,
+					Choices: []*discordgo.ApplicationCommandOptionChoice{
+						{
+							Name:  "Bot",
+							Value: "bot",
+						},
+						{
+							Name:  "Bot GPT",
+							Value: "bot-gpt",
+						},
+						{
+							Name:  "My Stats",
+							Value: "my-stats",
+						},
+						{
+							Name:  "Bot Stats",
+							Value: "bot-stats",
+						},
+						{
+							Name:  "About",
+							Value: "about",
+						},
+						{
+							Name:  "Donations",
+							Value: "donations",
+						},
+						{
+							Name:  "Images",
+							Value: "images",
+						},
+						{
+							Name:  "Balance",
+							Value: "balance",
+						},
+						{
+							Name:  "Send",
+							Value: "send",
+						},
+						{
+							Name:  "Bonus",
+							Value: "bonus",
+						},
+						{
+							Name:  "Loot Box",
+							Value: "loot-box",
+						},
+						{
+							Name:  "Broken",
+							Value: "broken",
+						},
+						{
+							Name:  "Burn",
+							Value: "burn",
+						},
+						{
+							Name:  "Stocks",
+							Value: "stocks",
+						},
+						{
+							Name:  "Portfolio",
+							Value: "portfolio",
+						},
+						{
+							Name:  "Invite",
+							Value: "invite",
+						},
+						{
+							Name:  "Save Streak",
+							Value: "save-streak",
+						},
+						{
+							Name:  "Store",
+							Value: "store",
+						},
+					},
+					Required: false,
+				},
+			},
 		},
 		{
 			Name:        "image",
@@ -139,7 +221,7 @@ var (
 			Description: "Use this command every 24 hours for a small bundle of tokens",
 		},
 		{
-			Name:        "lootbox",
+			Name:        "loot-box",
 			Description: "Spend 2.5 tokens to get an RNG box",
 		},
 		{
@@ -273,7 +355,7 @@ var (
 		"balance":     commands.Balance,
 		"send":        commands.Send,
 		"bonus":       commands.Bonus,
-		"lootbox":     commands.Lootbox,
+		"loot-box":    commands.Lootbox,
 		"broken":      commands.Broken,
 		"burn":        commands.Burn,
 		"stocks":      commands.Stocks,
@@ -289,7 +371,7 @@ func main() {
 	// https://gobyexample.com/command-line-flags
 	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
 	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
-	flag.BoolVar(&disableLogging, "diableLogging", false, "Flag for disabling file logging of commands passed into bot person")
+	flag.BoolVar(&disableLogging, "disableLogging", false, "Flag for disabling file logging of commands passed into bot person")
 	flag.BoolVar(&disableTracking, "disableTracking", false, "Flag for disabling tracking of user interactions and bad bot messages")
 	flag.BoolVar(&skipCmdReg, "skipCmdReg", false, "Flag for disabling registering of commands on startup")
 	flag.Parse()

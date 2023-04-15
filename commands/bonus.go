@@ -20,7 +20,7 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// If there is an error, then use the message from the error.
 	if err != nil {
 		bonusReturnMessage = err.Error()
-	} else {                     // If there is no error, then use the message from the returnMessage.
+	} else { // If there is no error, then use the message from the returnMessage.
 		if returnMessage != "" { // If there is a returnMessage, then append the bonusReward to the returnMessage.
 			bonusReturnMessage = fmt.Sprintf("%s \nCongrats! You are awarded %.2f tokens", returnMessage, bonusReward)
 		} else if returnMessage == "" { // If there is no returnMessage, then just return the bonusReward.

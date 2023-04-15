@@ -88,30 +88,6 @@ func GetBadBotResponse() string {
 	return badBotResponses[rand.Intn(len(badBotResponses))]
 }
 
-//func GetStreakBonus(userStats persistance.UserStatsStruct) (string, float64, error) {
-//
-//	var returnString string
-//	var modifier int
-//
-//	userStats.BonusStreak++
-//	streak := userStats.BonusStreak
-//
-//	returnString, modifier = GetStreakStringAndModifier(streak)
-//
-//	// Setting random seed and generating a, value safe, token amount
-//	randomizer := rand.New(rand.NewSource(time.Now().UnixMilli()))
-//	reward := randomizer.Intn(45) + 5
-//	reward *= modifier
-//	rewardf64 := float64(reward) / 10.0
-//	finalReward := LowerFloatPrecision(rewardf64)
-//
-//	// Updating User Record
-//	userStats.LastBonus = time.Now()
-//	userStats.ImageTokens += finalReward
-//
-//	return "", -1, nil
-//}
-
 func GetStreakStringAndModifier(streak int) (string, int) {
 
 	var returnString string
