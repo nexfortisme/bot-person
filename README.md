@@ -52,3 +52,7 @@ If an existing `config.json` doesn't exist, the command line will prompt you for
   - Have the Admins be configurable in the config.json, also, instead of being hard coded
 - Shop Improvements
   - Have users be able to purchase various items that can go up and down in price every x number of minutes/hours
+- Better Documentation
+  - Have the `/help` command offer better information about what each command is doing
+  - More detailed examples to show how commands are used
+  - Examples of how data is being stored in the `botTracking.json` file
