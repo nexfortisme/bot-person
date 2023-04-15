@@ -255,7 +255,7 @@ var (
 				economy
 					A way to see the status of the bot person economy
 				leaderboard
-					A way to see the top 10 users with the most tokens				
+					A way to see the top 10 users with the most tokens
 				Streaks
 					A way to see the top 10 users with the longest streaks
 		*/
@@ -344,12 +344,26 @@ func main() {
 		}
 	}
 
+	if util.GetFinHubToken() == "" {
+		log.Println("FinnHub Key not set, please enter your key: ")
+
+		createdConfig = true
+		reader := bufio.NewReader(os.Stdin)
+		newFinnHubToken, _ := reader.ReadString('\n')
+		newFinnHubToken = strings.TrimSuffix(newFinnHubToken, "\r\n")
+
+		util.SetFinnHubToken(newFinnHubToken)
+
+		log.Println("Finn Hub Token Set to: '" + util.GetFinHubToken() + "'")
+	}
+
+	// Adding a simple message handler
+	// Mostly used for "!" commands
 	discordSession.AddHandler(messageReceive)
 
 	err = discordSession.Open()
 	if err != nil {
-		log.Fatal("Error opening bot websocket")
-		log.Fatal(err.Error())
+		log.Fatal("Error opening bot websocket. " + err.Error())
 	}
 
 	if removeCommands {

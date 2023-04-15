@@ -2,13 +2,12 @@ package util
 
 import (
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"log"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/bwmarrin/discordgo"
 )
 
 func HandleErrors(err error) {
@@ -89,12 +88,63 @@ func GetBadBotResponse() string {
 	return badBotResponses[rand.Intn(len(badBotResponses))]
 }
 
-func CleanUpImages(s *discordgo.Session, i *discordgo.InteractionCreate) {
+//func GetStreakBonus(userStats persistance.UserStatsStruct) (string, float64, error) {
+//
+//	var returnString string
+//	var modifier int
+//
+//	userStats.BonusStreak++
+//	streak := userStats.BonusStreak
+//
+//	returnString, modifier = GetStreakStringAndModifier(streak)
+//
+//	// Setting random seed and generating a, value safe, token amount
+//	randomizer := rand.New(rand.NewSource(time.Now().UnixMilli()))
+//	reward := randomizer.Intn(45) + 5
+//	reward *= modifier
+//	rewardf64 := float64(reward) / 10.0
+//	finalReward := LowerFloatPrecision(rewardf64)
+//
+//	// Updating User Record
+//	userStats.LastBonus = time.Now()
+//	userStats.ImageTokens += finalReward
+//
+//	return "", -1, nil
+//}
 
-	// time.Sleep(time.Hour * 8);
-	// i.Interaction.Intre
+func GetStreakStringAndModifier(streak int) (string, int) {
 
-	time.AfterFunc(time.Hour*8, func() {
-		s.InteractionResponseDelete(i.Interaction)
-	})
+	var returnString string
+	var modifier int
+
+	if streak%10 == 0 && streak%100 != 0 && streak%50 != 0 {
+		returnString = fmt.Sprintf("Congrats on keeping the streak alive. Current Streak: %d. Bonus Modifier: 2x", streak)
+		modifier = 2
+	} else if streak%25 == 0 && streak%50 != 0 && streak%100 != 0 {
+		returnString = fmt.Sprintf("Great work on keeping the streak alive! Current Streak: %d. Bonus Modifier: 5x", streak)
+		modifier = 5
+	} else if streak%50 == 0 && streak%100 != 0 {
+		returnString = fmt.Sprintf("Wow! That's a long time. Current Streak: %d. Bonus Modifier: 10x", streak)
+		modifier = 10
+	} else if streak%69 == 0 {
+		returnString = fmt.Sprintf("Nice, Congratulations! Current Streak: %d. Bonus Modifier: 15x", streak)
+		modifier = 15
+	} else if streak%100 == 0 {
+		returnString = fmt.Sprintf("Few people ever reach is this far, Congratulations! Current Streak: %d. Bonus Modifier: 50x", streak)
+		modifier = 50
+	} else {
+		returnString = fmt.Sprintf("Current Bonus Streak: %d", streak)
+		modifier = 1
+	}
+
+	return returnString, modifier
+}
+
+func GetUserBonus(min int, max int, modifier int) float64 {
+	randomizer := rand.New(rand.NewSource(time.Now().UnixMilli()))
+	reward := randomizer.Intn(max-min) + min
+	reward *= modifier
+	rewardF64 := float64(reward) / 10.0
+	finalReward := LowerFloatPrecision(rewardF64)
+	return finalReward
 }

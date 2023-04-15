@@ -54,7 +54,7 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		sendResponse := persistance.TransferrBotPersonTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
+		sendResponse := persistance.TransferBotPersonTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
 
 		newBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
 

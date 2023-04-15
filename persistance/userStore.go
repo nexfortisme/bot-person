@@ -44,6 +44,11 @@ func getNewUser(userId string, messageCount int, goodBotCount int, badBotCount i
 	return newUser
 }
 
+func addUser(user UserStruct) bool {
+	botTracking.UserStats = append(botTracking.UserStats, user)
+	return true
+}
+
 func GetUserStats(userId string) (UserStatsStruct, error) {
 
 	user, err := getUser(userId)

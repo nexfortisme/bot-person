@@ -85,3 +85,7 @@ func GetFinHubToken() string {
 func SetDevDiscordToken(DevDiscordToken string) {
 	config.DevDiscordToken = DevDiscordToken
 }
+
+func SetFinnHubToken(FinnHubToken string) {
+	config.FinnHubToken = FinnHubToken
+}

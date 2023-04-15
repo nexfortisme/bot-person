@@ -27,7 +27,7 @@ func AddBotPersonTokens(tokenAmount float64, userId string) bool {
 
 }
 
-func TransferrBotPersonTokens(tokenAmount float64, fromUserId string, toUserId string) bool {
+func TransferBotPersonTokens(tokenAmount float64, fromUserId string, toUserId string) bool {
 
 	fromUser, fromErr := getUser(fromUserId)
 	toUser, toErr := getUser(toUserId)
@@ -37,7 +37,7 @@ func TransferrBotPersonTokens(tokenAmount float64, fromUserId string, toUserId s
 		return false
 	} else {
 
-		// The User exists but is trying to transferr more tokens then they have
+		// The User exists but is trying to transfer more tokens than they have
 		if fromUser.UserStats.ImageTokens < tokenAmount {
 			return false
 		}
@@ -82,14 +82,9 @@ func UserHasTokens(userId string) bool {
 
 	if err != nil {
 		return false
-	} else {
-		if user.UserStats.ImageTokens <= 0 {
-			return false
-		} else {
-			return true
-		}
 	}
 
+	return user.UserStats.ImageTokens > 0
 }
 
 func GetUserTokenCount(userId string) float64 {
@@ -99,18 +94,6 @@ func GetUserTokenCount(userId string) float64 {
 		return 0
 	} else {
 		return user.UserStats.ImageTokens
-	}
-}
-
-func SetUserTokenCount(userId string, tokenAmount float64) bool {
-	user, err := getUser(userId)
-
-	if err != nil {
-		createAndAddUser(userId, 0, 0, 0, 0, util.LowerFloatPrecision(tokenAmount))
-		return true
-	} else {
-		user.UserStats.ImageTokens = tokenAmount
-		return updateUser(user)
 	}
 }
 
@@ -133,14 +116,15 @@ func RemoveUserTokens(userId string, tokenAmount float64) bool {
 
 func GetUserReward(userId string) (float64, string, error) {
 
+	// Getting user and setting necessary variables
 	user, err := getUser(userId)
 	returnString := ""
-
 	modifier := 1
 
-	// Checking for error and setting userId on returned user struct as needed
+	// Checking for Get User Error and setting appropriate values
 	if err != nil {
 		user.UserId = userId
+		addUser(user)
 	}
 
 	// Checking to see if the user has a LastBonus time
@@ -159,7 +143,6 @@ func GetUserReward(userId string) (float64, string, error) {
 
 			errString := "Please try again in: " + formattedString.String()
 
-			// returning error
 			return -1.0, "", errors.New(errString)
 		}
 
@@ -169,22 +152,25 @@ func GetUserReward(userId string) (float64, string, error) {
 		// Missed Window
 		if timeWindowDiff > 0 {
 
+			// If the user has had a time set for trying to save their streak
 			if (user.UserStats.HoldStreakTimer != time.Time{}) {
-				returnString = fmt.Sprintf("Streak Not Saved in time.. Streak Reset. \nCurrent Streak: %d", 1)
+				returnString = fmt.Sprintf("Streak Not Saved in time. Streak Reset. \nCurrent Streak: %d", 1)
 				user.UserStats.BonusStreak = 1
 				user.UserStats.HoldStreakTimer = time.Time{}
 			} else {
 
-				inFiveMinutes := time.Now().Add(time.Minute * 5).Unix();
+				// Used for displaying the discord relative time for the user to save their streak
+				inFiveMinutes := time.Now().Add(time.Minute * 5).Unix()
 
-				returnString = fmt.Sprintf("Bonus Not Redeemed within 24 hours. To save your streak, use `/saveStreak` <t:%d:R>. `/saveStreak` will use a save token or purchase one for 1/2 of your current tokens. \nCurrent Streak: %d", inFiveMinutes, user.UserStats.BonusStreak)
+				// Not sure if the relative time string work for users outside the time zone of the bot
+				errString := fmt.Sprintf("Bonus Not Redeemed within 24 hours. To save your streak, use `/saveStreak` <t:%d:R>. `/saveStreak` will use a save token or purchase one for 1/2 of your current tokens. \nCurrent Streak: %d", inFiveMinutes, user.UserStats.BonusStreak)
 
-				user.UserStats.HoldStreakTimer = time.Now();
-	
+				user.UserStats.HoldStreakTimer = time.Now()
+
 				if !updateUser(user) {
 					return -1, "", errors.New("error updating user record")
 				} else {
-					return -1, returnString, nil
+					return -1, "", errors.New(errString)
 				}
 			}
 
@@ -192,34 +178,13 @@ func GetUserReward(userId string) (float64, string, error) {
 			user.UserStats.BonusStreak++
 			streak := user.UserStats.BonusStreak
 
-			if streak%10 == 0 && streak%100 != 0 && streak%50 != 0 {
-				returnString = fmt.Sprintf("Congrats on keeping the streak alive. Current Streak: %d. Bonus Modifier: 2x", streak)
-				modifier = 2
-			} else if streak%25 == 0 && streak%50 != 0 && streak%100 != 0 {
-				returnString = fmt.Sprintf("Great work on keeping the streak alive! Current Streak: %d. Bonus Modifier: 5x", streak)
-				modifier = 5
-			} else if streak%50 == 0 && streak%100 != 0 {
-				returnString = fmt.Sprintf("Wow! That's a long time. Current Streak: %d. Bonus Modifier: 10x", streak)
-				modifier = 10
-			} else if streak%69 == 0 {
-				returnString = fmt.Sprintf("Nice, Congratulations! Current Streak: %d. Bonus Modifier: 15x", streak)
-				modifier = 15
-			} else if streak%100 == 0 {
-				returnString = fmt.Sprintf("Few people ever reach is this far, Congratulations! Current Streak: %d. Bonus Modifier: 50x", streak)
-				modifier = 50
-			} else {
-				returnString = fmt.Sprintf("Current Bonus Streak: %d", streak)
-			}
+			returnString, modifier = util.GetStreakStringAndModifier(streak)
 		}
 
 	}
 
-	// Setting random seed and generating a, value safe, token amount
-	randomizer := rand.New(rand.NewSource(time.Now().UnixMilli()))
-	reward := randomizer.Intn(45) + 5
-	reward *= modifier
-	rewardf64 := float64(reward) / 10.0
-	finalReward := util.LowerFloatPrecision(rewardf64)
+	// Get Final Bonus Reward
+	finalReward := util.GetUserBonus(5, 50, modifier)
 
 	// Updating User Record
 	user.UserStats.LastBonus = time.Now()
@@ -230,10 +195,6 @@ func GetUserReward(userId string) (float64, string, error) {
 	} else {
 		return finalReward, returnString, nil
 	}
-
-}
-
-func SaveUserStreak(userId string){
 
 }
 
@@ -336,12 +297,12 @@ func AddStock(userId string, stockTicker string, quantity float64) error {
 		return err
 	}
 
-	userPortforlio := user.UserStats.Stocks
+	userPortfolio := user.UserStats.Stocks
 
-	for index, element := range userPortforlio {
+	for index, element := range userPortfolio {
 		if element.StockTicker == stockTicker {
 			element.StockCount += quantity
-			userPortforlio[index] = element
+			userPortfolio[index] = element
 			updateUser(user)
 			return nil
 		}
@@ -362,12 +323,12 @@ func RemoveStock(userId string, stockTicker string, quantity float64) error {
 		return err
 	}
 
-	userPortforlio := user.UserStats.Stocks
+	userPortfolio := user.UserStats.Stocks
 
-	for index, element := range userPortforlio {
+	for index, element := range userPortfolio {
 		if element.StockTicker == stockTicker {
 			element.StockCount -= quantity
-			userPortforlio[index] = element
+			userPortfolio[index] = element
 			updateUser(user)
 			return nil
 		}
@@ -384,9 +345,9 @@ func GetUserStock(userId string, stockTicker string) (UserStock, error) {
 		return UserStock{}, err
 	}
 
-	userPortforlio := user.UserStats.Stocks
+	userPortfolio := user.UserStats.Stocks
 
-	for _, element := range userPortforlio {
+	for _, element := range userPortfolio {
 		if element.StockTicker == stockTicker {
 			return element, nil
 		}
