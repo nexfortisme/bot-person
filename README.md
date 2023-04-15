@@ -1,5 +1,7 @@
 # Bot Person
-Bot Person is a farily simple Discord bot written in Go. It started off as a fun side project by [AltarCrystal](https://github.com/AltarCrystal) and is now being maintained by Nex. The main feature that comes with Bot Person is integration with the [OpenAI's DaVinci](https://beta.openai.com/docs/models/davinci) and [OpenAI's ChatGPT](https://platform.openai.com/docs/api-reference/chat/create) LLMs. Along with the chat prompting, through the use of [OpenAI's Dall-E API](https://beta.openai.com/docs/guides/images), users can send prompts to the AI and get back image responses back. It allows users to send prompts to the API to see what kind of response it returns.
+Bot Person is a farily simple Discord bot written in Go. It started off as a fun side project by [AltarCrystal](https://github.com/AltarCrystal) and is now being maintained by Nex. The main feature that comes with Bot Person is integration with the [OpenAI's DaVinci](https://beta.openai.com/docs/models/davinci) and [OpenAI's ChatGPT](https://platform.openai.com/docs/api-reference/chat/create) LLMs. Along with the chat prompting, through the use of [OpenAI's Dall-E API](https://beta.openai.com/docs/guides/images), users can send prompts to the AI and get back image responses back. It allows users to send prompts to the API to see what kind of response it returns. Feel free to join discussions in our [Discord Server](https://discord.gg/MtEG5zMtUR).
+
+
 
 ## Getting Started
 If an existing `config.json` doesn't exist, the command line will prompt you for the Keys necessary for the bot to function. The three keys you need are from: OpenAI (for chatbot features), Discord (to have the bot work in general), and FinnHub (for the stocks game). The OpenAI key can be obtained from: https://openai.com/api/, the Discord Key can be obtained from: https://discord.com/developers/applications, and the FinnHub Key can be obtained from: https://finnhub.io/dashboard. From there the bot will start up as normal and the bot will be able to interact with users in any server it's been invited to. As you continue to use the bot, the basic logging will be saved to the `logfile`, the user stats will be saved to the `botTracking.json` and the images will be saved in the `./img` folder where the bot is running. 
@@ -17,6 +19,9 @@ If an existing `config.json` doesn't exist, the command line will prompt you for
   - Ability to transfer tokens to other users
   - LootBox game where a user can spend 2.5 tokens and gets 1 to 250 tokens back on an RNG roll from a randomly generated seed
   - Stock market game. Users are able to purchase stocks for 1 Token = 1 USD and can have their tokens reise and fall based on the activity of the markets.
+
+## Other Notes
+Bot Person can be run locally by anyone but if you want to just invite it and run with it, you can get an invite link from the Discord Server (see above).
 
 ## Wishlist
 - Configurable Commands - Have commands be configurable in the config.json instead of hard coded into the application
