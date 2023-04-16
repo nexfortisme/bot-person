@@ -163,7 +163,7 @@ func GetUserReward(userId string) (float64, string, error) {
 				inFiveMinutes := time.Now().Add(time.Minute * 5).Unix()
 
 				// Not sure if the relative time string work for users outside the time zone of the bot
-				errString := fmt.Sprintf("Bonus Not Redeemed within 24 hours. To save your streak, use `/saveStreak` <t:%d:R>. `/saveStreak` will use a save token or purchase one for 1/2 of your current tokens. \nCurrent Streak: %d", inFiveMinutes, user.UserStats.BonusStreak)
+				errString := fmt.Sprintf("Bonus Not Redeemed within 24 hours. To save your streak, use `/save-streak` <t:%d:R>. `/save-streak` will use a save token or purchase one for 1/2 of your current tokens. \nCurrent Streak: %d", inFiveMinutes, user.UserStats.BonusStreak)
 
 				user.UserStats.HoldStreakTimer = time.Now()
 

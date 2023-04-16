@@ -42,7 +42,7 @@ func Help(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	} else if helpOption == "images" {
 		helpString = fmt.Sprintf("The `/images` command allows you to request an image from OpenAI's Dall-E API at the cost of 1 Bot Person token per image. The image returned is based on what you give in the `prompt` option.")
 	} else if helpOption == "store" {
-		helpString = fmt.Sprintf("The `/store` command allows you to purchase items/goods to use directly with Bot Person or with other users. You can specifiy which item to purchase with the `item` option. Currently the items that can be purchased are: \nSave Streak Token")
+		helpString = fmt.Sprintf("The `/store` command allows you to purchase items/goods to use directly with Bot Person or with other users. You can specifiy which item to purchase with the `item` option. Currently the items that can be purchased are: \nSave Streak Token (50 Tokens)")
 	} else if helpOption == "balance" {
 		helpString = fmt.Sprintf("The `/balance` command allows you to see how many Bot Person tokens you currently have. You can also see the balance of others in the server with the `user` option. If you don't specify a user, it will default to you.")
 	} else if helpOption == "send" {
