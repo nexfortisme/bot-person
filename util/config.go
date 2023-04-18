@@ -89,3 +89,36 @@ func SetDevDiscordToken(DevDiscordToken string) {
 func SetFinnHubToken(FinnHubToken string) {
 	config.FinnHubToken = FinnHubToken
 }
+
+func GetAdminIds() []string {
+	return config.AdminIDs
+}
+
+func AddAdmin(userId string) {
+	config.AdminIDs = append(config.AdminIDs, userId)
+}
+
+func RemoveAdmin(userId string) {
+	for i, id := range config.AdminIDs {
+		if id == userId {
+			config.AdminIDs = append(config.AdminIDs[:i], config.AdminIDs[i+1:]...)
+		}
+	}
+}
+
+func UserIsAdmin(userId string) bool {
+	for _, id := range config.AdminIDs {
+		if strings.Compare(id, userId) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func ListAdmins() string {
+	var adminList string = ""
+	for _, id := range config.AdminIDs {
+		adminList += id + ", "
+	}
+	return adminList
+}

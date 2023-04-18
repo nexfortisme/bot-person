@@ -458,6 +458,8 @@ func main() {
 
 	log.Println("Bot is now running")
 
+	go listenForCommands(discordSession)
+
 	// Pulled from the examples for discordgo, this lets the bot continue to run
 	// until an interrupt is received, at which point the bot disconnects from
 	// the server cleanly
@@ -544,4 +546,51 @@ func saveBotStatistics() {
 		log.Println("No Changes to Bot Statistics. Skipping Save...")
 	}
 
+}
+
+func listenForCommands(s *discordgo.Session) {
+	fmt.Print("Enter Command:")
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		command := scanner.Text()
+
+		// Handle the command
+		if strings.HasPrefix(command, "ping") {
+			fmt.Println("Pong!")
+		} else if strings.HasPrefix(command, "addAdmin") {
+			commandRequest := strings.Split(command, " ")
+
+			if len(commandRequest) < 2 {
+				fmt.Println("Command: addAdmin <UserId>")
+				fmt.Print("Enter Command:")
+				continue
+			}
+
+			createdConfig = true
+
+			util.AddAdmin(commandRequest[1])
+			fmt.Printf("Added %v to Admins\n", commandRequest[1])
+		} else if strings.HasPrefix(command, "removeAdmin") {
+			commandRequest := strings.Split(command, " ")
+
+			if len(commandRequest) < 2 {
+				fmt.Println("Command: removeAdmin <UserId>")
+				fmt.Print("Enter Command:")
+				continue
+			}
+
+			createdConfig = true
+			util.RemoveAdmin(commandRequest[1])
+			fmt.Printf("Removed %v from Admins\n", commandRequest[1])
+		} else if strings.HasPrefix(command, "listAdmins") {
+			fmt.Println("Admins: " + util.ListAdmins())
+		} else if command == "quit" {
+			fmt.Println("Quit Recieved, stopping...")
+			shutDown(s)
+			os.Exit(0)
+		} else {
+			fmt.Println("Unknown command")
+		}
+		fmt.Print("Enter Command:")
+	}
 }

@@ -12,14 +12,14 @@ import (
 
 func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
+	var incomingMessage string
+
 	// Ignoring messages from self
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 
-	// TODO - Add this to the config file
-	var incomingMessage string
-
+	// Checking for prefix
 	if !strings.HasPrefix(m.Message.Content, "!") {
 		incomingMessage = strings.ToLower(m.Message.Content)
 	} else {
@@ -49,8 +49,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// TODO - Switch to use BPSystemInteraction
 		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
 
-		// TODO - Change this to pull from the config instead of being a hardcoded value
-		if m.Author.ID != "92699061911580672" {
+		if !util.UserIsAdmin(m.Author.ID) {
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
 			return
 		} else {
@@ -73,8 +72,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// TODO - Switch to use BPSystemInteraction
 		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
 
-		// TODO - Change this to pull from the config instead of being a hardcoded value
-		if m.Author.ID != "92699061911580672" {
+		if !util.UserIsAdmin(m.Author.ID) {
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
 			return
 		} else {
@@ -86,8 +84,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// TODO - Switch to use BPSystemInteraction
 		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
 
-		// TODO - Change this to pull from the config instead of being a hardcoded value
-		if m.Author.ID != "92699061911580672" {
+		if !util.UserIsAdmin(m.Author.ID) {
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
 			return
 		} else {
