@@ -58,35 +58,6 @@ func printUserStocks(user UserStruct) string {
 	return retString
 }
 
-func SlashGetBotStats(s *discordgo.Session) string {
-
-	guildCount := len(s.State.Guilds)
-
-	var globalMessageCount int = 0
-	var globalGoodBotCount int = 0
-	var globalBadBotCount int = 0
-	var globalImageCount int = 0
-	// var globalLongestBonusStreak int = 0
-
-	var globalTokenCirculation float64 = 0.0
-
-	var returnMessage string
-
-	for _, element := range botTracking.UserStats {
-
-		globalMessageCount += element.UserStats.MessageCount
-		globalGoodBotCount += element.UserStats.GoodBotCount
-		globalBadBotCount += element.UserStats.BadBotCount
-		globalImageCount += element.UserStats.ImageCount
-
-		globalTokenCirculation += element.UserStats.ImageTokens
-	}
-
-	returnMessage = fmt.Sprintf("Across %d servers, Bot Person has/is/did:\nInteractions: %d\nBeen Good: %d\nBeen Bad: %d\nGenerated Images: %d\nTotal Tokens In Circulation: %.2f", guildCount, globalMessageCount, globalGoodBotCount, globalGoodBotCount, globalImageCount, globalTokenCirculation)
-
-	return returnMessage
-}
-
 func createNewUserTracking(flag BPInteraction, userId string, username string) {
 	log.Println("Creating New User For: " + username)
 
@@ -133,15 +104,4 @@ func handleUserStatIncrementing(flag BPInteraction, userId string) bool {
 
 	updateUser(incrementUser)
 	return true
-}
-
-func PrintUSerStocksHelper(user discordgo.User) (string, error) {
-	userStruct, err := getUser(user.ID)
-
-	if err != nil {
-		log.Println("Error getting user: " + err.Error())
-		return "", err
-	}
-
-	return printUserStocks(userStruct), nil
 }

@@ -33,17 +33,12 @@ func ReadConfig() {
 
 	if config.DiscordToken == "" {
 		createdConfig = true
-		readAPIKey(&config.DiscordToken, "Discord Token")
+		ReadAPIKey(&config.DiscordToken, "Discord Token")
 	}
 
 	if config.OpenAIKey == "" {
 		createdConfig = true
-		readAPIKey(&config.OpenAIKey, "Open AI Key")
-	}
-
-	if config.FinnHubToken == "" {
-		createdConfig = true
-		readAPIKey(&config.FinnHubToken, "FinnHub Token")
+		ReadAPIKey(&config.OpenAIKey, "Open AI Key")
 	}
 
 	if config.AdminIDs == nil {
@@ -58,9 +53,14 @@ func ReadConfig() {
 
 		log.Printf("Admin ID Added: '%s'\n", adminID)
 	}
+
+	if createdConfig {
+		WriteConfig()
+	}
+
 }
 
-func readAPIKey(variable *string, flavorText string) {
+func ReadAPIKey(variable *string, flavorText string) {
 	reader := bufio.NewReader(os.Stdin)
 	log.Printf("Please Enter the %s: ", flavorText)
 	*variable, _ = reader.ReadString('\n')
@@ -91,32 +91,8 @@ func GetOpenAIKey() string {
 	return config.OpenAIKey
 }
 
-func GetFinHubToken() string {
-	return config.FinnHubToken
-}
-
 func SetDevDiscordToken(DevDiscordToken string) {
 	config.DevDiscordToken = DevDiscordToken
-}
-
-func SetFinnHubToken(FinnHubToken string) {
-	config.FinnHubToken = FinnHubToken
-}
-
-func GetAdminIds() []string {
-	return config.AdminIDs
-}
-
-func AddAdmin(userId string) {
-	config.AdminIDs = append(config.AdminIDs, userId)
-}
-
-func RemoveAdmin(userId string) {
-	for i, id := range config.AdminIDs {
-		if id == userId {
-			config.AdminIDs = append(config.AdminIDs[:i], config.AdminIDs[i+1:]...)
-		}
-	}
 }
 
 func UserIsAdmin(userId string) bool {
@@ -126,16 +102,4 @@ func UserIsAdmin(userId string) bool {
 		}
 	}
 	return false
-}
-
-func ListAdmins() string {
-	var adminList string = ""
-	for index, id := range config.AdminIDs {
-		if index == len(config.AdminIDs)-1 {
-			adminList += id
-			break
-		}
-		adminList += id + ", "
-	}
-	return adminList
 }

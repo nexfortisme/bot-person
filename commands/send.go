@@ -11,7 +11,7 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	senderBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
 
-	var transferrAmount float64
+	var transferAmount float64
 
 	// Access options in the order provided by the user.
 	options := i.ApplicationCommandData().Options
@@ -25,9 +25,9 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Checking to see that the user has the number of tokens needed to send
 	if option, ok := optionMap["amount"]; ok {
 
-		transferrAmount = option.FloatValue()
+		transferAmount = option.FloatValue()
 
-		if senderBalance < transferrAmount {
+		if senderBalance < transferAmount {
 
 			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
@@ -41,10 +41,10 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 	}
 
-	if option, ok := optionMap["recepient"]; ok {
-		recepient := option.UserValue(s)
+	if option, ok := optionMap["recipient"]; ok {
+		recipient := option.UserValue(s)
 
-		if i.Interaction.Member.User.ID == recepient.ID {
+		if i.Interaction.Member.User.ID == recipient.ID {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -54,7 +54,7 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		sendResponse := persistance.TransferBotPersonTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
+		sendResponse := persistance.TransferBotPersonTokens(transferAmount, i.Interaction.Member.User.ID, recipient.ID)
 
 		newBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
 
