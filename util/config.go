@@ -58,6 +58,11 @@ func ReadConfig() {
 
 		log.Printf("Admin ID Added: '%s'\n", adminID)
 	}
+
+	if createdConfig {
+		WriteConfig()
+	}
+
 }
 
 func readAPIKey(variable *string, flavorText string) {
