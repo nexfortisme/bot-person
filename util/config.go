@@ -19,40 +19,53 @@ func ReadConfig() {
 	var botPersonConfig []byte
 	botPersonConfig, err := os.ReadFile("config.json")
 
+	// Going to assume that if there is an error, it is because the file doesn't exist
 	if err != nil {
 		createdConfig = true
+
 		log.Printf("Error reading config. Creating File")
-		os.WriteFile("config.json", []byte("{\"DiscordToken\":\"\",\"OpenAIKey\":\"\"}"), 0666)
+		_, err = os.Create("config.json")
+
 		botPersonConfig, err = os.ReadFile("config.json")
-		HandleFatalErrors(err, "Could not read config file: config.json")
 	}
 
 	err = json.Unmarshal(botPersonConfig, &config)
-	HandleFatalErrors(err, "Could not parse: config.json")
 
-	// Handling the case the config file has just been created
 	if config.DiscordToken == "" {
 		createdConfig = true
-		reader := bufio.NewReader(os.Stdin)
-		log.Print("Please Enter the Discord Token: ")
-		config.DiscordToken, _ = reader.ReadString('\n')
-		config.DiscordToken = strings.TrimSuffix(config.DiscordToken, "\r\n")
-		log.Println("Discord Token Set to: '" + config.DiscordToken + "'")
+		readAPIKey(&config.DiscordToken, "Discord Token")
 	}
 
-	// TODO - Check to see if the user doesn't type in a command
-	// If they don't, ask them if they wish to continue without OpenAI responses
 	if config.OpenAIKey == "" {
 		createdConfig = true
-		reader := bufio.NewReader(os.Stdin)
-		log.Print("Please Enter the Open AI Key: ")
-		config.OpenAIKey, _ = reader.ReadString('\n')
-		config.OpenAIKey = strings.TrimSuffix(config.OpenAIKey, "\r\n")
-		log.Println("Open AI Key Set to: '" + config.OpenAIKey + "'")
+		readAPIKey(&config.OpenAIKey, "Open AI Key")
 	}
 
-	// TODO - Add check for finnhub token and prompt if the user wants to continue without it
+	if config.FinnHubToken == "" {
+		createdConfig = true
+		readAPIKey(&config.FinnHubToken, "FinnHub Token")
+	}
 
+	if config.AdminIDs == nil {
+		createdConfig = true
+
+		reader := bufio.NewReader(os.Stdin)
+		log.Print("Please Enter an Admin ID: ")
+		adminID, _ := reader.ReadString('\n')
+		adminID = strings.TrimSuffix(adminID, "\r\n")
+
+		config.AdminIDs = append(config.AdminIDs, adminID)
+
+		log.Printf("Admin ID Added: '%s'\n", adminID)
+	}
+}
+
+func readAPIKey(variable *string, flavorText string) {
+	reader := bufio.NewReader(os.Stdin)
+	log.Printf("Please Enter the %s: ", flavorText)
+	*variable, _ = reader.ReadString('\n')
+	*variable = strings.TrimSuffix(*variable, "\r\n")
+	log.Printf("%s Set to: '%s'\n", flavorText, *variable)
 }
 
 func WriteConfig() {
@@ -117,7 +130,11 @@ func UserIsAdmin(userId string) bool {
 
 func ListAdmins() string {
 	var adminList string = ""
-	for _, id := range config.AdminIDs {
+	for index, id := range config.AdminIDs {
+		if index == len(config.AdminIDs)-1 {
+			adminList += id
+			break
+		}
 		adminList += id + ", "
 	}
 	return adminList
