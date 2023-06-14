@@ -91,6 +91,18 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			external.SetGPT3()
 			s.ChannelMessageSend(m.ChannelID, "Model set to GPT-3")
 		}
+	} else if strings.HasPrefix(incomingMessage, "!setGPT4New") {
+
+		// TODO - Switch to use BPSystemInteraction
+		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
+
+		if !util.UserIsAdmin(m.Author.ID) {
+			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
+			return
+		} else {
+			external.SetGPT4New()
+			s.ChannelMessageSend(m.ChannelID, "Model set to GPT-4")
+		}
 	} else if strings.HasPrefix(incomingMessage, ";;lenny") {
 		persistance.IncrementInteractionTracking(persistance.BPLennyFaceInteracton, *m.Author)
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")

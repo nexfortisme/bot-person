@@ -62,3 +62,7 @@ func SetGPT4() {
 func SetGPT3() {
 	model = "gpt-3.5-turbo-0301"
 }
+
+func SetGPT4New() {
+	model = "gpt-4-0613"
+}
