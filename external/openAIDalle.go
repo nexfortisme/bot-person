@@ -18,9 +18,11 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 	httpClient := &http.Client{}
 
 	requestDataTemplate := `{
+		"model": "dall-e-3",
 		"prompt": "%s",
 		"n": 1,
-		"size": "1024x1024"
+		"size": "1024x1024",
+		"quality": "hd"
 	  }`
 	requestData := fmt.Sprintf(requestDataTemplate, prompt)
 

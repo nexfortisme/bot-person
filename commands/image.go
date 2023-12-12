@@ -18,12 +18,14 @@ func Image(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		userImageOptionMap[opt.Name] = opt
 	}
 
-	if !persistance.UserHasTokens(i.Interaction.Member.User.ID) {
+	var userTokens = persistance.GetUserTokenCount(i.Interaction.Member.User.ID);
+
+	if userTokens < 10 {
 
 		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
 		// Getting user stat data
-		imageReturnString := "You don't have enough tokens to generate an image."
+		imageReturnString := "You don't have enough tokens (10) to generate an image."
 
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
