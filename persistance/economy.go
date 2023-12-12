@@ -69,7 +69,7 @@ func UseImageToken(userId string) bool {
 		if user.UserStats.ImageTokens < 1 {
 			return false
 		} else {
-			user.UserStats.ImageTokens--
+			user.UserStats.ImageTokens-=10
 			return updateUser(user)
 		}
 	}
