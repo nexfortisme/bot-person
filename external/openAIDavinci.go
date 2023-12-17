@@ -14,7 +14,7 @@ func GetOpenAIResponse(prompt string) string {
 	client := &http.Client{}
 
 	dataTemplate := `{
-		"model": "text-davinci-003",
+		"model": "davinci-002",
 		"prompt": "%s",
 		"temperature": 0.7,
 		"max_tokens": 256,
