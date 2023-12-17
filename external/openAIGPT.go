@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	model = "gpt-4"
+	model = "gpt-4-turbo"
 )
 
 func GetOpenAIGPTResponse(prompt string) string {
