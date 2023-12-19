@@ -58,7 +58,7 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 			return discordgo.File{}, errors.New("error creating directory")
 		}
 
-		path := filepath.Join("img", fmt.Sprintf("%s.jpg", removePunctuation(prompt)))
+		path := filepath.Join("img", fmt.Sprintf("%s.jpg", TruncateString(removePunctuation(prompt))))
 		
 		response, err := http.Get(openAIResponse.Data[0].URL)
 		if err != nil {
@@ -117,4 +117,11 @@ func createDirectoryIfNotExists(dirPath string) error {
 		}
 	}
 	return nil
+}
+
+func TruncateString(input string) string {
+	if len(input) > 50 {
+		return input[:50]
+	}
+	return input
 }

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"main/external"
 	"main/persistance"
 
@@ -45,6 +46,8 @@ func BotGPT(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			Content: &botResponseString,
 		})
 		if err != nil {
+
+			fmt.Println("Error editing interaction response:", err)
 
 			// Not 100% sure this is the approach I want to take with handling errors from the API
 			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
