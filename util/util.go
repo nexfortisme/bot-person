@@ -84,6 +84,7 @@ func GetBadBotResponse() string {
 	badBotResponses = append(badBotResponses, "Sure Thing.")
 	badBotResponses = append(badBotResponses, "Like you are the most perfect being in existance. Pound sand pal.")
 	badBotResponses = append(badBotResponses, "https://youtu.be/4X7q87RDSHI")
+	badBotResponses = append(badBotResponses, "https://llamajoustingclub.com")
 
 	return badBotResponses[rand.Intn(len(badBotResponses))]
 }
