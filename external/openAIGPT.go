@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	model = "gpt-4-1106-preview"
+	model = "gpt-4"
 )
 
 func GetOpenAIGPTResponse(prompt string) string {
@@ -19,7 +19,7 @@ func GetOpenAIGPTResponse(prompt string) string {
 
 	dataTemplate := `{
 		"model": "%s",
-		"messages": [{"role": "user", "content": "%s"}]
+		"messages": [{"role": "system", "content": "You generate responses no longer than 1750 characters long."}, {"role": "user", "content": "%s"}]
 	}`
 
 	data := fmt.Sprintf(dataTemplate, model, prompt)
