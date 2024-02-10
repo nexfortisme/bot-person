@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"main/pkg/util"
+	external "main/pkg/external/models"
 	"main/pkg/logging"
+	"main/pkg/util"
 
 	"net/http"
 	"strings"
@@ -41,7 +42,7 @@ func GetOpenAIResponse(prompt string) string {
 	}
 
 	buf, _ := io.ReadAll(resp.Body)
-	var rspOAI OpenAIGPTResponse
+	var rspOAI external.OpenAIGPTResponse
 	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
 	// need to add proper error handling
 	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
@@ -54,6 +55,6 @@ func GetOpenAIResponse(prompt string) string {
 	if len(rspOAI.Choices) == 0 {
 		return "I'm sorry, I don't understand?"
 	} else {
-		return rspOAI.Choices[0].Text
+		return rspOAI.Choices[0].Message.Content // TODO - Test This
 	}
 }

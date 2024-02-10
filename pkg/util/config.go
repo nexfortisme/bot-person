@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"log"
+	util "main/pkg/util/models"
 	"os"
 	"strings"
 )
 
 var (
-	config Config
+	config util.Config
 
 	createdConfig = false
 )

@@ -3,14 +3,13 @@ package persistance
 import (
 	"encoding/json"
 	"log"
+	persistance "main/pkg/persistance/models"
 	"os"
-
-	"main/pkg/model/persistance"
 )
 
 var (
-	botTracking  BotTracking
-	tempTracking BotTracking
+	botTracking  persistance.BotTracking
+	tempTracking persistance.BotTracking
 )
 
 func ReadBotStatistics() {
@@ -60,11 +59,11 @@ func SaveBotStatistics() {
 	log.Println("Done Writing botTracking.json")
 }
 
-func GetBotTracking() BotTracking {
+func GetBotTracking() persistance.BotTracking {
 	return botTracking
 }
 
-func GetTempTracking() BotTracking {
+func GetTempTracking() persistance.BotTracking {
 	quickReadStats()
 	return tempTracking
 }

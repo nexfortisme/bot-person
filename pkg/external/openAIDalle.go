@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	external "main/pkg/external/models"
 	"main/pkg/util"
 	"net/http"
 	"os"
@@ -40,7 +41,7 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 	}
 
 	responseBuffer, _ := io.ReadAll(httpResponse.Body)
-	var openAIResponse DalleResponse
+	var openAIResponse external.DalleResponse
 	err = json.Unmarshal([]byte(string(responseBuffer)), &openAIResponse)
 	if err != nil {
 		return discordgo.File{}, errors.New("error Parsing Response")

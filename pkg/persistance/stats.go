@@ -3,6 +3,7 @@ package persistance
 import (
 	"fmt"
 	"log"
+	persistance "main/pkg/persistance/models"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -43,7 +44,7 @@ func SlashGetUserStats(user discordgo.User) string {
 	}
 }
 
-func printUserStocks(user UserStruct) string {
+func printUserStocks(user persistance.User) string {
 
 	if len(user.UserStats.Stocks) == 0 {
 		return "You don't have any stocks."

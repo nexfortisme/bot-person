@@ -3,13 +3,12 @@ package persistance
 import (
 	"errors"
 	"fmt"
+	persistance "main/pkg/persistance/models"
 	"main/pkg/util"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
-
-	"main/pkg/external/models"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/hako/durafmt"
@@ -310,7 +309,7 @@ func AddStock(userId string, stockTicker string, quantity float64) error {
 		}
 	}
 
-	newStock := UserStock{stockTicker, quantity}
+	newStock := persistance.Stock{stockTicker, quantity}
 	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock)
 	updateUser(user)
 
@@ -339,12 +338,12 @@ func RemoveStock(userId string, stockTicker string, quantity float64) error {
 	return errors.New("stock not found")
 }
 
-func GetUserStock(userId string, stockTicker string) (UserStock, error) {
+func GetUserStock(userId string, stockTicker string) (persistance.Stock, error) {
 
 	user, err := getUser(userId)
 
 	if err != nil {
-		return UserStock{}, err
+		return persistance.Stock{}, err
 	}
 
 	userPortfolio := user.UserStats.Stocks
@@ -355,6 +354,6 @@ func GetUserStock(userId string, stockTicker string) (UserStock, error) {
 		}
 	}
 
-	return UserStock{}, errors.New("stock not found")
+	return persistance.Stock{}, errors.New("stock not found")
 
 }
