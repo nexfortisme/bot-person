@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"main/pkg/external/models"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/hako/durafmt"
 )
