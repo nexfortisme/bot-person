@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
-	"io"
+
+	// "io"
 	"log"
 
 	"main/pkg/commands"
@@ -14,18 +14,18 @@ import (
 
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/joho/godotenv"
 	"github.com/r3labs/diff/v3"
 )
 
 var (
 	// config  util.ConfigStruct
 	devMode bool
+
+	fiveMinuteTicker = time.NewTicker(5 * time.Minute)
 
 	removeCommands   bool
 	removeOnStartup  bool
@@ -369,50 +369,35 @@ var (
 	}
 )
 
+func main() {
+	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
+	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
+	flag.Parse()
 
-func ReadEnv() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
+	util.ReadEnv()
+	persistance.Connect()
 
-	dbHost := os.Getenv("DB_HOST")
-    dbUser := os.Getenv("DB_USER")
-    dbPassword := os.Getenv("DB_PASSWORD")
-    dbName := os.Getenv("DB_NAME")
-
-    fmt.Printf("DB_HOST: %s\n", dbHost)
-    fmt.Printf("DB_USER: %s\n", dbUser)
-    fmt.Printf("DB_PASSWORD: %s\n", dbPassword)
-    fmt.Printf("DB_NAME: %s\n", dbName)
+	
 }
 
-func main() {
+func main2() {
 
 	// https://gobyexample.com/command-line-flags
 	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
 	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
-	flag.BoolVar(&disableLogging, "disableLogging", false, "Flag for disabling file logging of commands passed into bot person")
-	flag.BoolVar(&disableTracking, "disableTracking", false, "Flag for disabling tracking of user interactions and bad bot messages")
+
 	flag.BoolVar(&skipCmdReg, "skipCmdReg", false, "Flag for disabling registering of commands on startup")
 	flag.Parse()
 
-	util.ReadConfig()
+	util.ReadEnv()
 	persistance.ReadBotStatistics()
 
-	fiveMinuteTicker := time.NewTicker(5 * time.Minute)
+	// fiveMinuteTicker := time.NewTicker(5 * time.Minute)
 
-	logFile, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	// Setting up logging to logfile and creating it if it doesn't exist
+	_, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
-	}
-
-	if !disableLogging {
-		multiWriter := io.MultiWriter(os.Stdout, logFile)
-		defer logFile.Close()
-
-		// This makes it print to both the console and to a file
-		log.SetOutput(multiWriter)
 	}
 
 	// Create the Discord client and add the handler to process messages
@@ -420,44 +405,15 @@ func main() {
 
 	if devMode {
 		log.Println("Entering Dev Mode...")
-
-		if util.GetDevDiscordToken() == "" {
-			createdConfig = true
-			reader := bufio.NewReader(os.Stdin)
-			log.Print("Please Enter the Dev Discord Token: ")
-
-			newDevToken, _ := reader.ReadString('\n')
-			newDevToken = strings.TrimSuffix(newDevToken, "\r\n")
-
-			util.SetDevDiscordToken(newDevToken)
-
-			// config.DevDiscordToken, _ = reader.ReadString('\n')
-			// config.DevDiscordToken = strings.TrimSuffix(config.DevDiscordToken, "\r\n")
-			log.Println("Dev Discord Token Set to: '" + util.GetDevDiscordToken() + "'")
-		}
-
-		discordSession, err = discordgo.New("Bot " + util.GetDevDiscordToken())
+		discordSession, err = discordgo.New("Bot " + util.GetDevDiscordKey())
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
 		}
 	} else {
-		discordSession, err = discordgo.New("Bot " + util.GetDiscordToken())
+		discordSession, err = discordgo.New("Bot " + util.GetDiscordKey())
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
 		}
-	}
-
-	if util.GetFinHubToken() == "" {
-		log.Println("FinnHub Key not set, please enter your key: ")
-
-		createdConfig = true
-		reader := bufio.NewReader(os.Stdin)
-		newFinnHubToken, _ := reader.ReadString('\n')
-		newFinnHubToken = strings.TrimSuffix(newFinnHubToken, "\r\n")
-
-		util.SetFinnHubToken(newFinnHubToken)
-
-		log.Println("Finn Hub Token Set to: '" + util.GetFinHubToken() + "'")
 	}
 
 	// Adding a simple message handler
@@ -479,7 +435,7 @@ func main() {
 
 	log.Println("Bot is now running")
 
-	go listenForCommands(discordSession)
+	// go listenForCommands(discordSession)
 
 	// Pulled from the examples for discordgo, this lets the bot continue to run
 	// until an interrupt is received, at which point the bot disconnects from
@@ -502,6 +458,35 @@ func main() {
 
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
 	messages.ParseMessage(s, m)
+}
+
+func registerNewCommands(s *discordgo.Session) {
+	log.Println("Registering Commands...")
+
+	registeredCommands, err := s.ApplicationCommands(s.State.User.ID, "")
+	if err != nil {
+		log.Fatalf("Could not fetch registered commands: %v", err)
+	}
+	// Loop through new commands and check if they are already registered
+	for _, newCmd := range slashCommands {
+		var found bool
+		for _, existingCmd := range registeredCommands {
+			if newCmd.Name == existingCmd.Name {
+				found = true
+				break
+			}
+		}
+
+		// If the command is not found among existing ones, register it
+		if !found {
+			_, err := s.ApplicationCommandCreate(s.State.User.ID, "", newCmd)
+			if err != nil {
+				fmt.Printf("Could not create command %s: %v\n", newCmd.Name, err)
+			} else {
+				fmt.Printf("Successfully registered new command: %s\n", newCmd.Name)
+			}
+		}
+	}
 }
 
 func registerSlashCommands(s *discordgo.Session) {
@@ -544,7 +529,7 @@ func shutDown(discord *discordgo.Session) {
 	log.Println("Shutting Down...")
 
 	if createdConfig {
-		util.WriteConfig()
+		// util.WriteConfig()
 	}
 
 	persistance.SaveBotStatistics()
@@ -568,49 +553,49 @@ func saveBotStatistics() {
 
 }
 
-func listenForCommands(s *discordgo.Session) {
-	fmt.Print("Enter Command:")
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		command := scanner.Text()
+// func listenForCommands(s *discordgo.Session) {
+// 	fmt.Print("Enter Command:")
+// 	scanner := bufio.NewScanner(os.Stdin)
+// 	for scanner.Scan() {
+// 		command := scanner.Text()
 
-		// Handle the command
-		if strings.HasPrefix(command, "ping") {
-			fmt.Println("Pong!")
-		} else if strings.HasPrefix(command, "addAdmin") {
-			commandRequest := strings.Split(command, " ")
+// 		// Handle the command
+// 		if strings.HasPrefix(command, "ping") {
+// 			fmt.Println("Pong!")
+// 		} else if strings.HasPrefix(command, "addAdmin") {
+// 			commandRequest := strings.Split(command, " ")
 
-			if len(commandRequest) < 2 {
-				fmt.Println("Command: addAdmin <UserId>")
-				fmt.Print("Enter Command:")
-				continue
-			}
+// 			if len(commandRequest) < 2 {
+// 				fmt.Println("Command: addAdmin <UserId>")
+// 				fmt.Print("Enter Command:")
+// 				continue
+// 			}
 
-			createdConfig = true
+// 			createdConfig = true
 
-			util.AddAdmin(commandRequest[1])
-			fmt.Printf("Added %v to Admins\n", commandRequest[1])
-		} else if strings.HasPrefix(command, "removeAdmin") {
-			commandRequest := strings.Split(command, " ")
+// 			util.AddAdmin(commandRequest[1])
+// 			fmt.Printf("Added %v to Admins\n", commandRequest[1])
+// 		} else if strings.HasPrefix(command, "removeAdmin") {
+// 			commandRequest := strings.Split(command, " ")
 
-			if len(commandRequest) < 2 {
-				fmt.Println("Command: removeAdmin <UserId>")
-				fmt.Print("Enter Command:")
-				continue
-			}
+// 			if len(commandRequest) < 2 {
+// 				fmt.Println("Command: removeAdmin <UserId>")
+// 				fmt.Print("Enter Command:")
+// 				continue
+// 			}
 
-			createdConfig = true
-			util.RemoveAdmin(commandRequest[1])
-			fmt.Printf("Removed %v from Admins\n", commandRequest[1])
-		} else if strings.HasPrefix(command, "listAdmins") {
-			fmt.Println("Admins: " + util.ListAdmins())
-		} else if command == "quit" {
-			fmt.Println("Quit Recieved, stopping...")
-			shutDown(s)
-			os.Exit(0)
-		} else {
-			fmt.Println("Unknown command")
-		}
-		fmt.Print("Enter Command:")
-	}
-}
+// 			createdConfig = true
+// 			util.RemoveAdmin(commandRequest[1])
+// 			fmt.Printf("Removed %v from Admins\n", commandRequest[1])
+// 		} else if strings.HasPrefix(command, "listAdmins") {
+// 			fmt.Println("Admins: " + util.ListAdmins())
+// 		} else if command == "quit" {
+// 			fmt.Println("Quit Recieved, stopping...")
+// 			shutDown(s)
+// 			os.Exit(0)
+// 		} else {
+// 			fmt.Println("Unknown command")
+// 		}
+// 		fmt.Print("Enter Command:")
+// 	}
+// }

@@ -1,151 +1,113 @@
 package util
 
 import (
-	"bufio"
-	"encoding/json"
+	"fmt"
 	"log"
-	util "main/pkg/util/models"
 	"os"
-	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 var (
-	config util.Config
+	db_host     string
+	db_user     string
+	db_password string
+	db_name     string
 
-	createdConfig = false
+	open_ai_api_key     string
+	discord_api_key     string
+	dev_discord_api_key string
+	finn_hub_api_key    string
 )
 
-func ReadConfig() {
-
-	var botPersonConfig []byte
-	botPersonConfig, err := os.ReadFile("config.json")
-
-	// Going to assume that if there is an error, it is because the file doesn't exist
+func ReadEnv() {
+	err := godotenv.Load()
 	if err != nil {
-		createdConfig = true
-
-		log.Printf("Error reading config. Creating File")
-		_, createErr := os.Create("config.json")
-		if createErr != nil {
-			log.Fatalf("Error creating config.json: %v", createErr)
-			return
-		}
-
-		botPersonConfig, _ = os.ReadFile("config.json")
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	_ = json.Unmarshal(botPersonConfig, &config)
+	db_host = os.Getenv("DB_HOST")
+	db_user = os.Getenv("DB_USER")
+	db_password = os.Getenv("DB_PASSWORD")
+	db_name = os.Getenv("DB_NAME")
 
-	if config.DiscordToken == "" {
-		createdConfig = true
-		readAPIKey(&config.DiscordToken, "Discord Token")
-	}
+	open_ai_api_key = os.Getenv("OPENAI_API_KEY")
+	discord_api_key = os.Getenv("DISCORD_API_KEY")
+	dev_discord_api_key = os.Getenv("DEV_DISCORD_API_KEY")
+	finn_hub_api_key = os.Getenv("FINNHUB_API_KEY")
 
-	if config.OpenAIKey == "" {
-		createdConfig = true
-		readAPIKey(&config.OpenAIKey, "Open AI Key")
-	}
-
-	if config.FinnHubToken == "" {
-		createdConfig = true
-		readAPIKey(&config.FinnHubToken, "FinnHub Token")
-	}
-
-	if config.AdminIDs == nil {
-		createdConfig = true
-
-		reader := bufio.NewReader(os.Stdin)
-		log.Print("Please Enter an Admin ID: ")
-		adminID, _ := reader.ReadString('\n')
-		adminID = strings.TrimSuffix(adminID, "\r\n")
-
-		config.AdminIDs = append(config.AdminIDs, adminID)
-
-		log.Printf("Admin ID Added: '%s'\n", adminID)
-	}
-
-	if createdConfig {
-		WriteConfig()
-	}
+	fmt.Println("DB_HOST: ", db_host)
+	fmt.Println("DB_USER: ", db_user)
+	fmt.Println("DB_PASSWORD: ", db_password)
+	fmt.Println("DB_NAME: ", db_name)
 
 }
 
-func readAPIKey(variable *string, flavorText string) {
-	reader := bufio.NewReader(os.Stdin)
-	log.Printf("Please Enter the %s: ", flavorText)
-	*variable, _ = reader.ReadString('\n')
-	*variable = strings.TrimSuffix(*variable, "\r\n")
-	log.Printf("%s Set to: '%s'\n", flavorText, *variable)
+func GetDBHost() string {
+	return db_host
 }
 
-func WriteConfig() {
-	log.Println("Config Updated. Writing...")
-
-	fle, _ := json.Marshal(config)
-	err := os.WriteFile("config.json", fle, 0666)
-	if err != nil {
-		log.Fatalf("Error Writing config.json")
-		return
-	}
+func GetDBUser() string {
+	return db_user
 }
 
-func GetDiscordToken() string {
-	return config.DiscordToken
+func GetDBPassword() string {
+	return db_password
 }
 
-func GetDevDiscordToken() string {
-	return config.DevDiscordToken
+func GetDBName() string {
+	return db_name
 }
 
 func GetOpenAIKey() string {
-	return config.OpenAIKey
+	return open_ai_api_key
 }
 
-func GetFinHubToken() string {
-	return config.FinnHubToken
+func GetDiscordKey() string {
+	return discord_api_key
 }
 
-func SetDevDiscordToken(DevDiscordToken string) {
-	config.DevDiscordToken = DevDiscordToken
+func GetDevDiscordKey() string {
+	return dev_discord_api_key
 }
 
-func SetFinnHubToken(FinnHubToken string) {
-	config.FinnHubToken = FinnHubToken
-}
-
-func GetAdminIds() []string {
-	return config.AdminIDs
-}
-
-func AddAdmin(userId string) {
-	config.AdminIDs = append(config.AdminIDs, userId)
-}
-
-func RemoveAdmin(userId string) {
-	for i, id := range config.AdminIDs {
-		if id == userId {
-			config.AdminIDs = append(config.AdminIDs[:i], config.AdminIDs[i+1:]...)
-		}
-	}
+func GetFinnHubKey() string {
+	return finn_hub_api_key
 }
 
 func UserIsAdmin(userId string) bool {
-	for _, id := range config.AdminIDs {
-		if strings.Compare(id, userId) == 0 {
-			return true
-		}
-	}
 	return false
 }
 
-func ListAdmins() string {
-	var adminList string = ""
-	for index, id := range config.AdminIDs {
-		if index == len(config.AdminIDs)-1 {
-			adminList += id
-			break
-		}
-		adminList += id + ", "
-	}
-	return adminList
-}
+// func AddAdmin(userId string) {
+// 	config.AdminIDs = append(config.AdminIDs, userId)
+// }
+
+// func RemoveAdmin(userId string) {
+// 	for i, id := range config.AdminIDs {
+// 		if id == userId {
+// 			config.AdminIDs = append(config.AdminIDs[:i], config.AdminIDs[i+1:]...)
+// 		}
+// 	}
+// }
+
+// func UserIsAdmin(userId string) bool {
+// 	for _, id := range config.AdminIDs {
+// 		if strings.Compare(id, userId) == 0 {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
+
+// func ListAdmins() string {
+// 	var adminList string = ""
+// 	for index, id := range config.AdminIDs {
+// 		if index == len(config.AdminIDs)-1 {
+// 			adminList += id
+// 			break
+// 		}
+// 		adminList += id + ", "
+// 	}
+// 	return adminList
+// }

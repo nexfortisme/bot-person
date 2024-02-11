@@ -13,7 +13,7 @@ func GetStockData(ticker string) (float32, error) {
 	// I don't like reinitializing this every time its called but it will stay for now
 	// TODO - Find a better way to do this
 	cfg := finnhub.NewConfiguration()
-	cfg.AddDefaultHeader("X-Finnhub-Token", util.GetFinHubToken())
+	cfg.AddDefaultHeader("X-Finnhub-Token", util.GetFinnHubKey())
 	finnhubClient := finnhub.NewAPIClient(cfg).DefaultApi
 
 	// Quote
