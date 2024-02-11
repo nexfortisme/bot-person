@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	
+
 	"main/pkg/commands"
 	"main/pkg/messages"
 	"main/pkg/persistance"
@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 	"github.com/r3labs/diff/v3"
 )
 
@@ -368,6 +369,24 @@ var (
 	}
 )
 
+
+func ReadEnv() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	dbHost := os.Getenv("DB_HOST")
+    dbUser := os.Getenv("DB_USER")
+    dbPassword := os.Getenv("DB_PASSWORD")
+    dbName := os.Getenv("DB_NAME")
+
+    fmt.Printf("DB_HOST: %s\n", dbHost)
+    fmt.Printf("DB_USER: %s\n", dbUser)
+    fmt.Printf("DB_PASSWORD: %s\n", dbPassword)
+    fmt.Printf("DB_NAME: %s\n", dbName)
+}
+
 func main() {
 
 	// https://gobyexample.com/command-line-flags
@@ -479,7 +498,6 @@ func main() {
 			return
 		}
 	}
-
 }
 
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
