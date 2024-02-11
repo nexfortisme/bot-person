@@ -25,12 +25,16 @@ func ReadConfig() {
 		createdConfig = true
 
 		log.Printf("Error reading config. Creating File")
-		_, err = os.Create("config.json")
+		_, createErr := os.Create("config.json")
+		if createErr != nil {
+			log.Fatalf("Error creating config.json: %v", createErr)
+			return
+		}
 
-		botPersonConfig, err = os.ReadFile("config.json")
+		botPersonConfig, _ = os.ReadFile("config.json")
 	}
 
-	err = json.Unmarshal(botPersonConfig, &config)
+	_ = json.Unmarshal(botPersonConfig, &config)
 
 	if config.DiscordToken == "" {
 		createdConfig = true

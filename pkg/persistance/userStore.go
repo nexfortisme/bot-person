@@ -40,7 +40,7 @@ func createAndAddUser(userId string, messageCount int, goodBotCount int, badBotC
 
 func getNewUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) persistance.User {
 
-	newUser := persistance.User{userId, persistance.UserStats{messageCount, goodBotCount, badBotCount, imageCount, imageTokens, time.Time{}, 0, time.Time{}, 0, []persistance.Stock{}}}
+	newUser := persistance.User{UserId: userId, UserStats: persistance.UserStats{MessageCount: messageCount, GoodBotCount: goodBotCount, BadBotCount: badBotCount, ImageCount: imageCount, ImageTokens: imageTokens, LastBonus: time.Time{}, BonusStreak: 0, HoldStreakTimer: time.Time{}, SaveStreakTokens: 0, Stocks: []persistance.Stock{}}}
 
 	return newUser
 }

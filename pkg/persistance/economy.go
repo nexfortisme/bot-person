@@ -132,14 +132,14 @@ func GetUserReward(userId string) (float64, string, error) {
 	if (user.UserStats.LastBonus != time.Time{}) {
 
 		// Checking diff between now and lastBonus time
-		diff := time.Now().Sub(user.UserStats.LastBonus)
+		diff := time.Since(user.UserStats.LastBonus)
 
 		// if diff is less than 1 day (86400 seconds), then throws error
 		if diff.Seconds() <= 86400 {
 
 			// Doing math to for countdown to next bonus
 			nextBonus := user.UserStats.LastBonus.AddDate(0, 0, 1)
-			timeToNextBonus := nextBonus.Sub(time.Now())
+			timeToNextBonus := time.Until(nextBonus)
 			formattedString := durafmt.Parse(timeToNextBonus).LimitFirstN(3)
 
 			errString := "Please try again in: " + formattedString.String()
@@ -148,7 +148,7 @@ func GetUserReward(userId string) (float64, string, error) {
 		}
 
 		timeWindow := user.UserStats.LastBonus.Add(time.Hour * 48)
-		timeWindowDiff := time.Now().Sub(timeWindow)
+		timeWindowDiff := time.Since(timeWindow)
 
 		// Missed Window
 		if timeWindowDiff > 0 {
@@ -309,7 +309,7 @@ func AddStock(userId string, stockTicker string, quantity float64) error {
 		}
 	}
 
-	newStock := persistance.Stock{stockTicker, quantity}
+	newStock := persistance.Stock{StockTicker: stockTicker, StockCount: quantity}
 	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock)
 	updateUser(user)
 
