@@ -1,6 +1,7 @@
 package persistance
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	persistance "main/pkg/persistance/models"
@@ -146,3 +147,58 @@ func PrintUSerStocksHelper(user discordgo.User) (string, error) {
 
 	return printUserStocks(userStruct), nil
 }
+
+// ----------------- Database Functions -----------------
+
+func GetUserDBStats(discord_user_id string) (persistance.DBUserStats, error) {
+
+	dbUser, err := GetUser(discord_user_id)
+	if err != nil {
+		return persistance.DBUserStats{}, errors.New("error fetching user")
+	}
+
+	var userDBStats persistance.DBUserStats
+
+	err = GetDatabaseConnection().Model(&userDBStats).Where("bd_user_id = ?", dbUser.Id).Select();
+	if err != nil {
+		return persistance.DBUserStats{}, err
+	}
+
+	return userDBStats, nil
+}
+
+func CreateUserStatsDB(userId string, stats persistance.DBUserStats) (persistance.DBUserStats, error) {
+	
+	dbUser, err := GetUser(userId)
+	if err != nil {
+		return persistance.DBUserStats{}, errors.New("error fetching user")
+	}
+
+	stats.BP_User_ID = dbUser.Id
+
+	result, err := GetDatabaseConnection().Model(&stats).Insert()
+	if err != nil {
+		return persistance.DBUserStats{}, err
+	}
+
+	if result.RowsAffected() < 1 {
+		return persistance.DBUserStats{}, errors.New("db stats - creation failed")
+	}
+
+	return stats, nil
+}
+
+func UpdateUserDBStats(stats persistance.DBUserStats) (bool, error) {
+
+	result, err := GetDatabaseConnection().Model(&stats).Update()
+	if err != nil {
+		return false, err
+	}
+
+	if result.RowsAffected() < 1 {
+		return false, errors.New("db stats - update failed")
+	}
+
+	return true, nil
+}
+

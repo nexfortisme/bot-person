@@ -2,12 +2,13 @@ package util
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"log"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func HandleErrors(err error) {
@@ -126,12 +127,8 @@ func GetUserBonus(min int, max int, modifier int) float64 {
 	return finalReward
 }
 
-func Contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
+func EscapeQuotes(input string) string {
+	// Replace all instances of " with \"
+	escapedString := strings.Replace(input, `"`, `\"`, -1)
+	return escapedString
 }

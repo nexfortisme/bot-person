@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/r3labs/diff/v3"
 )
 
 var (
@@ -377,31 +376,9 @@ func main() {
 	util.ReadEnv()
 	persistance.Connect()
 
-	
-}
-
-func main2() {
-
-	// https://gobyexample.com/command-line-flags
-	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
-	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
-
-	flag.BoolVar(&skipCmdReg, "skipCmdReg", false, "Flag for disabling registering of commands on startup")
-	flag.Parse()
-
-	util.ReadEnv()
-	persistance.ReadBotStatistics()
-
-	// fiveMinuteTicker := time.NewTicker(5 * time.Minute)
-
-	// Setting up logging to logfile and creating it if it doesn't exist
-	_, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
-	}
-
 	// Create the Discord client and add the handler to process messages
 	var discordSession *discordgo.Session
+	var err error
 
 	if devMode {
 		log.Println("Entering Dev Mode...")
@@ -416,8 +393,6 @@ func main2() {
 		}
 	}
 
-	// Adding a simple message handler
-	// Mostly used for "!" commands
 	discordSession.AddHandler(messageReceive)
 
 	err = discordSession.Open()
@@ -432,10 +407,9 @@ func main2() {
 	if !skipCmdReg {
 		registerSlashCommands(discordSession)
 	}
+	
 
 	log.Println("Bot is now running")
-
-	// go listenForCommands(discordSession)
 
 	// Pulled from the examples for discordgo, this lets the bot continue to run
 	// until an interrupt is received, at which point the bot disconnects from
@@ -446,7 +420,7 @@ func main2() {
 	for {
 		select {
 		case <-fiveMinuteTicker.C:
-			saveBotStatistics()
+			// saveBotStatistics()
 		case <-interrupt:
 			fmt.Println("Interrupt received, stopping...")
 			fiveMinuteTicker.Stop()
@@ -454,6 +428,7 @@ func main2() {
 			return
 		}
 	}
+
 }
 
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -525,77 +500,9 @@ func removeRegisteredSlashCommands(s *discordgo.Session) {
 	}
 }
 
+// I guess this is redundant since we no longer have to worry about
+// persisting bot data to a file
 func shutDown(discord *discordgo.Session) {
 	log.Println("Shutting Down...")
-
-	if createdConfig {
-		// util.WriteConfig()
-	}
-
-	persistance.SaveBotStatistics()
 	_ = discord.Close()
 }
-
-// This is a function that will save the current contents of the bot statistics
-func saveBotStatistics() {
-
-	changeLog, _ := diff.Diff(persistance.GetTempTracking(), persistance.GetBotTracking())
-
-	if len(changeLog) > 0 {
-		log.Println("Saving Bot Statistics...")
-		fsInterrupt = true // TODO - Implement interrupt checking for when a user may be doing something while the bot is saving
-		persistance.SaveBotStatistics()
-		persistance.ReadBotStatistics()
-		fsInterrupt = false
-	} else {
-		log.Println("No Changes to Bot Statistics. Skipping Save...")
-	}
-
-}
-
-// func listenForCommands(s *discordgo.Session) {
-// 	fmt.Print("Enter Command:")
-// 	scanner := bufio.NewScanner(os.Stdin)
-// 	for scanner.Scan() {
-// 		command := scanner.Text()
-
-// 		// Handle the command
-// 		if strings.HasPrefix(command, "ping") {
-// 			fmt.Println("Pong!")
-// 		} else if strings.HasPrefix(command, "addAdmin") {
-// 			commandRequest := strings.Split(command, " ")
-
-// 			if len(commandRequest) < 2 {
-// 				fmt.Println("Command: addAdmin <UserId>")
-// 				fmt.Print("Enter Command:")
-// 				continue
-// 			}
-
-// 			createdConfig = true
-
-// 			util.AddAdmin(commandRequest[1])
-// 			fmt.Printf("Added %v to Admins\n", commandRequest[1])
-// 		} else if strings.HasPrefix(command, "removeAdmin") {
-// 			commandRequest := strings.Split(command, " ")
-
-// 			if len(commandRequest) < 2 {
-// 				fmt.Println("Command: removeAdmin <UserId>")
-// 				fmt.Print("Enter Command:")
-// 				continue
-// 			}
-
-// 			createdConfig = true
-// 			util.RemoveAdmin(commandRequest[1])
-// 			fmt.Printf("Removed %v from Admins\n", commandRequest[1])
-// 		} else if strings.HasPrefix(command, "listAdmins") {
-// 			fmt.Println("Admins: " + util.ListAdmins())
-// 		} else if command == "quit" {
-// 			fmt.Println("Quit Recieved, stopping...")
-// 			shutDown(s)
-// 			os.Exit(0)
-// 		} else {
-// 			fmt.Println("Unknown command")
-// 		}
-// 		fmt.Print("Enter Command:")
-// 	}
-// }
