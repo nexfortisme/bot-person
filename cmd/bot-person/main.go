@@ -369,7 +369,6 @@ var (
 	}
 )
 
-
 func ReadEnv() {
 	err := godotenv.Load()
 	if err != nil {
@@ -463,6 +462,7 @@ func main() {
 	// Adding a simple message handler
 	// Mostly used for "!" commands
 	discordSession.AddHandler(messageReceive)
+	discordSession.AddHandler(messages.InteractionCreate)
 
 	err = discordSession.Open()
 	if err != nil {
