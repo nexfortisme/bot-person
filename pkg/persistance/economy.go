@@ -70,7 +70,7 @@ func UseImageToken(userId string) bool {
 		if user.UserStats.ImageTokens < 1 {
 			return false
 		} else {
-			user.UserStats.ImageTokens-=10
+			user.UserStats.ImageTokens -= 10
 			return updateUser(user)
 		}
 	}
@@ -199,7 +199,7 @@ func GetUserReward(userId string) (float64, string, error) {
 
 }
 
-func BuyLootbox(userId string) (int, int, error) {
+func BuyLootbox(userId string) (float64, int, error) {
 
 	user, err := getUser(userId)
 
@@ -217,18 +217,18 @@ func BuyLootbox(userId string) (int, int, error) {
 	lootboxSeed := random.Intn(9999999999) + 1000000000
 
 	val := hashLootBoxSeed(lootboxSeed)
-	reward := 0
+	reward := 0.0
 
 	if val <= 7992 {
-		reward += 2
+		reward += 3.63
 	} else if val > 7992 && val <= 9590 {
-		reward += 5
+		reward += 8
 	} else if val > 9590 && val <= 9910 {
-		reward += 20
+		reward += 15
 	} else if val > 9910 && val <= 9974 {
-		reward += 100
+		reward += 25
 	} else if val > 9974 && val <= 10000 {
-		reward += 500
+		reward += 50
 	}
 
 	user.UserStats.ImageTokens += float64(reward)
@@ -257,7 +257,6 @@ func hashLootBoxSeed(bar int) int {
 
 	for i := 1; i < 11; i++ {
 		num := (bar / modifier) % 10
-		// fmt.Println(num)
 		modifier /= 10
 
 		if i <= 8 {
