@@ -2,9 +2,9 @@ package messages
 
 import (
 	"main/pkg/external"
-	"main/pkg/persistance"
+	// "main/pkg/persistance"
 	"main/pkg/util"
-	"strconv"
+	// "strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -26,19 +26,19 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		incomingMessage = m.Message.Content
 	}
 
-	persistance.APictureIsWorthAThousand(incomingMessage, m)
+	// persistance.APictureIsWorthAThousand(incomingMessage, m)
 
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if strings.HasPrefix(incomingMessage, "bad bot") {
 
-		persistance.IncrementInteractionTracking(persistance.BPBadBotInteraction, *m.Author)
+		// persistance.IncrementInteractionTracking(persistance.BPBadBotInteraction, *m.Author)
 
 		badBotRetort := util.GetBadBotResponse()
 
 		_, err := s.ChannelMessageSend(m.ChannelID, badBotRetort)
 		util.HandleErrors(err)
 	} else if strings.HasPrefix(incomingMessage, "good bot") {
-		persistance.IncrementInteractionTracking(persistance.BPGoodBotInteraction, *m.Author)
+		// persistance.IncrementInteractionTracking(persistance.BPGoodBotInteraction, *m.Author)
 
 		goodBotRetort := util.GetGoodBotResponse()
 
@@ -47,7 +47,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(incomingMessage, "!addTokens") {
 
 		// TODO - Switch to use BPSystemInteraction
-		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
+		// persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
 
 		if !util.UserIsAdmin(m.Author.ID) {
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
@@ -59,18 +59,18 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 				return
 			}
 
-			tokenCount, _ := strconv.ParseFloat(req[2], 64)
-			success := persistance.AddBotPersonTokens(tokenCount, req[1][2:len(req[1])-1])
-			if success {
-				s.ChannelMessageSend(m.ChannelID, "Tokens were successfully added.")
-			} else {
-				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
-			}
+			// tokenCount, _ := strconv.ParseFloat(req[2], 64)
+			// success := persistance.AddBotPersonTokens(tokenCount, req[1][2:len(req[1])-1])
+			// if success {
+			// 	s.ChannelMessageSend(m.ChannelID, "Tokens were successfully added.")
+			// } else {
+			// 	s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
+			// }
 		}
 	} else if strings.HasPrefix(incomingMessage, "!setGPT4") {
 
 		// TODO - Switch to use BPSystemInteraction
-		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
+		// persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
 
 		if !util.UserIsAdmin(m.Author.ID) {
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
@@ -82,7 +82,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(incomingMessage, "!setGPT3") {
 
 		// TODO - Switch to use BPSystemInteraction
-		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
+		// persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
 
 		if !util.UserIsAdmin(m.Author.ID) {
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
@@ -94,7 +94,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(incomingMessage, "!setGPT4New") {
 
 		// TODO - Switch to use BPSystemInteraction
-		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
+		// persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
 
 		if !util.UserIsAdmin(m.Author.ID) {
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
@@ -104,7 +104,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, "Model set to GPT-4")
 		}
 	} else if strings.HasPrefix(incomingMessage, ";;lenny") {
-		persistance.IncrementInteractionTracking(persistance.BPLennyFaceInteracton, *m.Author)
+		// persistance.IncrementInteractionTracking(persistance.BPLennyFaceInteracton, *m.Author)
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
 	}
 
@@ -116,7 +116,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	msg := util.ReplaceIDsWithNames(m, s)
 
-	persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *m.Author)
+	// persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *m.Author)
 	respTxt := external.GetOpenAIResponse(msg)
 
 	if mentionsKeyphrase(m) {

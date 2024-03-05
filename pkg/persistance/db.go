@@ -1,74 +1,49 @@
 package persistance
 
 import (
-	"errors"
 	"fmt"
+	"sync"
 
-	persistance "main/pkg/persistance/models"
 	"main/pkg/util"
 
 	"github.com/go-pg/pg/v10"
 )
 
 var (
-	databaseConnection *pg.DB
+	db   *pg.DB
+	once sync.Once
 )
 
-func Connect() {
+func initDB() {
 	// Create a database connection
-	databaseConnection := pg.Connect(&pg.Options{
+	db = pg.Connect(&pg.Options{
 		Addr:     util.GetDBHost() + ":5432",
 		User:     util.GetDBUser(),
 		Password: util.GetDBPassword(),
 		Database: util.GetDBName(),
 	})
 
-	// Ensure the database connection is closed when main() exits
-	defer databaseConnection.Close()
-
 	fmt.Println("Database Connected.")
 }
 
-func GetUser(discord_user_id string) (persistance.DBUser, error) {
 
-	var dbUser persistance.DBUser
 
-	err := databaseConnection.Model(dbUser).Where("discord_user_id = ?", discord_user_id).Select()
-	if err != nil {
-		return persistance.DBUser{}, err
-	}
+// func HelloWorld() {
+// 	var greeting string
+// 	ctx := context.Background()
 
-	return dbUser, nil
-}
+// 	_, err := db.QueryOneContext(ctx, pg.Scan(&greeting), "SELECT 'Hello, World!'")
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	fmt.Println(greeting)
+// }
 
-func CreateUser(dbUser persistance.DBUser) (persistance.DBUser, error) {
+// TODO - Delete User
 
-	result, err := databaseConnection.Model(&dbUser).Insert()
-	if err != nil {
-		return persistance.DBUser{}, err
-	}
-
-	if result.RowsAffected() < 1 {
-		return persistance.DBUser{}, errors.New("db user - creation failed")
-	}
-
-	return dbUser, nil
-}
-
-func UpdateUser(dbUser persistance.DBUser) (bool, error) {
-
-	result, err := databaseConnection.Model(&dbUser).Update()
-	if err != nil {
-		return false, err
-	}
-
-	if result.RowsAffected() < 1 {
-		return false, errors.New("db user - update failed")
-	}
-
-	return true, nil
-}
-
-func GetDatabaseConnection() *pg.DB {
-	return databaseConnection
+func GetDB() *pg.DB {
+	once.Do(func() {
+		initDB()
+	})
+	return db
 }

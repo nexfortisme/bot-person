@@ -2,7 +2,9 @@ package commands
 
 import (
 	"main/pkg/external"
-	"main/pkg/persistance"
+
+	loggingType "main/pkg/logging/enums"
+	logging "main/pkg/logging/services"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -37,14 +39,15 @@ func Bot(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// Going out to make the OpenAI call to get the proper response
 		botResponseString = ParseSlashCommand(s, option.StringValue())
 
-		// Incrementint interaciton counter
-		persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *i.Interaction.Member.User)
+		logging.LogEvent(loggingType.COMMAND_BOT, botResponseString, i.Member.User.ID, i.GuildID, s)
 
 		// Updating the initial message with the response from the OpenAI API
 		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Content: &botResponseString,
 		})
 		if err != nil {
+
+			logging.LogEvent(loggingType.EXTERNAL_API_ERROR, "Error editing interaction response for /bot", i.Member.User.ID, i.GuildID, s)
 
 			// Not 100% sure this is the approach I want to take with handling errors from the API
 			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
@@ -58,5 +61,8 @@ func Bot(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func ParseSlashCommand(s *discordgo.Session, prompt string) string {
 	respTxt := external.GetOpenAIResponse(prompt)
 	respTxt = "Request: " + prompt + " " + respTxt
+	if len(respTxt) > 2000 {
+		respTxt = respTxt[:1997] + "..."
+	}
 	return respTxt
 }

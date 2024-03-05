@@ -6,8 +6,10 @@ import (
 	"io"
 
 	external "main/pkg/external/models"
-	"main/pkg/logging"
 	"main/pkg/util"
+
+	loggingType "main/pkg/logging/enums"
+	logging "main/pkg/logging/services"
 
 	"net/http"
 	"strings"
@@ -27,9 +29,12 @@ func GetOpenAIResponse(prompt string) string {
 	  }`
 	data := fmt.Sprintf(dataTemplate, prompt)
 
+	logging.LogEvent(loggingType.EXTERNAL_GPT_REQUEST, data, "System", "System", nil)
+
 	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/completions", strings.NewReader(data))
 	if err != nil {
-		logging.LogError("Error creating POST request")
+		logging.LogEvent(loggingType.EXTERNAL_API_ERROR, "Error Creating OpenAI Request", "System", "System", nil)
+		return "Error Contacting OpenAI API. Please Try Again Later."
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -53,8 +58,11 @@ func GetOpenAIResponse(prompt string) string {
 	// It's possible that OpenAI returns no response, so
 	// fallback to a default one
 	if len(rspOAI.Choices) == 0 {
+		logging.LogEvent(loggingType.EXTERNAL_API_ERROR, "OpenAI Response Empty", "System", "System", nil)
 		return "I'm sorry, I don't understand?"
 	} else {
-		return rspOAI.Choices[0].Message.Content // TODO - Test This
+		response := rspOAI.Choices[0].Message.Content
+		logging.LogEvent(loggingType.EXTERNAL_GPT_RESPONSE, response, "System", "System", nil)
+		return response
 	}
 }

@@ -1,6 +1,11 @@
 package commands
 
-import "github.com/bwmarrin/discordgo"
+import (
+	loggingType "main/pkg/logging/enums"
+	logging "main/pkg/logging/services"
+
+	"github.com/bwmarrin/discordgo"
+)
 
 func Invite(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
@@ -15,6 +20,8 @@ func Invite(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	url = discordgo.EndpointOAuth2 + "authorize?client_id=" + app.ID + "&permissions=517547084864&scope=bot"
 	retString = "Invite me to your server: " + url
+
+	logging.LogEvent(loggingType.COMMAND_INVITE, "Invite command used", i.Member.User.ID, i.GuildID, s)
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

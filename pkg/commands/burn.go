@@ -1,16 +1,19 @@
 package commands
 
 import (
-	"fmt"
-	"main/pkg/persistance"
+
+	logging "main/pkg/logging/services"
+	loggingType "main/pkg/logging/enums"
+
+	persistance "main/pkg/persistance/services"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func Burn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
-	var burnAmount float64
-	senderBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+	userStats, _ := persistance.GetUserStats(i.Interaction.Member.User.ID, s)
+	userBalance := userStats.Token_Balance;
 
 	// Access options in the order provided by the user.
 	options := i.ApplicationCommandData().Options
@@ -26,11 +29,11 @@ func Burn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		burnAmount = option.FloatValue()
 
-		if senderBalance < burnAmount {
+		if userBalance < burnAmount {
 
-			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+			logging.LogEvent(loggingType.COMMAND_BURN, "User attempted to burn more tokens than they have", i.Interaction.Member.User.Username, i.Interaction.GuildID, s)
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: "Oops! You do not have the tokens needed to complete the transaction.",
@@ -38,10 +41,14 @@ func Burn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			})
 			return
 		} else {
-			persistance.RemoveUserTokens(i.Interaction.Member.User.ID, burnAmount)
-			senderBalance = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+
+			userStats.Token_Balance = userBalance - burnAmount
+			persistance.UpsertUserStats(userStats)
+			userBalance = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
 
 			removeTokenResponse := fmt.Sprintf("%.2f tokens removed. New Balance: %.2f", burnAmount, senderBalance)
+
+			logging.LogEvent(loggingType.COMMAND_BURN, removeTokenResponse, i.Interaction.Member.User.Username, i.Interaction.GuildID, s)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

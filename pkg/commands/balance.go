@@ -2,14 +2,17 @@ package commands
 
 import (
 	"fmt"
-	"main/pkg/persistance"
+
+	logging "main/pkg/logging/services"
+	loggingType "main/pkg/logging/enums"
+
+	persistance "main/pkg/persistance/services"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func Balance(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
-	var tokenCount float64
 	var balanceResponse string
 
 	// Access options in the order provided by the user.
@@ -23,14 +26,16 @@ func Balance(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	if option, ok := optionMap["user"]; ok {
 		user := option.UserValue(s)
-		tokenCount = persistance.GetUserTokenCount(user.ID)
-		balanceResponse = user.Username + " has " + fmt.Sprintf("%.2f", tokenCount) + " tokens."
+		queryUserStats, _ := persistance.GetUserStats(user.ID, s)
+
+		balanceResponse = user.Username + " has " + fmt.Sprintf("%.2f", queryUserStats.Token_Balance) + " tokens."
 	} else {
-		tokenCount = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
-		balanceResponse = "You have " + fmt.Sprintf("%.2f", tokenCount) + " tokens."
+		queryUserStats, _ := persistance.GetUserStats(i.Interaction.Member.User.ID, s)
+		
+		balanceResponse = "You have " + fmt.Sprintf("%.2f", queryUserStats.Token_Balance) + " tokens."
 	}
 
-	persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+	logging.LogEvent(loggingType.COMMAND_BALANCE, balanceResponse, i.Member.User.ID, i.GuildID, s)
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

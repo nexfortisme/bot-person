@@ -5,12 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	external "main/pkg/external/models"
 	"main/pkg/util"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	external "main/pkg/external/models"
+
+	loggingType "main/pkg/logging/enums"
+	logging "main/pkg/logging/services"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -27,8 +31,11 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 	  }`
 	requestData := fmt.Sprintf(requestDataTemplate, prompt)
 
+	logging.LogEvent(loggingType.EXTERNAL_DALLE_REQUEST, requestData, "System", "System", nil)
+
 	postRequest, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/images/generations", strings.NewReader(requestData))
 	if err != nil {
+		logging.LogEvent(loggingType.EXTERNAL_API_ERROR, "Error Creating OpenAI Request", "System", "System", nil)
 		return discordgo.File{}, errors.New("POST Request Error")
 	}
 
@@ -37,6 +44,7 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 
 	httpResponse, _ := httpClient.Do(postRequest)
 	if httpResponse == nil {
+		logging.LogEvent(loggingType.EXTERNAL_API_ERROR, "Error Contacting OpenAI API", "System", "System", nil)
 		return discordgo.File{}, errors.New("API Error")
 	}
 
@@ -44,12 +52,14 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 	var openAIResponse external.DalleResponse
 	err = json.Unmarshal([]byte(string(responseBuffer)), &openAIResponse)
 	if err != nil {
+		logging.LogEvent(loggingType.EXTERNAL_API_ERROR, "Error Parsing OpenAI DALLE Response", "System", "System", nil)
 		return discordgo.File{}, errors.New("error Parsing Response")
 	}
 
 	// It's possible that OpenAI returns no response, so
 	// fallback to a default one
 	if len(openAIResponse.Data) == 0 {
+		logging.LogEvent(loggingType.EXTERNAL_API_ERROR, "OpenAI Response Error", "System", "System", nil)
 		return discordgo.File{}, errors.New("API Response Error. (Most Likely Picked Up By OpenAI Query Filter)")
 	} else {
 
@@ -60,7 +70,7 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 		}
 
 		path := filepath.Join("img", fmt.Sprintf("%s.jpg", TruncateString(removePunctuation(prompt))))
-		
+
 		response, err := http.Get(openAIResponse.Data[0].URL)
 		if err != nil {
 			panic(err)
@@ -80,21 +90,27 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 			panic(err)
 		}
 
+		// Open the file to send it to Discord
 		reader, err := os.Open(path)
 		if err != nil {
 			return discordgo.File{}, errors.New("error opening file")
 		}
 
+		// Get the file info
 		fileInfo, err := reader.Stat()
 		if err != nil {
 			return discordgo.File{}, errors.New("error creating file")
 		}
 
+		// Create a new Discord file object to send
 		fileObj := &discordgo.File{
 			Name:        fileInfo.Name(),
 			ContentType: "image/jpg",
 			Reader:      reader,
 		}
+
+		responseJSON, _ := json.Marshal(openAIResponse.Data)
+		logging.LogEvent(loggingType.EXTERNAL_DALLE_RESPONSE, string(responseJSON), "System", "System", nil)
 
 		return *fileObj, nil
 	}

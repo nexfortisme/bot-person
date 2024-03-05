@@ -2,13 +2,14 @@ package commands
 
 import (
 	"fmt"
-	"main/pkg/persistance"
+
+	loggingType "main/pkg/logging/enums"
+	logging "main/pkg/logging/services"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func Help(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
 	var helpOption string
 	var helpString string
@@ -26,6 +27,8 @@ func Help(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if option, ok := optionMap["command"]; ok {
 		helpOption = option.StringValue()
 	}
+
+	logging.LogEvent(loggingType.COMMAND_HELP, fmt.Sprintf("User requested help with %s", helpOption), i.Interaction.Member.User.Username, i.Interaction.GuildID, s)
 
 	if helpOption == "" {
 		helpString = fmt.Sprintf("To get help with a specific command use `/help [command]` where `[command]` is the slash command you want help with. If that still doesn't help, feel free to join the Bot Person discord server and ask there and someone will try their best to sort out what ever issue you may have. https://discord.gg/MtEG5zMtUR")

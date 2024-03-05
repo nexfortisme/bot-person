@@ -2,16 +2,19 @@ package commands
 
 import (
 	"fmt"
-	"main/pkg/persistance"
+	persistance "main/pkg/persistance/services"
+
+	loggingType "main/pkg/logging/enums"
+	logging "main/pkg/logging/services"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
-	senderBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
-
 	var transferrAmount float64
+	senderStats, _ := persistance.GetUserStats(i.Interaction.Member.User.ID, s)
+
 
 	// Access options in the order provided by the user.
 	options := i.ApplicationCommandData().Options
@@ -27,9 +30,9 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		transferrAmount = option.FloatValue()
 
-		if senderBalance < transferrAmount {
+		if senderStats.Token_Balance < transferrAmount {
 
-			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+			logging.LogEvent(loggingType.COMMAND_SEND, "User attempted to send more tokens than they have", i.Interaction.Member.User.Username, i.Interaction.GuildID, s)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -54,25 +57,27 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		sendResponse := persistance.TransferBotPersonTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
+		recipientStats, _ := persistance.GetUserStats(recepient.ID, s)
+		senderStats.Token_Balance = senderStats.Token_Balance - transferrAmount
+		recipientStats.Token_Balance = recipientStats.Token_Balance + transferrAmount
 
-		newBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+		_, err := persistance.UpsertUserStats(senderStats)
+		_, err = persistance.UpsertUserStats(recipientStats)
 
-		if sendResponse {
+		if err == nil {
 
-			// TODO - Switch to use BPSystemInteraction
-			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+			logging.LogEvent(loggingType.COMMAND_SEND, "Tokens sent successfully", i.Interaction.Member.User.Username, i.Interaction.GuildID, s)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprint(newBalance),
+					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprint(senderStats.Token_Balance),
 				},
 			})
 			return
 		} else {
 
-			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+			logging.LogEvent(loggingType.COMMAND_SEND, "Error sending tokens", i.Interaction.Member.User.Username, i.Interaction.GuildID, s)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

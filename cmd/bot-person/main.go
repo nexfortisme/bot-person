@@ -9,8 +9,13 @@ import (
 
 	"main/pkg/commands"
 	"main/pkg/messages"
-	"main/pkg/persistance"
 	"main/pkg/util"
+
+	persistance "main/pkg/persistance"
+	persistanceServices "main/pkg/persistance/services"
+
+	loggingTypes "main/pkg/logging/enums"
+	logging "main/pkg/logging/services"
 
 	"os"
 	"os/signal"
@@ -330,19 +335,6 @@ var (
 				},
 			},
 		},
-		/*
-			Todo:
-				headsOrTails
-					Bet tokens and get an RNG roll of heads or tails
-				gamble
-					Same as the previous gamble
-				economy
-					A way to see the status of the bot person economy
-				leaderboard
-					A way to see the top 10 users with the most tokens
-				Streaks
-					A way to see the top 10 users with the longest streaks
-		*/
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -369,14 +361,23 @@ var (
 )
 
 func main() {
+	// Step One: Read in flag variables
 	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
 	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
 	flag.Parse()
 
+	// Step 2: Read in environment variables
 	util.ReadEnv()
-	persistance.Connect()
 
-	// Create the Discord client and add the handler to process messages
+	// Step 3: Connect to the database
+	databseConnection := persistance.GetDB()
+
+	_, insertError := logging.LogEvent(loggingTypes.BOT_START, "Bot Person is starting up.", "System", "System")
+	if insertError != nil {
+		log.Fatalf("Error logging event: %v", insertError)
+	}
+
+	// Step 4: Declare and create the Discord Session
 	var discordSession *discordgo.Session
 	var err error
 
@@ -393,13 +394,16 @@ func main() {
 		}
 	}
 
+	// Step 5: Add the messageReceive handler to the discord session
 	discordSession.AddHandler(messageReceive)
 
+	// Step 6: Open the discord session
 	err = discordSession.Open()
 	if err != nil {
 		log.Fatal("Error opening bot websocket. " + err.Error())
 	}
 
+	// Step 7: Register the slash commands
 	if removeCommands {
 		removeRegisteredSlashCommands(discordSession)
 	}
@@ -407,9 +411,12 @@ func main() {
 	if !skipCmdReg {
 		registerSlashCommands(discordSession)
 	}
-	
 
+	// Step 8: Done
 	log.Println("Bot is now running")
+
+	fmt.Println("Getting User")
+	persistanceServices.GetUser("1", discordSession)
 
 	// Pulled from the examples for discordgo, this lets the bot continue to run
 	// until an interrupt is received, at which point the bot disconnects from
@@ -417,6 +424,9 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
+	defer databseConnection.Close()
+
+	// This is a simple 5 minute loop originally used to save the bot statistics
 	for {
 		select {
 		case <-fiveMinuteTicker.C:
@@ -425,6 +435,7 @@ func main() {
 			fmt.Println("Interrupt received, stopping...")
 			fiveMinuteTicker.Stop()
 			shutDown(discordSession)
+			logging.LogEvent(loggingTypes.BOT_STOP, "Bot Person is shutting down.", "System", "System")
 			return
 		}
 	}
