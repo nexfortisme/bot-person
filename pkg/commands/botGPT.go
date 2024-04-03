@@ -41,7 +41,7 @@ func BotGPT(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		prompt := option.StringValue()
 		botResponseString = ParseGPTSlashCommand(s, prompt)
 		if len("Request: "+prompt+" ")+len(botResponseString) > 2000 {
-			truncatedLength := 2000 - len(prompt) - len("...") // account for ellipsis
+			truncatedLength := 2000 - len("Request: "+prompt+" ") - len("...") // account for ellipsis
 			if truncatedLength > 0 {
 				botResponseString = botResponseString[:truncatedLength] + "..."
 			} else {
