@@ -171,7 +171,7 @@ func GetUserReward(userId string) (float64, string, error) {
 				if !updateUser(user) {
 					return -1, "", errors.New("error updating user record")
 				} else {
-					return -1, "", errors.New(errString)
+					return -2, "", errors.New(errString)
 				}
 			}
 
