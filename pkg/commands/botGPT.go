@@ -36,7 +36,18 @@ func BotGPT(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 
 		// Going out to make the OpenAI call to get the proper response
-		botResponseString = ParseGPTSlashCommand(s, option.StringValue())
+		// botResponseString = ParseGPTSlashCommand(s, option.StringValue(
+		// Check if the response will be too long and truncate if necessary
+		prompt := option.StringValue()
+		botResponseString = ParseGPTSlashCommand(s, prompt)
+		if len("Request: "+prompt+" ")+len(botResponseString) > 2000 {
+			truncatedLength := 2000 - len("Request: "+prompt+" ") - len("...") // account for ellipsis
+			if truncatedLength > 0 {
+				botResponseString = botResponseString[:truncatedLength] + "..."
+			} else {
+				botResponseString = "Response too long to display."
+			}
+		}
 
 		// Incrementint interaciton counter
 		persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *i.Interaction.Member.User)
