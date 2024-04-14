@@ -156,10 +156,6 @@ var (
 							Value: "invite",
 						},
 						{
-							Name:  "Save Streak",
-							Value: "save-streak",
-						},
-						{
 							Name:  "Store",
 							Value: "store",
 						},
@@ -289,28 +285,6 @@ var (
 			Description: "Get an invite link to invite Bot Person to your server.",
 		},
 		{
-			Name:        "save-streak",
-			Description: "Save your streak with an save streak token or purchase one for 1/2 of your current tokens",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "action",
-					Description: "Action you want to complete",
-					Type:        discordgo.ApplicationCommandOptionString,
-					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{
-							Name:  "Use",
-							Value: "use",
-						},
-						{
-							Name:  "Buy",
-							Value: "buy",
-						},
-					},
-					Required: true,
-				},
-			},
-		},
-		{
 			Name:        "store",
 			Description: "Pre-purchase your save streak tokens here. And more to come!",
 			Options: []*discordgo.ApplicationCommandOption{
@@ -365,7 +339,7 @@ var (
 		"stocks":      commands.Stocks,
 		"portfolio":   commands.Portfolio,
 		"invite":      commands.Invite,
-		"save-streak": commands.SaveStreak,
+		// "save-streak": commands.SaveStreak,
 		"store":       commands.Store,
 	}
 
