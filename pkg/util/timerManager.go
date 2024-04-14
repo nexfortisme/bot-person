@@ -69,3 +69,12 @@ func(m *TimerManager) CheckTimer(key string) bool {
     _, exists := m.timers[key]
     return exists
 }
+
+func(m *TimerManager) ExecTimerFunction(key string) {
+    // Get the function from timers map and execute it
+    m.lock.Lock()
+    defer m.lock.Unlock()
+    if timer, exists := m.timers[key]; exists {
+        timer.Reset(0)
+    }
+}

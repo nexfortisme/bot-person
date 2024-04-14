@@ -100,7 +100,7 @@ func SaveStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	})
 
 	timerManager := util.GetInstance()
-	timerManager.StopTimer("save_streak_exp" + i.Interaction.Member.User.ID)
+	timerManager.ExecTimerFunction("save_streak_exp" + i.Interaction.Member.User.ID)
 
 	// s.InteractionResponseDelete(i.Interaction)
 
