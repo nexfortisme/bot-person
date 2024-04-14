@@ -18,12 +18,14 @@ var (
 func GetOpenAIGPTResponse(prompt string) string {
 	client := &http.Client{}
 
+	fmt.Println("Hitting GPT 4")
+
 	dataTemplate := `{
-		"model": "%s",
+		"model": "gpt-4",
 		"messages": [{"role": "system", "content": "You generate responses no longer than 1750 characters long."}, {"role": "user", "content": "%s"}]
 	}`
 
-	data := fmt.Sprintf(dataTemplate, model, prompt)
+	data := fmt.Sprintf(dataTemplate, prompt)
 
 	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", strings.NewReader(data))
 	if err != nil {
@@ -54,16 +56,4 @@ func GetOpenAIGPTResponse(prompt string) string {
 	} else {
 		return rspOAI.Choices[0].Message.Content
 	}
-}
-
-func SetGPT4() {
-	model = "gpt-4"
-}
-
-func SetGPT3() {
-	model = "gpt-3.5-turbo-0301"
-}
-
-func SetGPT4New() {
-	model = "gpt-4-0613"
 }
