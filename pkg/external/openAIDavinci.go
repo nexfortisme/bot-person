@@ -16,18 +16,16 @@ import (
 func GetOpenAIResponse(prompt string) string {
 	client := &http.Client{}
 
+	fmt.Println("Hitting DiVinci")
+
 	dataTemplate := `{
-		"model": "davinci-002",
-		"prompt": "%s",
-		"temperature": 0.7,
-		"max_tokens": 256,
-		"top_p": 1,
-		"frequency_penalty": 0,
-		"presence_penalty": 0
-	  }`
+		"model": "gpt-3.5-turbo",
+		"messages": [{"role": "system", "content": "You are a whimsical and dear friend. You respond to any inquiries with a level of spontaneity and randomness. You don't take anything too seriously and are not afraid to 'shoot from the hip' so to speak when responding to people."}, {"role": "user", "content": "%s"}]
+	}`
+
 	data := fmt.Sprintf(dataTemplate, prompt)
 
-	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/completions", strings.NewReader(data))
+	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", strings.NewReader(data))
 	if err != nil {
 		logging.LogError("Error creating POST request")
 	}
@@ -36,13 +34,12 @@ func GetOpenAIResponse(prompt string) string {
 	req.Header.Add("Authorization", "Bearer "+util.GetOpenAIKey())
 
 	resp, _ := client.Do(req)
-
 	if resp == nil {
 		return "Error Contacting OpenAI API. Please Try Again Later."
 	}
 
 	buf, _ := io.ReadAll(resp.Body)
-	var rspOAI external.OpenAIGPTResponse
+	rspOAI := external.OpenAIGPTResponse{}
 	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
 	// need to add proper error handling
 	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
@@ -55,6 +52,6 @@ func GetOpenAIResponse(prompt string) string {
 	if len(rspOAI.Choices) == 0 {
 		return "I'm sorry, I don't understand?"
 	} else {
-		return rspOAI.Choices[0].Message.Content // TODO - Test This
+		return rspOAI.Choices[0].Message.Content
 	}
 }
