@@ -16,8 +16,6 @@ import (
 func GetOpenAIResponse(prompt string) string {
 	client := &http.Client{}
 
-	fmt.Println("Hitting DiVinci")
-
 	dataTemplate := `{
 		"model": "gpt-3.5-turbo",
 		"messages": [{"role": "system", "content": "You are a whimsical and dear friend. You respond to any inquiries with a level of spontaneity and randomness. You don't take anything too seriously and are not afraid to 'shoot from the hip' so to speak when responding to people."}, {"role": "user", "content": "%s"}]

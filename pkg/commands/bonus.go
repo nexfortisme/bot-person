@@ -57,7 +57,7 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 					Name: "You already collected your bonus today!",
 				},
 				{
-					Name: "Next Bonus In",
+					Name:  "Next Bonus In",
 					Value: err.Error(),
 				},
 			}
@@ -129,7 +129,7 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Label:    buttonLabel,
 		Emoji:    &discordgo.ComponentEmoji{Name: "🍻"}, // This is needed to get the button to work
 		Style:    discordgo.PrimaryButton,
-		CustomID: "save_streak_button",
+		CustomID: "save_streak_button:" + i.Interaction.Member.User.ID,
 		Disabled: err == nil || disableSaveStreak,
 	}
 
@@ -137,11 +137,11 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Label:    "Reset Streak",
 		Emoji:    &discordgo.ComponentEmoji{Name: "🔥"}, // This is needed to get the button to work
 		Style:    discordgo.DangerButton,
-		CustomID: "reset_streak_button",
+		CustomID: "reset_streak_button:" + i.Interaction.Member.User.ID,
 		Disabled: err == nil,
 	}
 
-	if(err != nil && bonusReward == -1) {
+	if err != nil && bonusReward == -1 {
 		saveStreakButton.Disabled = true
 		resetStreakButton.Disabled = true
 	}

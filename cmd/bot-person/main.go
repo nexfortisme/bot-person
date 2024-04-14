@@ -505,7 +505,8 @@ func registerSlashCommands(s *discordgo.Session) {
 			}
 			break;
 		case discordgo.InteractionMessageComponent:
-			if h, ok := applicationCommandHandlers[i.MessageComponentData().CustomID]; ok {
+			commandNameSplit := strings.Split(i.MessageComponentData().CustomID, ":")
+			if h, ok := applicationCommandHandlers[commandNameSplit[0]]; ok {
 				h(s, i)
 			}
 			break;

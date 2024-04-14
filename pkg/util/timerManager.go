@@ -62,3 +62,10 @@ func (m *TimerManager) ClearTimer(key string) {
     defer m.lock.Unlock()
     delete(m.timers, key)
 }
+
+func(m *TimerManager) CheckTimer(key string) bool {
+    m.lock.Lock()
+    defer m.lock.Unlock()
+    _, exists := m.timers[key]
+    return exists
+}

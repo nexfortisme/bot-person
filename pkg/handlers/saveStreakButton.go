@@ -4,12 +4,35 @@ import (
 	"fmt"
 	"main/pkg/persistance"
 	"main/pkg/util"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func SaveStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+	// Parse CustomID to retrieve the stored user ID
+	parts := strings.Split(i.MessageComponentData().CustomID, ":")
+	if len(parts) < 2 {
+		fmt.Println("Invalid CustomID format")
+		return
+	}
+
+	originalUserID := parts[1]
+	clickingUserID := i.Member.User.ID
+
+	if originalUserID != clickingUserID {
+		// Respond with a message that the user does not have permission to click this button
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "You are not allowed to interact with this button.",
+				Flags:   discordgo.MessageFlagsEphemeral, // Make the response only visible to the user
+			},
+		})
+		return
+	}
 
 	// Getting User Stats
 	userStats, userStatsError := persistance.GetUserStats(i.Interaction.Member.User.ID)

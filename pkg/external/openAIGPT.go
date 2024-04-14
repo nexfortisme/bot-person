@@ -11,14 +11,8 @@ import (
 	"strings"
 )
 
-var (
-	model = "gpt-4"
-)
-
 func GetOpenAIGPTResponse(prompt string) string {
 	client := &http.Client{}
-
-	fmt.Println("Hitting GPT 4")
 
 	dataTemplate := `{
 		"model": "gpt-4",
