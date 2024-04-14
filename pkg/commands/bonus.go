@@ -51,20 +51,33 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// }
 
 	if err != nil {
-		// flavorText = "You Missed Your Bonus!"
-		embedFields = []*discordgo.MessageEmbedField{
-			{
-				Name:  "Current Streak",
-				Value: fmt.Sprintf("%d days", userStreak),
-			},
-			{
-				Name:  "Streak Missed",
-				Value: "Click the save streak button to save your streak and get your bonus. Save streak costs 10% of your current balance. Click 'Save Streak' in the next 10 minutes to save your streak, or click 'Reset Streak' to reset your streak at no cost.",
-			},
-			{
-				Name:  "Current Balance",
-				Value: fmt.Sprintf("%.2f tokens", userBalance),
-			},
+		if bonusReward == -1 {
+			embedFields = []*discordgo.MessageEmbedField{
+				{
+					Name: "You already collected your bonus today!",
+				},
+				{
+					Name: "Next Bonus In",
+					Value: err.Error(),
+				},
+			}
+		} else {
+
+			// flavorText = "You Missed Your Bonus!"
+			embedFields = []*discordgo.MessageEmbedField{
+				{
+					Name:  "Current Streak",
+					Value: fmt.Sprintf("%d days", userStreak),
+				},
+				{
+					Name:  "Streak Missed",
+					Value: "Click the save streak button to save your streak and get your bonus. Save streak costs 10% of your current balance. Click 'Save Streak' in the next 10 minutes to save your streak, or click 'Reset Streak' to reset your streak at no cost.",
+				},
+				{
+					Name:  "Current Balance",
+					Value: fmt.Sprintf("%.2f tokens", userBalance),
+				},
+			}
 		}
 	} else {
 		flavorText, _ = util.GetStreakStringAndModifier(userStreak)
@@ -128,6 +141,10 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Disabled: err == nil,
 	}
 
+	if(err != nil && bonusReward == -1) {
+		saveStreakButton.Disabled = true
+		resetStreakButton.Disabled = true
+	}
 	actionRow := discordgo.ActionsRow{
 		Components: []discordgo.MessageComponent{saveStreakButton, resetStreakButton},
 	}
