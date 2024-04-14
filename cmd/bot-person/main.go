@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"main/pkg/commands"
+	"main/pkg/handlers"
 	"main/pkg/messages"
 	"main/pkg/persistance"
 	"main/pkg/util"
@@ -367,6 +368,11 @@ var (
 		"save-streak": commands.SaveStreak,
 		"store":       commands.Store,
 	}
+
+	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"reset_streak_button": handlers.ResetStreakButton,
+		"save_streak_button":  handlers.SaveStreakButton,
+	}
 )
 
 func ReadEnv() {
@@ -376,14 +382,14 @@ func ReadEnv() {
 	}
 
 	dbHost := os.Getenv("DB_HOST")
-    dbUser := os.Getenv("DB_USER")
-    dbPassword := os.Getenv("DB_PASSWORD")
-    dbName := os.Getenv("DB_NAME")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
 
-    fmt.Printf("DB_HOST: %s\n", dbHost)
-    fmt.Printf("DB_USER: %s\n", dbUser)
-    fmt.Printf("DB_PASSWORD: %s\n", dbPassword)
-    fmt.Printf("DB_NAME: %s\n", dbName)
+	fmt.Printf("DB_HOST: %s\n", dbHost)
+	fmt.Printf("DB_USER: %s\n", dbUser)
+	fmt.Printf("DB_PASSWORD: %s\n", dbPassword)
+	fmt.Printf("DB_NAME: %s\n", dbName)
 }
 
 func main() {
@@ -462,7 +468,7 @@ func main() {
 	// Adding a simple message handler
 	// Mostly used for "!" commands
 	discordSession.AddHandler(messageReceive)
-	discordSession.AddHandler(messages.InteractionCreate)
+	// discordSession.AddHandler(messages.InteractionCreate)
 
 	err = discordSession.Open()
 	if err != nil {
@@ -518,9 +524,21 @@ func registerSlashCommands(s *discordgo.Session) {
 		registeredCommands[i] = cmd
 	}
 	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-			h(s, i)
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+				h(s, i)
+			}
+			break;
+		case discordgo.InteractionMessageComponent:
+			if h, ok := applicationCommandHandlers[i.MessageComponentData().CustomID]; ok {
+				h(s, i)
+			}
+			break;
+		default:
+			log.Printf("Unknown interaction type: %v", i.Type)
 		}
+
 	})
 }
 

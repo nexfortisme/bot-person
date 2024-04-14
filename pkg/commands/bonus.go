@@ -26,6 +26,8 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var bonusEmbed *discordgo.MessageEmbed
 	var disableSaveStreak = false
 
+	var TEM_MINUTES = 10 * time.Minute
+
 	//Getting user stat information
 	userBalance = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
 	userStats, userStatsError := persistance.GetUserStats(i.Interaction.Member.User.ID)
@@ -112,7 +114,7 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	saveStreakButton := discordgo.Button{
 		Label:    buttonLabel,
-		Emoji:    discordgo.ComponentEmoji{Name: "🍻"}, // This is needed to get the button to work
+		Emoji:    &discordgo.ComponentEmoji{Name: "🍻"}, // This is needed to get the button to work
 		Style:    discordgo.PrimaryButton,
 		CustomID: "save_streak_button",
 		Disabled: err == nil || disableSaveStreak,
@@ -120,7 +122,7 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	resetStreakButton := discordgo.Button{
 		Label:    "Reset Streak",
-		Emoji:    discordgo.ComponentEmoji{Name: "🔥"}, // This is needed to get the button to work
+		Emoji:    &discordgo.ComponentEmoji{Name: "🔥"}, // This is needed to get the button to work
 		Style:    discordgo.DangerButton,
 		CustomID: "reset_streak_button",
 		Disabled: err == nil,
@@ -139,24 +141,23 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	})
 
 	if err != nil {
-		fmt.Println("starting timer")
-		_ = time.AfterFunc(10*time.Second, func() {
-			fmt.Println("timer done")
-			disableSaveStreak = true
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseUpdateMessage,
-				Data: &discordgo.InteractionResponseData{
-					Embeds:     []*discordgo.MessageEmbed{bonusEmbed},
-					Components: []discordgo.MessageComponent{actionRow},
-				},
+		timeString := "save_streak_exp" + i.Interaction.Member.User.ID
+		timerManager := util.GetInstance()
+
+		timerManager.SetTimer(timeString, TEM_MINUTES, func() {
+			saveStreakButton.Disabled = true
+			resetStreakButton.Disabled = true
+			actionRow = discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{saveStreakButton, resetStreakButton},
+			}
+
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Embeds:     &[]*discordgo.MessageEmbed{bonusEmbed},
+				Components: &[]discordgo.MessageComponent{actionRow},
 			})
+			if err != nil {
+				fmt.Println("error editing message", err)
+			}
 		})
 	}
-
-	// // Cleaning up the bonus message if the user is on cooldown or missed their bonus window.
-	// if err != nil {
-	// 	time.Sleep(time.Second * 15)
-	// 	_ = s.InteractionResponseDelete(i.Interaction)
-	// }
-
 }
