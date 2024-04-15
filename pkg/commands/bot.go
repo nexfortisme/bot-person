@@ -61,7 +61,7 @@ func Bot(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func ParseSlashCommand(s *discordgo.Session, prompt string) string {
 	respTxt := external.GetOpenAIResponse(prompt)
 	respTxt = "Request: " + prompt + " " + respTxt
-	if len(respTxt) > 2000 {
+	if len("Request: "+prompt+" "+respTxt) > 2000 {
 		respTxt = respTxt[:1997] + "..."
 	}
 	return respTxt

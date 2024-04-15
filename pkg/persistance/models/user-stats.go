@@ -1,18 +1,18 @@
 package persistance
 
-type DBUserStats struct {
-	tableName     struct{} `pg:"tbl_bp_user_stats"`
-	ID            string   `pg:"type: uuid"`
-	Date_Created  string   `pg:"date_created"`
-	Date_Modified string   `pg:"date_modified"`
+type UserStats struct {
+	UserId string `json:"userId"`
 
-	BP_User_ID string `pg:"bp_user_id"`
+	Date_Created  string `json:"dateCreated"`
+	Date_Modified string `json:"dateModified"`
 
-	Message_count  int `pg:"message_count"`
-	Good_Bot_Count int `pg:"good_bot_count"`
-	Bad_Bot_Count  int `pg:"bad_bot_count"`
+	// BP_User_ID string `pg:"bp_user_id"`
 
-	Token_Balance float64    `pg:"token_balance"`
-	Last_Bonus    string `pg:"last_bonus"`
-	Bonus_Streak  int    `pg:"bonus_streak"`
+	Message_count  int `json:"messageCount"`
+	Good_Bot_Count int `json:"goodBotCount"`
+	Bad_Bot_Count  int `json:"badBotCount"`
+
+	Token_Balance float64 `json:"tokenBalance"`
+	Last_Bonus    string  `json:"lastBonus"`
+	Bonus_Streak  int     `json:"bonusStreak"`
 }

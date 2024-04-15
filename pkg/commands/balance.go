@@ -3,8 +3,8 @@ package commands
 import (
 	"fmt"
 
-	logging "main/pkg/logging/services"
 	loggingType "main/pkg/logging/enums"
+	logging "main/pkg/logging/services"
 
 	persistance "main/pkg/persistance/services"
 
@@ -26,13 +26,13 @@ func Balance(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	if option, ok := optionMap["user"]; ok {
 		user := option.UserValue(s)
-		queryUserStats, _ := persistance.GetUserStats(user.ID, s)
+		queryUserStats, _ := persistance.GetUserByDiscordUserId(user.ID, s)
 
-		balanceResponse = user.Username + " has " + fmt.Sprintf("%.2f", queryUserStats.Token_Balance) + " tokens."
+		balanceResponse = user.Username + " has " + fmt.Sprintf("%.2f", queryUserStats.UserStats.ImageTokens) + " tokens."
 	} else {
-		queryUserStats, _ := persistance.GetUserStats(i.Interaction.Member.User.ID, s)
-		
-		balanceResponse = "You have " + fmt.Sprintf("%.2f", queryUserStats.Token_Balance) + " tokens."
+		queryUserStats, _ := persistance.GetUserByDiscordUserId(i.Interaction.Member.User.ID, s)
+
+		balanceResponse = "You have " + fmt.Sprintf("%.2f", queryUserStats.UserStats.ImageTokens) + " tokens."
 	}
 
 	logging.LogEvent(loggingType.COMMAND_BALANCE, balanceResponse, i.Member.User.ID, i.GuildID, s)

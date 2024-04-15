@@ -1,7 +1,7 @@
 package messages
 
 import (
-	"main/pkg/external"
+	external "main/pkg/external"
 	// "main/pkg/persistance"
 	"main/pkg/util"
 	// "strconv"
@@ -66,42 +66,6 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			// } else {
 			// 	s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
 			// }
-		}
-	} else if strings.HasPrefix(incomingMessage, "!setGPT4") {
-
-		// TODO - Switch to use BPSystemInteraction
-		// persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
-
-		if !util.UserIsAdmin(m.Author.ID) {
-			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
-			return
-		} else {
-			external.SetGPT4()
-			s.ChannelMessageSend(m.ChannelID, "Model set to GPT-4")
-		}
-	} else if strings.HasPrefix(incomingMessage, "!setGPT3") {
-
-		// TODO - Switch to use BPSystemInteraction
-		// persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
-
-		if !util.UserIsAdmin(m.Author.ID) {
-			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
-			return
-		} else {
-			external.SetGPT3()
-			s.ChannelMessageSend(m.ChannelID, "Model set to GPT-3")
-		}
-	} else if strings.HasPrefix(incomingMessage, "!setGPT4New") {
-
-		// TODO - Switch to use BPSystemInteraction
-		// persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
-
-		if !util.UserIsAdmin(m.Author.ID) {
-			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
-			return
-		} else {
-			external.SetGPT4New()
-			s.ChannelMessageSend(m.ChannelID, "Model set to GPT-4")
 		}
 	} else if strings.HasPrefix(incomingMessage, ";;lenny") {
 		// persistance.IncrementInteractionTracking(persistance.BPLennyFaceInteracton, *m.Author)

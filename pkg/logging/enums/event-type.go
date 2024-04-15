@@ -62,6 +62,9 @@ const (
 	INTERNAL_ERROR
 	DATABASE_ERROR
 
+	// Logging
+	USER_SET_BONUS_STREAK
+
 	// Test
 	TEST_EVENT
 )

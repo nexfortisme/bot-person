@@ -14,8 +14,7 @@ import (
 	persistance "main/pkg/persistance"
 	persistanceServices "main/pkg/persistance/services"
 
-	loggingTypes "main/pkg/logging/enums"
-	logging "main/pkg/logging/services"
+	state "main/pkg/state/services"
 
 	"os"
 	"os/signal"
@@ -181,15 +180,6 @@ var (
 					Description: "The actual prompt that Bot Person will generate an image from.",
 					Required:    true,
 				},
-				// TODO - Implement requesting multiple images at once
-				// {
-				// 	Type:        discordgo.ApplicationCommandOptionInteger,
-				// 	Name:        "number",
-				// 	Description: "The number of image you want Bot Person to generate. Cost = # of images generated",
-				// 	MinValue:    &integerOptionMinValue,
-				// 	MaxValue:    10,
-				// 	Required:    false,
-				// },
 			},
 		},
 		{
@@ -338,10 +328,10 @@ var (
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"bot":         commands.Bot,
-		"bot-gpt":     commands.BotGPT,
-		"my-stats":    commands.MyStats,
-		"bot-stats":   commands.BotStats,
+		"bot":      commands.Bot,
+		"bot-gpt":  commands.BotGPT,
+		"my-stats": commands.MyStats,
+		// "bot-stats":   commands.BotStats,
 		"about":       commands.About,
 		"donations":   commands.Donations,
 		"help":        commands.Help,
@@ -372,10 +362,10 @@ func main() {
 	// Step 3: Connect to the database
 	databseConnection := persistance.GetDB()
 
-	_, insertError := logging.LogEvent(loggingTypes.BOT_START, "Bot Person is starting up.", "System", "System")
-	if insertError != nil {
-		log.Fatalf("Error logging event: %v", insertError)
-	}
+	// _, insertError := logging.LogEvent(loggingTypes.BOT_START, "Bot Person is starting up.", "System", "System")
+	// if insertError != nil {
+	// 	log.Fatalf("Error logging event: %v", insertError)
+	// }
 
 	// Step 4: Declare and create the Discord Session
 	var discordSession *discordgo.Session
@@ -402,6 +392,9 @@ func main() {
 	if err != nil {
 		log.Fatal("Error opening bot websocket. " + err.Error())
 	}
+
+	// Step 6.5: Set the session in the state
+	state.SetDiscordSession(discordSession)
 
 	// Step 7: Register the slash commands
 	if removeCommands {
@@ -435,7 +428,7 @@ func main() {
 			fmt.Println("Interrupt received, stopping...")
 			fiveMinuteTicker.Stop()
 			shutDown(discordSession)
-			logging.LogEvent(loggingTypes.BOT_STOP, "Bot Person is shutting down.", "System", "System")
+			// logging.LogEvent(loggingTypes.BOT_STOP, "Bot Person is shutting down.", "System", "System")
 			return
 		}
 	}

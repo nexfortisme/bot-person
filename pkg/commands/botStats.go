@@ -17,5 +17,4 @@ func BotStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// 	Data: &discordgo.InteractionResponseData{
 	// 		Content: botStatisticsString,
 	// 	},
-	// })
 }

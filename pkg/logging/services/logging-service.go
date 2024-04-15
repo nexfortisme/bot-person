@@ -3,6 +3,7 @@ package logging
 import (
 	"log"
 	loggingType "main/pkg/logging/enums"
+
 	logging "main/pkg/logging/models"
 	"main/pkg/persistance"
 	"main/pkg/util"
@@ -29,7 +30,7 @@ func LogEvent(event loggingType.EventType, eventValue string, createUser string,
 		CreateGuild:   guild.Name,
 	}
 
-	_, err := db.Model(&loggingEvent).Insert()
+	_, err := db.Create("events", loggingEvent)
 	if err != nil {
 		return false, err
 	}
