@@ -203,7 +203,7 @@ var (
 		},
 		{
 			Name:        "loot-box",
-			Description: "Spend 2.5 tokens to get an RNG box",
+			Description: "Spend 5 tokens to get an RNG box",
 		},
 		{
 			Name:        "broken",
