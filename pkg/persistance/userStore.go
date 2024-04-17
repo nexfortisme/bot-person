@@ -36,6 +36,7 @@ func GetUser(userId string) (*persistance.User, error) {
 		newUser := persistance.User{}
 		newUser.UserId = userId
 		newUser.Username = discordUser.Username
+		newUser.UserStats.ImageTokens = 25
 
 		resp, err := db.Create("users", newUser)
 		if err != nil {
