@@ -222,7 +222,7 @@ var (
 		},
 		{
 			Name:        "loot-box",
-			Description: "Spend 2.5 tokens to get an RNG box",
+			Description: "Spend 5 tokens to get an RNG box",
 		},
 		{
 			Name:        "broken",
@@ -322,25 +322,25 @@ var (
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"bot":         commands.Bot,
-		"bot-gpt":     commands.BotGPT,
-		"my-stats":    commands.MyStats,
-		"bot-stats":   commands.BotStats,
-		"about":       commands.About,
-		"donations":   commands.Donations,
-		"help":        commands.Help,
-		"image":       commands.Image,
-		"balance":     commands.Balance,
-		"send":        commands.Send,
-		"bonus":       commands.Bonus,
-		"loot-box":    commands.Lootbox,
-		"broken":      commands.Broken,
-		"burn":        commands.Burn,
-		"stocks":      commands.Stocks,
-		"portfolio":   commands.Portfolio,
-		"invite":      commands.Invite,
+		"bot":       commands.Bot,
+		"bot-gpt":   commands.BotGPT,
+		"my-stats":  commands.MyStats,
+		"bot-stats": commands.BotStats,
+		"about":     commands.About,
+		"donations": commands.Donations,
+		"help":      commands.Help,
+		"image":     commands.Image,
+		"balance":   commands.Balance,
+		"send":      commands.Send,
+		"bonus":     commands.Bonus,
+		"loot-box":  commands.Lootbox,
+		"broken":    commands.Broken,
+		"burn":      commands.Burn,
+		"stocks":    commands.Stocks,
+		"portfolio": commands.Portfolio,
+		"invite":    commands.Invite,
 		// "save-streak": commands.SaveStreak,
-		"store":       commands.Store,
+		"store": commands.Store,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -503,13 +503,13 @@ func registerSlashCommands(s *discordgo.Session) {
 			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
 				h(s, i)
 			}
-			break;
+			break
 		case discordgo.InteractionMessageComponent:
 			commandNameSplit := strings.Split(i.MessageComponentData().CustomID, ":")
 			if h, ok := applicationCommandHandlers[commandNameSplit[0]]; ok {
 				h(s, i)
 			}
-			break;
+			break
 		default:
 			log.Printf("Unknown interaction type: %v", i.Type)
 		}
