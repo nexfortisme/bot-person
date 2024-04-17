@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"main/pkg/persistance"
 
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
+
 	"github.com/bwmarrin/discordgo"
 )
 
 func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
-	senderBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+	sender, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
 	var transferrAmount float64
 
@@ -27,9 +30,9 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		transferrAmount = option.FloatValue()
 
-		if senderBalance < transferrAmount {
+		if sender.UserStats.ImageTokens < transferrAmount {
 
-			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+			logging.LogEvent(eventType.COMMAND_SEND, i.Interaction.Member.User.ID, "User does not have enough tokens to send", i.Interaction.GuildID)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -56,23 +59,22 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		sendResponse := persistance.TransferBotPersonTokens(transferrAmount, i.Interaction.Member.User.ID, recepient.ID)
 
-		newBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+		sender, _ = persistance.GetUser(i.Interaction.Member.User.ID)
 
 		if sendResponse {
 
-			// TODO - Switch to use BPSystemInteraction
-			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+			logging.LogEvent(eventType.COMMAND_SEND, i.Interaction.Member.User.ID, fmt.Sprintf("User Sent %f tokens to %s", transferrAmount, recepient.ID), i.Interaction.GuildID)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprint(newBalance),
+					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprint(sender.UserStats.ImageTokens),
 				},
 			})
 			return
 		} else {
 
-			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+			logging.LogEvent(eventType.COMMAND_SEND, i.Interaction.Member.User.ID, "Something Went Wrong.", i.Interaction.GuildID)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

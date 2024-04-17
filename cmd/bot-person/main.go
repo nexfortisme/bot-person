@@ -1,32 +1,34 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
-	"io"
 	"log"
+	"time"
 
 	"main/pkg/commands"
 	"main/pkg/handlers"
+	"main/pkg/logging"
 	"main/pkg/messages"
 	"main/pkg/persistance"
 	"main/pkg/util"
+
+	eventType "main/pkg/logging/enums"
+	state "main/pkg/state/services"
 
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/joho/godotenv"
-	"github.com/r3labs/diff/v3"
 )
 
 var (
 	// config  util.ConfigStruct
 	devMode bool
+
+	fiveMinuteTicker = time.NewTicker(5 * time.Minute)
 
 	removeCommands   bool
 	removeOnStartup  bool
@@ -144,20 +146,8 @@ var (
 							Value: "burn",
 						},
 						{
-							Name:  "Stocks",
-							Value: "stocks",
-						},
-						{
-							Name:  "Portfolio",
-							Value: "portfolio",
-						},
-						{
 							Name:  "Invite",
 							Value: "invite",
-						},
-						{
-							Name:  "Store",
-							Value: "store",
 						},
 					},
 					Required: false,
@@ -174,15 +164,6 @@ var (
 					Description: "The actual prompt that Bot Person will generate an image from.",
 					Required:    true,
 				},
-				// TODO - Implement requesting multiple images at once
-				// {
-				// 	Type:        discordgo.ApplicationCommandOptionInteger,
-				// 	Name:        "number",
-				// 	Description: "The number of image you want Bot Person to generate. Cost = # of images generated",
-				// 	MinValue:    &integerOptionMinValue,
-				// 	MaxValue:    10,
-				// 	Required:    false,
-				// },
 			},
 		},
 		{
@@ -242,69 +223,8 @@ var (
 			},
 		},
 		{
-			Name:        "stocks",
-			Description: "Buy and sell fake stocks with bot person tokens.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "action",
-					Description: "Action you want to complete",
-					Type:        discordgo.ApplicationCommandOptionString,
-					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{
-							Name:  "Buy",
-							Value: "buy",
-						},
-						{
-							Name:  "Sell",
-							Value: "sell",
-						},
-					},
-					Required: true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "stock",
-					Description: "The symbol of the stock you want to buy or sell",
-					Required:    true,
-				},
-				{
-					Name:        "quantity",
-					Description: "Number of stocks you want to buy or sell",
-					Type:        discordgo.ApplicationCommandOptionNumber,
-					MinValue:    &integerOptionMinValue,
-					Required:    true,
-				},
-			},
-		},
-		{
-			Name:        "portfolio",
-			Description: "View your portfolio of stocks.",
-		},
-		{
 			Name:        "invite",
 			Description: "Get an invite link to invite Bot Person to your server.",
-		},
-		{
-			Name:        "store",
-			Description: "Pre-purchase your save streak tokens here. And more to come!",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "item",
-					Description: "The item you wish to purchase",
-					Type:        discordgo.ApplicationCommandOptionString,
-					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{
-							Name:  "Help",
-							Value: "help",
-						},
-						{
-							Name:  "Save Streak Token",
-							Value: "save-streak-token",
-						},
-					},
-					Required: true,
-				},
-			},
 		},
 		/*
 			Todo:
@@ -322,25 +242,21 @@ var (
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"bot":         commands.Bot,
-		"bot-gpt":     commands.BotGPT,
-		"my-stats":    commands.MyStats,
-		"bot-stats":   commands.BotStats,
-		"about":       commands.About,
-		"donations":   commands.Donations,
-		"help":        commands.Help,
-		"image":       commands.Image,
-		"balance":     commands.Balance,
-		"send":        commands.Send,
-		"bonus":       commands.Bonus,
-		"loot-box":    commands.Lootbox,
-		"broken":      commands.Broken,
-		"burn":        commands.Burn,
-		"stocks":      commands.Stocks,
-		"portfolio":   commands.Portfolio,
-		"invite":      commands.Invite,
-		// "save-streak": commands.SaveStreak,
-		"store":       commands.Store,
+		"bot":       commands.Bot,
+		"bot-gpt":   commands.BotGPT,
+		"my-stats":  commands.MyStats,
+		"bot-stats": commands.BotStats,
+		"about":     commands.About,
+		"donations": commands.Donations,
+		"help":      commands.Help,
+		"image":     commands.Image,
+		"balance":   commands.Balance,
+		"send":      commands.Send,
+		"bonus":     commands.Bonus,
+		"loot-box":  commands.Lootbox,
+		"broken":    commands.Broken,
+		"burn":      commands.Burn,
+		"invite": commands.Invite,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -349,106 +265,50 @@ var (
 	}
 )
 
-func ReadEnv() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
-	dbHost := os.Getenv("DB_HOST")
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-
-	fmt.Printf("DB_HOST: %s\n", dbHost)
-	fmt.Printf("DB_USER: %s\n", dbUser)
-	fmt.Printf("DB_PASSWORD: %s\n", dbPassword)
-	fmt.Printf("DB_NAME: %s\n", dbName)
-}
-
 func main() {
 
-	// https://gobyexample.com/command-line-flags
+	// Step One: Read in flag variables
 	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
 	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
-	flag.BoolVar(&disableLogging, "disableLogging", false, "Flag for disabling file logging of commands passed into bot person")
-	flag.BoolVar(&disableTracking, "disableTracking", false, "Flag for disabling tracking of user interactions and bad bot messages")
-	flag.BoolVar(&skipCmdReg, "skipCmdReg", false, "Flag for disabling registering of commands on startup")
 	flag.Parse()
 
-	util.ReadConfig()
-	persistance.ReadBotStatistics()
+	// Step 2: Read in environment variables
+	util.ReadEnv()
 
-	fiveMinuteTicker := time.NewTicker(5 * time.Minute)
+	// Step 3: Connect to the database
+	databseConnection := persistance.GetDB()
+	logging.LogEvent(eventType.BOT_START, "SYSTEM", "Bot Person is starting up.", "SYSTEM")
 
-	logFile, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
-	}
-
-	if !disableLogging {
-		multiWriter := io.MultiWriter(os.Stdout, logFile)
-		defer logFile.Close()
-
-		// This makes it print to both the console and to a file
-		log.SetOutput(multiWriter)
-	}
-
-	// Create the Discord client and add the handler to process messages
+	// Step 4: Declare and create the Discord Session
 	var discordSession *discordgo.Session
+	var err error
 
 	if devMode {
 		log.Println("Entering Dev Mode...")
-
-		if util.GetDevDiscordToken() == "" {
-			createdConfig = true
-			reader := bufio.NewReader(os.Stdin)
-			log.Print("Please Enter the Dev Discord Token: ")
-
-			newDevToken, _ := reader.ReadString('\n')
-			newDevToken = strings.TrimSuffix(newDevToken, "\r\n")
-
-			util.SetDevDiscordToken(newDevToken)
-
-			// config.DevDiscordToken, _ = reader.ReadString('\n')
-			// config.DevDiscordToken = strings.TrimSuffix(config.DevDiscordToken, "\r\n")
-			log.Println("Dev Discord Token Set to: '" + util.GetDevDiscordToken() + "'")
-		}
-
-		discordSession, err = discordgo.New("Bot " + util.GetDevDiscordToken())
+		discordSession, err = discordgo.New("Bot " + util.GetDevDiscordKey())
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
 		}
 	} else {
-		discordSession, err = discordgo.New("Bot " + util.GetDiscordToken())
+		discordSession, err = discordgo.New("Bot " + util.GetDiscordKey())
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
 		}
 	}
 
-	if util.GetFinHubToken() == "" {
-		log.Println("FinnHub Key not set, please enter your key: ")
-
-		createdConfig = true
-		reader := bufio.NewReader(os.Stdin)
-		newFinnHubToken, _ := reader.ReadString('\n')
-		newFinnHubToken = strings.TrimSuffix(newFinnHubToken, "\r\n")
-
-		util.SetFinnHubToken(newFinnHubToken)
-
-		log.Println("Finn Hub Token Set to: '" + util.GetFinHubToken() + "'")
-	}
-
-	// Adding a simple message handler
-	// Mostly used for "!" commands
+	// Step 5: Add the messageReceive handler to the discord session
 	discordSession.AddHandler(messageReceive)
-	// discordSession.AddHandler(messages.InteractionCreate)
 
+	// Step 6: Open the discord session
 	err = discordSession.Open()
 	if err != nil {
 		log.Fatal("Error opening bot websocket. " + err.Error())
 	}
 
+	// Step 6.5: Set the session in the state
+	state.SetDiscordSession(discordSession)
+
+	// Step 7: Register the slash commands
 	if removeCommands {
 		removeRegisteredSlashCommands(discordSession)
 	}
@@ -457,9 +317,8 @@ func main() {
 		registerSlashCommands(discordSession)
 	}
 
+	// Step 8: Done
 	log.Println("Bot is now running")
-
-	go listenForCommands(discordSession)
 
 	// Pulled from the examples for discordgo, this lets the bot continue to run
 	// until an interrupt is received, at which point the bot disconnects from
@@ -467,10 +326,12 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
+	defer databseConnection.Close()
+
+	// This is a simple 5 minute loop originally used to save the bot statistics
 	for {
 		select {
 		case <-fiveMinuteTicker.C:
-			saveBotStatistics()
 		case <-interrupt:
 			fmt.Println("Interrupt received, stopping...")
 			fiveMinuteTicker.Stop()
@@ -478,6 +339,7 @@ func main() {
 			return
 		}
 	}
+
 }
 
 func messageReceive(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -503,13 +365,13 @@ func registerSlashCommands(s *discordgo.Session) {
 			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
 				h(s, i)
 			}
-			break;
+			break
 		case discordgo.InteractionMessageComponent:
 			commandNameSplit := strings.Split(i.MessageComponentData().CustomID, ":")
 			if h, ok := applicationCommandHandlers[commandNameSplit[0]]; ok {
 				h(s, i)
 			}
-			break;
+			break
 		default:
 			log.Printf("Unknown interaction type: %v", i.Type)
 		}
@@ -533,77 +395,10 @@ func removeRegisteredSlashCommands(s *discordgo.Session) {
 	}
 }
 
+// I guess this is redundant since we no longer have to worry about
+// persisting bot data to a file
 func shutDown(discord *discordgo.Session) {
+	logging.LogEvent(eventType.BOT_STOP, "SYSTEM", "Bot Person is shutting down.", "SYSTEM")
 	log.Println("Shutting Down...")
-
-	if createdConfig {
-		util.WriteConfig()
-	}
-
-	persistance.SaveBotStatistics()
 	_ = discord.Close()
-}
-
-// This is a function that will save the current contents of the bot statistics
-func saveBotStatistics() {
-
-	changeLog, _ := diff.Diff(persistance.GetTempTracking(), persistance.GetBotTracking())
-
-	if len(changeLog) > 0 {
-		log.Println("Saving Bot Statistics...")
-		fsInterrupt = true // TODO - Implement interrupt checking for when a user may be doing something while the bot is saving
-		persistance.SaveBotStatistics()
-		persistance.ReadBotStatistics()
-		fsInterrupt = false
-	} else {
-		log.Println("No Changes to Bot Statistics. Skipping Save...")
-	}
-
-}
-
-func listenForCommands(s *discordgo.Session) {
-	fmt.Print("Enter Command:")
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		command := scanner.Text()
-
-		// Handle the command
-		if strings.HasPrefix(command, "ping") {
-			fmt.Println("Pong!")
-		} else if strings.HasPrefix(command, "addAdmin") {
-			commandRequest := strings.Split(command, " ")
-
-			if len(commandRequest) < 2 {
-				fmt.Println("Command: addAdmin <UserId>")
-				fmt.Print("Enter Command:")
-				continue
-			}
-
-			createdConfig = true
-
-			util.AddAdmin(commandRequest[1])
-			fmt.Printf("Added %v to Admins\n", commandRequest[1])
-		} else if strings.HasPrefix(command, "removeAdmin") {
-			commandRequest := strings.Split(command, " ")
-
-			if len(commandRequest) < 2 {
-				fmt.Println("Command: removeAdmin <UserId>")
-				fmt.Print("Enter Command:")
-				continue
-			}
-
-			createdConfig = true
-			util.RemoveAdmin(commandRequest[1])
-			fmt.Printf("Removed %v from Admins\n", commandRequest[1])
-		} else if strings.HasPrefix(command, "listAdmins") {
-			fmt.Println("Admins: " + util.ListAdmins())
-		} else if command == "quit" {
-			fmt.Println("Quit Recieved, stopping...")
-			shutDown(s)
-			os.Exit(0)
-		} else {
-			fmt.Println("Unknown command")
-		}
-		fmt.Print("Enter Command:")
-	}
 }

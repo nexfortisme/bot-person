@@ -11,7 +11,7 @@ import (
 
 func Stocks(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
-	userBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+	user, _ := persistance.GetUser(i.Interaction.Member.User.ID);
 
 	var stockAction string
 	var stockTicker string
@@ -62,7 +62,7 @@ func Stocks(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		purchasePrice := currentPriceF64 * purchaseAmount
 
-		if userBalance < purchasePrice {
+		if user.UserStats.ImageTokens < purchasePrice {
 
 			retString := fmt.Sprintf("You don't have the tokens needed to purchase %.2f shares of %s. Please try again with a lower amount.", purchaseAmount, stockTicker)
 
@@ -78,9 +78,11 @@ func Stocks(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 			persistance.AddStock(i.Interaction.Member.User.ID, stockTicker, purchaseAmount)
 
-			persistance.RemoveUserTokens(i.Interaction.Member.User.ID, purchasePrice)
+			persistance.RemoveBotPersonTokens(purchasePrice, i.Interaction.Member.User.ID)
 
-			retString := fmt.Sprintf("You have purchased %f shares of %s for %.2f tokens. Your new balance is %.2f tokens.", purchaseAmount, stockTicker, purchasePrice, persistance.GetUserTokenCount(i.Interaction.Member.User.ID))
+			user, _ = persistance.GetUser(i.Interaction.Member.User.ID)
+
+			retString := fmt.Sprintf("You have purchased %f shares of %s for %.2f tokens. Your new balance is %.2f tokens.", purchaseAmount, stockTicker, purchasePrice, user.UserStats.ImageTokens)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -127,7 +129,9 @@ func Stocks(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 			persistance.AddBotPersonTokens(sellPrice, i.Interaction.Member.User.ID)
 
-			retString := fmt.Sprintf("You have sold %f shares of %s for %.2f tokens. Your new balance is %.2f tokens.", purchaseAmount, stockTicker, sellPrice, persistance.GetUserTokenCount(i.Interaction.Member.User.ID))
+			user, _ = persistance.GetUser(i.Interaction.Member.User.ID)
+
+			retString := fmt.Sprintf("You have sold %f shares of %s for %.2f tokens. Your new balance is %.2f tokens.", purchaseAmount, stockTicker, sellPrice, user.UserStats.ImageTokens)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

@@ -1,16 +1,20 @@
 package commands
 
 import (
-	"main/pkg/persistance"
+	// "main/pkg/persistance"
+
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func BotStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+	
+	logging.LogEvent(eventType.COMMAND_BOT_STATS, i.Interaction.Member.User.ID, "Bot Stats command used", i.Interaction.GuildID)
 
 	// Getting user stat data
-	botStatisticsString := persistance.SlashGetBotStats(s)
+	botStatisticsString := "Refactor in progress..."
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

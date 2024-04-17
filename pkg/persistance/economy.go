@@ -3,12 +3,14 @@ package persistance
 import (
 	"errors"
 	"fmt"
-	persistance "main/pkg/persistance/models"
 	"main/pkg/util"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
+
+	persistance "main/pkg/persistance/eums"
+	models "main/pkg/persistance/models"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/hako/durafmt"
@@ -16,117 +18,56 @@ import (
 
 func AddBotPersonTokens(tokenAmount float64, userId string) bool {
 
-	user, err := getUser(userId)
+	user, _ := GetUser(userId)
+	user.UserStats.ImageTokens += tokenAmount
 
-	if err != nil {
-		createAndAddUser(userId, 0, 0, 0, 0, util.LowerFloatPrecision(tokenAmount))
-		return true
-	} else {
-		user.UserStats.ImageTokens += tokenAmount
-		return updateUser(user)
+	UpdateUser(*user)
+
+	return true
+}
+
+func RemoveBotPersonTokens(tokenAmount float64, userId string) bool {
+
+	user, _ := GetUser(userId)
+	user.UserStats.ImageTokens -= tokenAmount
+
+	if user.UserStats.ImageTokens < 0 {
+		user.UserStats.ImageTokens = 0
 	}
 
+	UpdateUser(*user)
+
+	return true
 }
 
 func TransferBotPersonTokens(tokenAmount float64, fromUserId string, toUserId string) bool {
 
-	fromUser, fromErr := getUser(fromUserId)
-	toUser, toErr := getUser(toUserId)
+	fromUser, fromErr := GetUser(fromUserId)
+	toUser, toErr := GetUser(toUserId)
 
-	// Checking to see if user exists
-	if fromErr != nil {
-		return false
-	} else {
-
-		// The User exists but is trying to transfer more tokens than they have
-		if fromUser.UserStats.ImageTokens < tokenAmount {
-			return false
-		}
-
-		// Checking to see if the toUser exists
-		if toErr != nil {
-
-			// toUser doesn't exist
-			// Creates user and assigns them the number of tokens that is being transferred
-			createAndAddUser(toUserId, 0, 0, 0, 0, util.LowerFloatPrecision(tokenAmount))
-			fromUser.UserStats.ImageTokens -= tokenAmount
-			return updateUser(fromUser)
-		} else {
-			toUser.UserStats.ImageTokens += tokenAmount
-			fromUser.UserStats.ImageTokens -= tokenAmount
-			return updateUser(toUser) && updateUser(fromUser)
-		}
-	}
-
-}
-
-func UseImageToken(userId string) bool {
-
-	user, err := getUser(userId)
-
-	if err != nil {
-		return false
-	} else {
-		if user.UserStats.ImageTokens < 1 {
-			return false
-		} else {
-			user.UserStats.ImageTokens -= 10
-			return updateUser(user)
-		}
-	}
-
-}
-
-// Is this needed, can be canned
-func UserHasTokens(userId string) bool {
-	user, err := getUser(userId)
-
-	if err != nil {
+	if fromErr != nil || toErr != nil {
 		return false
 	}
 
-	return user.UserStats.ImageTokens > 0
-}
-
-func GetUserTokenCount(userId string) float64 {
-	user, err := getUser(userId)
-
-	if err != nil {
-		return 0
-	} else {
-		return user.UserStats.ImageTokens
+	// The User exists but is trying to transfer more tokens than they have
+	if fromUser.UserStats.ImageTokens < tokenAmount {
+		return false
 	}
+
+	toUser.UserStats.ImageTokens += tokenAmount
+	fromUser.UserStats.ImageTokens -= tokenAmount
+	return UpdateUser(*toUser) && UpdateUser(*fromUser)
 }
 
-func RemoveUserTokens(userId string, tokenAmount float64) bool {
-	user, err := getUser(userId)
-
-	if err != nil {
-		createAndAddUser(userId, 0, 0, 0, 0, 0)
-		return true
-	} else {
-		if (user.UserStats.ImageTokens - tokenAmount) <= 0 {
-			user.UserStats.ImageTokens = 0
-			return updateUser(user)
-		} else {
-			user.UserStats.ImageTokens -= tokenAmount
-			return updateUser(user)
-		}
-	}
-}
-
-func GetUserReward(userId string) (float64, string, error) {
+func GetUserReward(userId string) (float64, persistance.RewardStatus, error) {
 
 	// Getting user and setting necessary variables
-	user, err := getUser(userId)
-	returnString := ""
-	modifier := 1
-
-	// Checking for Get User Error and setting appropriate values
+	user, err := GetUser(userId)
 	if err != nil {
-		user.UserId = userId
-		addUser(user)
+		panic(err)
 	}
+
+	modifier := 1
 
 	// Checking to see if the user has a LastBonus time
 	if (user.UserStats.LastBonus != time.Time{}) {
@@ -144,42 +85,14 @@ func GetUserReward(userId string) (float64, string, error) {
 
 			errString := "Please try again in: " + formattedString.String()
 
-			return -1.0, "", errors.New(errString)
+			return -1.0, persistance.TOO_EARLY, errors.New(errString)
 		}
 
 		timeWindow := user.UserStats.LastBonus.Add(time.Hour * 48)
 		timeWindowDiff := time.Since(timeWindow)
 
-		// Missed Window
 		if timeWindowDiff > 0 {
-
-			// If the user has had a time set for trying to save their streak
-			if (user.UserStats.HoldStreakTimer != time.Time{}) {
-				returnString = fmt.Sprintf("Streak Not Saved in time. Streak Reset. \nCurrent Streak: %d", 1)
-				user.UserStats.BonusStreak = 1
-				user.UserStats.HoldStreakTimer = time.Time{}
-			} else {
-
-				// Used for displaying the discord relative time for the user to save their streak
-				inFiveMinutes := time.Now().Add(time.Minute * 5).Unix()
-
-				// Not sure if the relative time string work for users outside the time zone of the bot
-				errString := fmt.Sprintf("Bonus Not Redeemed within 24 hours. To save your streak, use `/save-streak` <t:%d:R>. `/save-streak` will use a save token or purchase one for 1/2 of your current tokens. \nCurrent Streak: %d", inFiveMinutes, user.UserStats.BonusStreak)
-
-				user.UserStats.HoldStreakTimer = time.Now()
-
-				if !updateUser(user) {
-					return -1, "", errors.New("error updating user record")
-				} else {
-					return -2, "", errors.New(errString)
-				}
-			}
-
-		} else {
-			user.UserStats.BonusStreak++
-			streak := user.UserStats.BonusStreak
-
-			returnString, modifier = util.GetStreakStringAndModifier(streak)
+			return -1.0, persistance.MISSED, errors.New("Streak Missed")
 		}
 
 	}
@@ -190,27 +103,28 @@ func GetUserReward(userId string) (float64, string, error) {
 	// Updating User Record
 	user.UserStats.LastBonus = time.Now()
 	user.UserStats.ImageTokens += finalReward
+	user.UserStats.BonusStreak++
 
-	if !updateUser(user) {
-		return -1, "", errors.New("error updating user record")
+	if !UpdateUser(*user) {
+		return -1.0, persistance.AVAILABLE, errors.New("error updating user record")
 	} else {
-		return finalReward, returnString, nil
+		return finalReward, persistance.AVAILABLE, nil
 	}
 
 }
 
 func BuyLootbox(userId string) (float64, int, error) {
 
-	user, err := getUser(userId)
+	user, err := GetUser(userId)
 
 	if err != nil {
 		return -1, -1, err
 	}
 
-	if user.UserStats.ImageTokens < 2.5 {
-		return -1, -1, errors.New("you do not have the 2.5 tokens needed to purchase a lootbox")
+	if user.UserStats.ImageTokens < 5 {
+		return -1, -1, errors.New("you do not have the 5 tokens needed to purchase a lootbox")
 	} else {
-		user.UserStats.ImageTokens -= 2.5
+		user.UserStats.ImageTokens -= 5
 	}
 
 	random := rand.New(rand.NewSource(time.Now().UnixMilli()))
@@ -233,7 +147,7 @@ func BuyLootbox(userId string) (float64, int, error) {
 
 	user.UserStats.ImageTokens += float64(reward)
 
-	if !updateUser(user) {
+	if !UpdateUser(*user) {
 		return -1, -1, errors.New("error updating user record")
 	} else {
 		return reward, lootboxSeed, nil
@@ -291,7 +205,7 @@ func APictureIsWorthAThousand(incomingMessage string, m *discordgo.MessageCreate
 
 func AddStock(userId string, stockTicker string, quantity float64) error {
 
-	user, err := getUser(userId)
+	user, err := GetUser(userId)
 
 	if err != nil {
 		return err
@@ -303,21 +217,21 @@ func AddStock(userId string, stockTicker string, quantity float64) error {
 		if element.StockTicker == stockTicker {
 			element.StockCount += quantity
 			userPortfolio[index] = element
-			updateUser(user)
+			UpdateUser(*user)
 			return nil
 		}
 	}
 
-	newStock := persistance.Stock{StockTicker: stockTicker, StockCount: quantity}
+	newStock := models.Stock{StockTicker: stockTicker, StockCount: quantity}
 	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock)
-	updateUser(user)
+	UpdateUser(*user)
 
 	return nil
 }
 
 func RemoveStock(userId string, stockTicker string, quantity float64) error {
 
-	user, err := getUser(userId)
+	user, err := GetUser(userId)
 
 	if err != nil {
 		return err
@@ -329,7 +243,7 @@ func RemoveStock(userId string, stockTicker string, quantity float64) error {
 		if element.StockTicker == stockTicker {
 			element.StockCount -= quantity
 			userPortfolio[index] = element
-			updateUser(user)
+			UpdateUser(*user)
 			return nil
 		}
 	}
@@ -337,12 +251,12 @@ func RemoveStock(userId string, stockTicker string, quantity float64) error {
 	return errors.New("stock not found")
 }
 
-func GetUserStock(userId string, stockTicker string) (persistance.Stock, error) {
+func GetUserStock(userId string, stockTicker string) (models.Stock, error) {
 
-	user, err := getUser(userId)
+	user, err := GetUser(userId)
 
 	if err != nil {
-		return persistance.Stock{}, err
+		return models.Stock{}, err
 	}
 
 	userPortfolio := user.UserStats.Stocks
@@ -353,6 +267,6 @@ func GetUserStock(userId string, stockTicker string) (persistance.Stock, error) 
 		}
 	}
 
-	return persistance.Stock{}, errors.New("stock not found")
+	return models.Stock{}, errors.New("stock not found")
 
 }

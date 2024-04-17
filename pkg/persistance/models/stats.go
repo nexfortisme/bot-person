@@ -3,18 +3,11 @@ package persistance
 import "time"
 
 type UserStats struct {
-	MessageCount int     `json:"MessageCount"`
-	GoodBotCount int     `json:"GoodBotCount"`
-	BadBotCount  int     `json:"BadBotCount"`
-	ImageCount   int     `json:"imageCount"`
-	ImageTokens  float64 `json:"imageTokens"`
+	ImageCount   int     `json:"ImageCount"`
+	ImageTokens  float64 `json:"ImageTokens"`
 
-	LastBonus   time.Time `json:"lastBonus"`
-	BonusStreak int       `json:"bonusStreak"`
+	LastBonus   time.Time `json:"LastBonus"`
+	BonusStreak int       `json:"BonusStreak"`
 	
-	HoldStreakTimer time.Time `json:"holdStreakTimer"`
-
-	SaveStreakTokens int `json:"saveStreakTokens"`
-
-	Stocks []Stock `json:"stocks"`
+	Stocks []Stock `json:"Stocks"`
 }

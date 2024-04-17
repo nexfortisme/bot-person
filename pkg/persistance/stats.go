@@ -21,28 +21,18 @@ const (
 	BPLennyFaceInteracton
 )
 
-func IncrementInteractionTracking(flag BPInteraction, user discordgo.User) {
+// func IncrementInteractionTracking(flag BPInteraction, user discordgo.User) {
 
-	userId := user.ID
-	username := user.Username
+// 	userId := user.ID
+// 	username := user.Username
 
-	foundUser := false
-	foundUser = handleUserStatIncrementing(flag, userId)
+// 	foundUser := false
+// 	foundUser = handleUserStatIncrementing(flag, userId)
 
-	if !foundUser {
-		createNewUserTracking(flag, userId, username)
-	}
-}
-
-func SlashGetUserStats(user discordgo.User) string {
-	bpUser, err := getUser(user.ID)
-
-	if err != nil {
-		return "Sorry, you don't have any recorded interactions with the bot."
-	} else {
-		return fmt.Sprintf("You have interacted with the bot %d times.\nYou praised the bot %d times and scolded the bot %d times.\nYou have requested %d images.\nYour current bonus streak is %d.\nYou have %d Save Streak Tokens.\n%s", bpUser.UserStats.MessageCount, bpUser.UserStats.GoodBotCount, bpUser.UserStats.BadBotCount, bpUser.UserStats.ImageCount, bpUser.UserStats.BonusStreak, bpUser.UserStats.SaveStreakTokens, printUserStocks(bpUser))
-	}
-}
+// 	if !foundUser {
+// 		createNewUserTracking(flag, userId, username)
+// 	}
+// }
 
 func printUserStocks(user persistance.User) string {
 
@@ -59,90 +49,42 @@ func printUserStocks(user persistance.User) string {
 	return retString
 }
 
-func SlashGetBotStats(s *discordgo.Session) string {
+// func SlashGetBotStats(s *discordgo.Session) string {
 
-	guildCount := len(s.State.Guilds)
+// 	guildCount := len(s.State.Guilds)
 
-	var globalMessageCount int = 0
-	var globalGoodBotCount int = 0
-	var globalBadBotCount int = 0
-	var globalImageCount int = 0
-	// var globalLongestBonusStreak int = 0
+// 	var globalMessageCount int = 0
+// 	var globalGoodBotCount int = 0
+// 	var globalBadBotCount int = 0
+// 	var globalImageCount int = 0
+// 	// var globalLongestBonusStreak int = 0
 
-	var globalTokenCirculation float64 = 0.0
+// 	var globalTokenCirculation float64 = 0.0
 
-	var returnMessage string
+// 	var returnMessage string
 
-	for _, element := range botTracking.UserStats {
+// 	for _, element := range botTracking.UserStats {
 
-		globalMessageCount += element.UserStats.MessageCount
-		globalGoodBotCount += element.UserStats.GoodBotCount
-		globalBadBotCount += element.UserStats.BadBotCount
-		globalImageCount += element.UserStats.ImageCount
+// 		globalMessageCount += element.UserStats.MessageCount
+// 		globalGoodBotCount += element.UserStats.GoodBotCount
+// 		globalBadBotCount += element.UserStats.BadBotCount
+// 		globalImageCount += element.UserStats.ImageCount
 
-		globalTokenCirculation += element.UserStats.ImageTokens
-	}
+// 		globalTokenCirculation += element.UserStats.ImageTokens
+// 	}
 
-	returnMessage = fmt.Sprintf("Across %d servers, Bot Person has/is/did:\nInteractions: %d\nBeen Good: %d\nBeen Bad: %d\nGenerated Images: %d\nTotal Tokens In Circulation: %.2f", guildCount, globalMessageCount, globalGoodBotCount, globalGoodBotCount, globalImageCount, globalTokenCirculation)
+// 	returnMessage = fmt.Sprintf("Across %d servers, Bot Person has/is/did:\nInteractions: %d\nBeen Good: %d\nBeen Bad: %d\nGenerated Images: %d\nTotal Tokens In Circulation: %.2f", guildCount, globalMessageCount, globalGoodBotCount, globalGoodBotCount, globalImageCount, globalTokenCirculation)
 
-	return returnMessage
-}
-
-func createNewUserTracking(flag BPInteraction, userId string, username string) {
-	log.Println("Creating New User For: " + username)
-
-	switch interaction := flag; interaction {
-	case BPChatInteraction:
-	case BPLennyFaceInteracton:
-	case BPBasicInteraction:
-		createAndAddUser(userId, 1, 0, 0, 0, 25)
-	case BPImageRequest:
-		createAndAddUser(userId, 1, 0, 0, 1, 25)
-	case BPBadBotInteraction:
-		createAndAddUser(userId, 1, 0, 1, 0, 25)
-	case BPGoodBotInteraction:
-		createAndAddUser(userId, 1, 1, 0, 0, 25)
-	default:
-		createAndAddUser(userId, 1, 0, 0, 0, 25)
-	}
-}
-
-func handleUserStatIncrementing(flag BPInteraction, userId string) bool {
-
-	incrementUser, err := getUser(userId)
-
-	if err != nil {
-		return false
-	}
-
-	switch interaction := flag; interaction {
-	case BPChatInteraction:
-	case BPLennyFaceInteracton:
-	case BPBasicInteraction:
-		incrementUser.UserStats.MessageCount++
-	case BPImageRequest:
-		incrementUser.UserStats.ImageCount++
-	case BPBadBotInteraction:
-		incrementUser.UserStats.MessageCount++
-		incrementUser.UserStats.BadBotCount++
-	case BPGoodBotInteraction:
-		incrementUser.UserStats.MessageCount++
-		incrementUser.UserStats.GoodBotCount++
-	default:
-		incrementUser.UserStats.MessageCount++
-	}
-
-	updateUser(incrementUser)
-	return true
-}
+// 	return returnMessage
+// }
 
 func PrintUSerStocksHelper(user discordgo.User) (string, error) {
-	userStruct, err := getUser(user.ID)
+	userStruct, err := GetUser(user.ID)
 
 	if err != nil {
 		log.Println("Error getting user: " + err.Error())
 		return "", err
 	}
 
-	return printUserStocks(userStruct), nil
+	return printUserStocks(*userStruct), nil
 }

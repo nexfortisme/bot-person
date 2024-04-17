@@ -12,6 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -61,6 +64,8 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 
 		path := filepath.Join("img", fmt.Sprintf("%s.jpg", TruncateString(removePunctuation(prompt))))
 		
+		logging.LogEvent(eventType.EXTERNAL_DALLE_RESPONSE, "Dalle", path, path)
+
 		response, err := http.Get(openAIResponse.Data[0].URL)
 		if err != nil {
 			panic(err)

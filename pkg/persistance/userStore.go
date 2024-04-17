@@ -1,77 +1,68 @@
 package persistance
 
 import (
-	"errors"
+	"fmt"
 	persistance "main/pkg/persistance/models"
-	"time"
+
+	stateService "main/pkg/state/services"
+
+	"github.com/surrealdb/surrealdb.go"
 )
 
-func getUser(userId string) (persistance.User, error) {
+func GetUser(userId string) (*persistance.User, error) {
 
-	// TODO - Change this to use a Map instead
-	for _, element := range botTracking.UserStats {
-		if element.UserId != userId {
-			continue
-		} else {
-			return element, nil
-		}
-	}
+	db := GetDB()
 
-	return getNewUser("bad user", -1, -1, -1, -1, -1), errors.New("unable to find user")
-}
-
-func updateUser(updateUser persistance.User) bool {
-	// TODO - Change this to use a Map instead
-	for index, element := range botTracking.UserStats {
-		if element.UserId != updateUser.UserId {
-			continue
-		} else {
-			botTracking.UserStats[index] = updateUser
-			return true
-		}
-	}
-	return false
-}
-
-func createAndAddUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) bool {
-	botTracking.UserStats = append(botTracking.UserStats, getNewUser(userId, messageCount, goodBotCount, badBotCount, imageCount, imageTokens))
-	return true
-}
-
-func getNewUser(userId string, messageCount int, goodBotCount int, badBotCount int, imageCount int, imageTokens float64) persistance.User {
-
-	newUser := persistance.User{UserId: userId, UserStats: persistance.UserStats{MessageCount: messageCount, GoodBotCount: goodBotCount, BadBotCount: badBotCount, ImageCount: imageCount, ImageTokens: imageTokens, LastBonus: time.Time{}, BonusStreak: 0, HoldStreakTimer: time.Time{}, SaveStreakTokens: 0, Stocks: []persistance.Stock{}}}
-
-	return newUser
-}
-
-func addUser(user persistance.User) bool {
-	botTracking.UserStats = append(botTracking.UserStats, user)
-	return true
-}
-
-func GetUserStats(userId string) (persistance.UserStats, error) {
-
-	user, err := getUser(userId)
-
+	// Get user by ID
+	data, err := db.Query("SELECT * FROM users WHERE UserId = $userId", map[string]interface{}{
+		"userId": userId,
+	})
 	if err != nil {
-		return persistance.UserStats{}, err
+		panic(err)
 	}
 
-	return user.UserStats, nil
+	// Unmarshal data
+	selectedUser := make([]persistance.User, 1)
+	_, err = surrealdb.UnmarshalRaw(data, &selectedUser)
+	if err != nil {
+		panic(err)
+	}
+
+	if selectedUser[0].ID == "" || err != nil {
+
+		discordSession := stateService.GetDiscordSession()
+		discordUser, _ := discordSession.User(userId)
+
+		newUser := persistance.User{}
+		newUser.UserId = userId
+		newUser.Username = discordUser.Username
+
+		resp, err := db.Create("users", newUser)
+		if err != nil {
+			return nil, err
+		}
+
+		// Unmarshal data
+		createdUser := make([]persistance.User, 1)
+		err = surrealdb.Unmarshal(resp, &createdUser)
+		if err != nil {
+			panic(err)
+		}
+
+		return &createdUser[0], nil
+	}
+
+	fmt.Printf("User: %+v\n", selectedUser[0])
+
+	return &selectedUser[0], nil
 }
 
-func UpdateUserStats(userId string, stats persistance.UserStats) bool {
+func UpdateUser(updateUser persistance.User) bool {
 
-	user, err := getUser(userId)
+	db := GetDB()
 
-	if err != nil {
+	if _, err := db.Update(updateUser.ID, updateUser); err != nil {
 		return false
 	}
-
-	user.UserStats = stats
-
-	return updateUser(user)
+	return true
 }
-
-// TODO - Delete User Function

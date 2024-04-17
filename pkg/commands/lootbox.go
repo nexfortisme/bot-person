@@ -6,11 +6,13 @@ import (
 	"main/pkg/util"
 	"time"
 
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
+
 	"github.com/bwmarrin/discordgo"
 )
 
 func Lootbox(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
 	lootboxReward, lootboxSeed, err := persistance.BuyLootbox(i.Interaction.Member.User.ID)
 	var lootboxReturnMessage string
@@ -20,19 +22,21 @@ func Lootbox(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	} else {
 
 		// TODO - Refactor this so a change in rates doesn't break the command
-		if lootboxReward == 2 {
-			lootboxReturnMessage = fmt.Sprintf("%s You purchased a lootbox with the seed: %d and it contained %d tokens", util.GetOofResponse(), lootboxSeed, lootboxReward)
-		} else if lootboxReward == 5 {
-			lootboxReturnMessage = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
-		} else if lootboxReward == 20 {
-			lootboxReturnMessage = fmt.Sprintf("Congrats! You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
-		} else if lootboxReward == 100 {
-			lootboxReturnMessage = fmt.Sprintf("Woah! You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
-		} else if lootboxReward == 500 {
-			lootboxReturnMessage = fmt.Sprintf("Stop Hacking. You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
+		if lootboxReward == 3.63 {
+			lootboxReturnMessage = fmt.Sprintf("%s You purchased a lootbox with the seed: %d and it contained %.2f tokens", util.GetOofResponse(), lootboxSeed, lootboxReward)
+		} else if lootboxReward == 8 {
+			lootboxReturnMessage = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %f tokens", lootboxSeed, lootboxReward)
+		} else if lootboxReward == 15 {
+			lootboxReturnMessage = fmt.Sprintf("Congrats! You purchased a lootbox with the seed: %d and it contained %f tokens", lootboxSeed, lootboxReward)
+		} else if lootboxReward == 25 {
+			lootboxReturnMessage = fmt.Sprintf("Woah! You purchased a lootbox with the seed: %d and it contained %f tokens", lootboxSeed, lootboxReward)
+		} else if lootboxReward == 50 {
+			lootboxReturnMessage = fmt.Sprintf("Stop Hacking. You purchased a lootbox with the seed: %d and it contained %f tokens", lootboxSeed, lootboxReward)
 		}
 
 	}
+
+	logging.LogEvent(eventType.COMMAND_LOOTBOX, i.Interaction.Member.User.ID, fmt.Sprintf("User has purchased a lootbox with seed: %d and reward %f", lootboxSeed, lootboxReward), i.Interaction.GuildID)
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
