@@ -207,10 +207,10 @@ func BuyLootbox(userId string) (float64, int, error) {
 		return -1, -1, err
 	}
 
-	if user.UserStats.ImageTokens < 2.5 {
+	if user.UserStats.ImageTokens < 5 {
 		return -1, -1, errors.New("you do not have the 2.5 tokens needed to purchase a lootbox")
 	} else {
-		user.UserStats.ImageTokens -= 2.5
+		user.UserStats.ImageTokens -= 5
 	}
 
 	random := rand.New(rand.NewSource(time.Now().UnixMilli()))

@@ -20,16 +20,16 @@ func Lootbox(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	} else {
 
 		// TODO - Refactor this so a change in rates doesn't break the command
-		if lootboxReward == 2 {
-			lootboxReturnMessage = fmt.Sprintf("%s You purchased a lootbox with the seed: %d and it contained %d tokens", util.GetOofResponse(), lootboxSeed, lootboxReward)
-		} else if lootboxReward == 5 {
-			lootboxReturnMessage = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
-		} else if lootboxReward == 20 {
-			lootboxReturnMessage = fmt.Sprintf("Congrats! You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
-		} else if lootboxReward == 100 {
-			lootboxReturnMessage = fmt.Sprintf("Woah! You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
-		} else if lootboxReward == 500 {
-			lootboxReturnMessage = fmt.Sprintf("Stop Hacking. You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
+		if lootboxReward == 3.63 {
+			lootboxReturnMessage = fmt.Sprintf("%s You purchased a lootbox with the seed: %d and it contained %.2f tokens", util.GetOofResponse(), lootboxSeed, lootboxReward)
+		} else if lootboxReward == 8 {
+			lootboxReturnMessage = fmt.Sprintf("You purchased a lootbox with the seed: %d and it contained %f tokens", lootboxSeed, lootboxReward)
+		} else if lootboxReward == 15 {
+			lootboxReturnMessage = fmt.Sprintf("Congrats! You purchased a lootbox with the seed: %d and it contained %f tokens", lootboxSeed, lootboxReward)
+		} else if lootboxReward == 25 {
+			lootboxReturnMessage = fmt.Sprintf("Woah! You purchased a lootbox with the seed: %d and it contained %f tokens", lootboxSeed, lootboxReward)
+		} else if lootboxReward == 50 {
+			lootboxReturnMessage = fmt.Sprintf("Stop Hacking. You purchased a lootbox with the seed: %d and it contained %f tokens", lootboxSeed, lootboxReward)
 		}
 
 	}
