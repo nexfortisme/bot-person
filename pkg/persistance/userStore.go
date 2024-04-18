@@ -30,12 +30,17 @@ func GetUser(userId string) (*persistance.User, error) {
 
 	if selectedUser[0].ID == "" || err != nil {
 
-		discordSession := stateService.GetDiscordSession()
-		discordUser, _ := discordSession.User(userId)
-
 		newUser := persistance.User{}
+
+		if userId != "SYSTEM" {
+			discordSession := stateService.GetDiscordSession()
+			discordUser, _ := discordSession.User(userId)
+			newUser.Username = discordUser.Username
+		} else {
+			newUser.Username = "SYSTEM"
+		}
+
 		newUser.UserId = userId
-		newUser.Username = discordUser.Username
 		newUser.UserStats.ImageTokens = 50
 
 		resp, err := db.Create("users", newUser)
