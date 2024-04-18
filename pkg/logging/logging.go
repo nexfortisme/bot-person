@@ -16,6 +16,8 @@ func LogEvent(eventType logging.EventType, userId string, message string, server
 
 	db := persistance.GetDB()
 
+	user, _ := persistance.GetUser(userId)
+
 	event := models.Event{}
 	event.EventType = eventType
 	event.EventTime = time.Now()
@@ -32,9 +34,7 @@ func LogEvent(eventType logging.EventType, userId string, message string, server
 		panic(err)
 	}
 
-	// fmt.Println("Marshalled Event", marshaledEvent)
-
-	relateString := fmt.Sprintf("RELATE users:%s->did->events:%s", "<" + userId + ">", marshaledEvent[0].ID)
+	relateString := fmt.Sprintf("RELATE users:%s->did->events:%s", user.ID, marshaledEvent[0].ID)
 
 	db.Query(relateString, nil)
 }
