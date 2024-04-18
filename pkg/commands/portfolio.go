@@ -3,12 +3,15 @@ package commands
 import (
 	"main/pkg/persistance"
 
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
+
 	"github.com/bwmarrin/discordgo"
 )
 
 func Portfolio(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
-	persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+	logging.LogEvent(eventType.COMMAND_PORTFOLIO, i.Interaction.Member.User.ID, "Portfolio command used", i.Interaction.GuildID)
 
 	userStatisticsString, err := persistance.PrintUSerStocksHelper(*i.Interaction.Member.User)
 

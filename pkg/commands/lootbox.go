@@ -6,11 +6,13 @@ import (
 	"main/pkg/util"
 	"time"
 
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
+
 	"github.com/bwmarrin/discordgo"
 )
 
 func Lootbox(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
 
 	lootboxReward, lootboxSeed, err := persistance.BuyLootbox(i.Interaction.Member.User.ID)
 	var lootboxReturnMessage string
@@ -33,6 +35,8 @@ func Lootbox(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 
 	}
+
+	logging.LogEvent(eventType.COMMAND_LOOTBOX, i.Interaction.Member.User.ID, fmt.Sprintf("User has purchased a lootbox with seed: %d and reward %f", lootboxSeed, lootboxReward), i.Interaction.GuildID)
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

@@ -3,24 +3,28 @@ package commands
 import (
 	"fmt"
 	"main/pkg/persistance"
+	persistanceEnums "main/pkg/persistance/eums"
 	"main/pkg/util"
 	"time"
+
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+
+	logging.LogEvent(eventType.COMMAND_BONUS, i.Interaction.Member.User.ID, "User has checked their bonus", i.Interaction.GuildID)
 
 	// Bonus Reward: -1 or actual reward. -1 is just placeholder.
 	// Return Message: "" or specialBonusRewardString. "" is default value and only returned if there is no modifier.
 	// err: nil, wait error, or saveStreak error.
-	bonusReward, _, err := persistance.GetUserReward(i.Interaction.Member.User.ID)
+	bonusReward, rewardStatus, err := persistance.GetUserReward(i.Interaction.Member.User.ID)
+
+	user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
 	// Variables for the embed message.
-	// var bonusReturnMessage string
-	var userStreak int
-	var userBalance float64
 	var flavorText string
 	var embedFields []*discordgo.MessageEmbedField
 	var bonusEmbed *discordgo.MessageEmbed
@@ -28,59 +32,33 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	var TEM_MINUTES = 10 * time.Minute
 
-	//Getting user stat information
-	userBalance = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
-	userStats, userStatsError := persistance.GetUserStats(i.Interaction.Member.User.ID)
-
-	// If there is an error, then set the userStreak to 0.
-	if userStatsError != nil {
-		userStreak = 0
-	} else {
-		userStreak = userStats.BonusStreak
-	}
-
-	// // If there is an error, then use the message from the error.
-	// if err != nil {
-	// 	bonusReturnMessage = err.Error()
-	// } else { // If there is no error, then use the message from the returnMessage.
-	// 	if returnMessage != "" { // If there is a returnMessage, then append the bonusReward to the returnMessage.
-	// 		bonusReturnMessage = fmt.Sprintf("%s \nCongrats! You are awarded %.2f tokens", returnMessage, bonusReward)
-	// 	} else if returnMessage == "" { // If there is no returnMessage, then just return the bonusReward.
-	// 		bonusReturnMessage = fmt.Sprintf("Congrats! You are awarded %.2f tokens", bonusReward)
-	// 	}
-	// }
-
-	if err != nil {
-		if bonusReward == -1 {
-			embedFields = []*discordgo.MessageEmbedField{
-				{
-					Name: "You already collected your bonus today!",
-				},
-				{
-					Name:  "Next Bonus In",
-					Value: err.Error(),
-				},
-			}
-		} else {
-
-			// flavorText = "You Missed Your Bonus!"
-			embedFields = []*discordgo.MessageEmbedField{
-				{
-					Name:  "Current Streak",
-					Value: fmt.Sprintf("%d days", userStreak),
-				},
-				{
-					Name:  "Streak Missed",
-					Value: "Click the save streak button to save your streak and get your bonus. Save streak costs 10% of your current balance. Click 'Save Streak' in the next 10 minutes to save your streak, or click 'Reset Streak' to reset your streak at no cost.",
-				},
-				{
-					Name:  "Current Balance",
-					Value: fmt.Sprintf("%.2f tokens", userBalance),
-				},
-			}
+	if rewardStatus == persistanceEnums.TOO_EARLY {
+		embedFields = []*discordgo.MessageEmbedField{
+			{
+				Name: "You already collected your bonus today!",
+			},
+			{
+				Name:  "Next Bonus In",
+				Value: err.Error(),
+			},
+		}
+	} else if rewardStatus == persistanceEnums.MISSED {
+		embedFields = []*discordgo.MessageEmbedField{
+			{
+				Name:  "Current Streak",
+				Value: fmt.Sprintf("%d days", user.UserStats.BonusStreak),
+			},
+			{
+				Name:  "Streak Missed",
+				Value: "Click the save streak button to save your streak and get your bonus. Save streak costs 10% of your current balance. Click 'Save Streak' in the next 10 minutes to save your streak, or click 'Reset Streak' to reset your streak at no cost.",
+			},
+			{
+				Name:  "Current Balance",
+				Value: fmt.Sprintf("%.2f tokens", user.UserStats.ImageTokens),
+			},
 		}
 	} else {
-		flavorText, _ = util.GetStreakStringAndModifier(userStreak)
+		flavorText, _ = util.GetStreakStringAndModifier(user.UserStats.ImageCount)
 		embedFields = []*discordgo.MessageEmbedField{
 			{
 				Name:  "Bonus Award",
@@ -88,27 +66,31 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 			{
 				Name:  "Current Streak",
-				Value: fmt.Sprintf("%d days", userStreak),
+				Value: fmt.Sprintf("%d days", user.UserStats.BonusStreak),
 			},
 			{
 				Name:  "Current Balance",
-				Value: fmt.Sprintf("%.2f tokens", userBalance),
+				Value: fmt.Sprintf("%.2f tokens", user.UserStats.ImageTokens),
 			},
 		}
 	}
 
 	var embedTitle string
-	if err != nil {
+	if rewardStatus != persistanceEnums.MISSED {
 		embedTitle = "Missed Bonus"
+	} else if rewardStatus == persistanceEnums.TOO_EARLY {
+		embedTitle = "Too Early"
 	} else {
 		embedTitle = "Bonus Reward!"
 	}
 
 	var embedColor int
-	if err != nil {
-		embedColor = 0xff0000
+	if rewardStatus == persistanceEnums.TOO_EARLY {
+		embedColor = 0xFFFF00
+	} else if rewardStatus == persistanceEnums.MISSED {
+		embedColor = 0xFF0000
 	} else {
-		embedColor = 0x0000FF
+		embedColor = 0x00FF00
 	}
 
 	bonusEmbed = &discordgo.MessageEmbed{
@@ -119,8 +101,8 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	var buttonLabel string
-	if err != nil {
-		buttonLabel = fmt.Sprintf("Save Streak (%.2f tokens)", userBalance/10)
+	if rewardStatus == persistanceEnums.MISSED {
+		buttonLabel = fmt.Sprintf("Save Streak (%.2f tokens)", user.UserStats.ImageTokens/10)
 	} else {
 		buttonLabel = "Save Streak"
 	}
@@ -141,7 +123,7 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Disabled: err == nil,
 	}
 
-	if err != nil && bonusReward == -1 {
+	if rewardStatus == persistanceEnums.TOO_EARLY || rewardStatus == persistanceEnums.AVAILABLE {
 		saveStreakButton.Disabled = true
 		resetStreakButton.Disabled = true
 	}

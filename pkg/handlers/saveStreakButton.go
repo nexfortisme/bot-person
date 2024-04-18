@@ -34,43 +34,37 @@ func SaveStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
-	// Getting User Stats
-	userStats, userStatsError := persistance.GetUserStats(i.Interaction.Member.User.ID)
-	if userStatsError != nil {
-		return
-	}
+	// Getting User
+	user, _ := persistance.GetUser(originalUserID);
 
 	var saveStreakCost float64
 	var saveStreakMessage string
 
 	// Calculating cost and creating save streak string
-	saveStreakCost = userStats.ImageTokens * 0.1
+	saveStreakCost = user.UserStats.ImageTokens * 0.1
 	saveStreakMessage = fmt.Sprintf("You have saved your streak! It Cost %.2f tokens", saveStreakCost)
 
 	// Removing tokens from user
-	persistance.RemoveUserTokens(i.Interaction.Member.User.ID, saveStreakCost)
+	persistance.RemoveBotPersonTokens(saveStreakCost, originalUserID)
 
 	// Refetching stats
-	userStats, userStatsError = persistance.GetUserStats(i.Interaction.Member.User.ID)
-	if userStatsError != nil {
-		return
-	}
+	user, _ = persistance.GetUser(i.Interaction.Member.User.ID)
 
 	// Updating the streak
-	userStats.BonusStreak++
+	user.UserStats.BonusStreak++
 
 	//Getting return string and modifier
-	_, modifier := util.GetStreakStringAndModifier(userStats.BonusStreak)
+	_, modifier := util.GetStreakStringAndModifier(user.UserStats.BonusStreak)
 
 	// Getting Final Bonus Reward
 	finalReward := util.GetUserBonus(5, 50, modifier)
 
 	// Updating User Record
-	userStats.LastBonus = time.Now()
-	userStats.ImageTokens += finalReward
+	user.UserStats.LastBonus = time.Now()
+	user.UserStats.ImageTokens += finalReward
 
 	// Updating User Stats
-	persistance.UpdateUserStats(i.Interaction.Member.User.ID, userStats)
+	persistance.UpdateUser(*user)
 
 	saveStreakEmbed := &discordgo.MessageEmbed{
 		Title:       "Streak Saved!",
@@ -83,11 +77,11 @@ func SaveStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 			{
 				Name:  "Current Streak",
-				Value: fmt.Sprintf("%d days", userStats.BonusStreak),
+				Value: fmt.Sprintf("%d days", user.UserStats.BonusStreak),
 			},
 			{
 				Name:  "Current Balance",
-				Value: fmt.Sprintf("%.2f tokens", userStats.ImageTokens),
+				Value: fmt.Sprintf("%.2f tokens", user.UserStats.ImageTokens),
 			},
 		},
 	}

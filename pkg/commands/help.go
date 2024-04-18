@@ -2,13 +2,16 @@ package commands
 
 import (
 	"fmt"
-	"main/pkg/persistance"
+	
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 func Help(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+	
+	logging.LogEvent(eventType.COMMAND_HELP, i.Interaction.Member.User.ID, "Help command used", i.Interaction.GuildID)
 
 	var helpOption string
 	var helpString string

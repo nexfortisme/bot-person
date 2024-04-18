@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"main/pkg/persistance"
 
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
+
 	"github.com/bwmarrin/discordgo"
 )
 
 func Balance(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
-	var tokenCount float64
 	var balanceResponse string
 
 	// Access options in the order provided by the user.
@@ -22,15 +24,20 @@ func Balance(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	if option, ok := optionMap["user"]; ok {
-		user := option.UserValue(s)
-		tokenCount = persistance.GetUserTokenCount(user.ID)
-		balanceResponse = user.Username + " has " + fmt.Sprintf("%.2f", tokenCount) + " tokens."
-	} else {
-		tokenCount = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
-		balanceResponse = "You have " + fmt.Sprintf("%.2f", tokenCount) + " tokens."
-	}
 
-	persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+		user := option.UserValue(s)
+
+		checkUser, _ := persistance.GetUser(user.ID)
+		balanceResponse = user.Username + " has " + fmt.Sprintf("%.2f", checkUser.UserStats.ImageTokens) + " tokens."
+
+		logging.LogEvent(eventType.COMMAND_BALANCE, i.Interaction.Member.User.ID, fmt.Sprintf("User has checked the balance of %s", user.ID), i.Interaction.GuildID)
+	} else {
+		
+		user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
+		balanceResponse = "You have " + fmt.Sprintf("%.2f", user.UserStats.ImageTokens) + " tokens."
+
+		logging.LogEvent(eventType.COMMAND_BALANCE, i.Interaction.Member.User.ID, "User has checked their balance", i.Interaction.GuildID)
+	}
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

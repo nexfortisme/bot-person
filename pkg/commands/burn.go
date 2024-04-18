@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"main/pkg/persistance"
 
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
+
 	"github.com/bwmarrin/discordgo"
 )
 
 func Burn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	var burnAmount float64
-	senderBalance := persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+	user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
 	// Access options in the order provided by the user.
 	options := i.ApplicationCommandData().Options
@@ -26,9 +29,9 @@ func Burn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		burnAmount = option.FloatValue()
 
-		if senderBalance < burnAmount {
+		if user.UserStats.ImageTokens < burnAmount {
 
-			persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *i.Interaction.Member.User)
+			logging.LogEvent(eventType.COMMAND_BURN, i.Interaction.Member.User.ID, "User does not have enough tokens to burn", i.Interaction.GuildID)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -38,10 +41,13 @@ func Burn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			})
 			return
 		} else {
-			persistance.RemoveUserTokens(i.Interaction.Member.User.ID, burnAmount)
-			senderBalance = persistance.GetUserTokenCount(i.Interaction.Member.User.ID)
+			
+			user.UserStats.ImageTokens -= burnAmount
+			persistance.UpdateUser(*user);
 
-			removeTokenResponse := fmt.Sprintf("%.2f tokens removed. New Balance: %.2f", burnAmount, senderBalance)
+			logging.LogEvent(eventType.COMMAND_BURN, i.Interaction.Member.User.ID, fmt.Sprintf("User has burnt %f tokens", burnAmount), i.Interaction.GuildID)
+
+			removeTokenResponse := fmt.Sprintf("%.2f tokens removed. New Balance: %.2f", burnAmount, user.UserStats.ImageTokens)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

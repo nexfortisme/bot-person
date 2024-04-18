@@ -7,6 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -31,14 +34,15 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if strings.HasPrefix(incomingMessage, "bad bot") {
 
-		persistance.IncrementInteractionTracking(persistance.BPBadBotInteraction, *m.Author)
+		logging.LogEvent(eventType.USER_BAD_BOT, m.Author.ID, "Bad bot command used", m.GuildID)
 
 		badBotRetort := util.GetBadBotResponse()
 
 		_, err := s.ChannelMessageSend(m.ChannelID, badBotRetort)
 		util.HandleErrors(err)
 	} else if strings.HasPrefix(incomingMessage, "good bot") {
-		persistance.IncrementInteractionTracking(persistance.BPGoodBotInteraction, *m.Author)
+
+		logging.LogEvent(eventType.USER_GOOD_BOT, m.Author.ID, "Good bot command used", m.GuildID)
 
 		goodBotRetort := util.GetGoodBotResponse()
 
@@ -46,13 +50,16 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		util.HandleErrors(err)
 	} else if strings.HasPrefix(incomingMessage, "!addTokens") {
 
-		// TODO - Switch to use BPSystemInteraction
-		persistance.IncrementInteractionTracking(persistance.BPBasicInteraction, *m.Author)
-
 		if !util.UserIsAdmin(m.Author.ID) {
+
+			logging.LogEvent(eventType.ECONOMY_CREATE_TOKENS, m.Author.ID, "NOT ENOUGH PERMISSIONS", m.GuildID)
+
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
 			return
 		} else {
+
+			logging.LogEvent(eventType.ECONOMY_CREATE_TOKENS, m.Author.ID, "Add tokens command used", m.GuildID)
+
 			req := strings.Split(incomingMessage, " ")
 
 			if len(req) != 3 {
@@ -68,7 +75,9 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 	} else if strings.HasPrefix(incomingMessage, ";;lenny") {
-		persistance.IncrementInteractionTracking(persistance.BPLennyFaceInteracton, *m.Author)
+
+		logging.LogEvent(eventType.LENNY, m.Author.ID, "Lenny command used", m.GuildID)
+
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
 	}
 
@@ -80,9 +89,11 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	msg := util.ReplaceIDsWithNames(m, s)
 
-	persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *m.Author)
+	logging.LogEvent(eventType.USER_MESSAGE, m.Author.ID, msg, m.GuildID)
+
 	respTxt := external.GetOpenAIResponse(msg)
 
+	// TODO - Remove
 	if mentionsKeyphrase(m) {
 		s.ChannelMessageSend(m.ChannelID, "!bot is deprecated. Please at the bot or use /bot for further interactions")
 	}

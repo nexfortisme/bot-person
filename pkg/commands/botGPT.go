@@ -3,7 +3,9 @@ package commands
 import (
 	"fmt"
 	"main/pkg/external"
-	"main/pkg/persistance"
+
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -23,6 +25,8 @@ func BotGPT(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	// Pulling the propt out of the optionsMap
 	if option, ok := optionMap["prompt"]; ok {
+
+		logging.LogEvent(eventType.COMMAND_BOT_GPT, i.Interaction.Member.User.ID, option.StringValue(), i.Interaction.GuildID)
 
 		// Generating the response
 		placeholderBotResponse := "Thinking about: " + option.StringValue()
@@ -49,8 +53,7 @@ func BotGPT(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 		}
 
-		// Incrementint interaciton counter
-		persistance.IncrementInteractionTracking(persistance.BPChatInteraction, *i.Interaction.Member.User)
+		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, botResponseString, i.Interaction.GuildID)
 
 		// Updating the initial message with the response from the OpenAI API
 		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{

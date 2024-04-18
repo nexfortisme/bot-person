@@ -1,42 +1,42 @@
 package logging
 
 import (
+	"fmt"
 	"log"
-	"main/pkg/util"
+	"main/pkg/persistance"
+	"time"
 
-	"github.com/bwmarrin/discordgo"
+	logging "main/pkg/logging/enums"
+	models "main/pkg/logging/models"
+
+	"github.com/surrealdb/surrealdb.go"
 )
 
-func LogIncomingMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	requestUser := m.Author.Username
-	rGuild, _ := s.State.Guild(m.GuildID)
-	rGuildName := rGuild.Name
-	message := util.ReplaceIDsWithNames(m, s)
+func LogEvent(eventType logging.EventType, userId string, message string, serverId string) {
 
-	log.Printf("%s (%s) > %s\n", requestUser, rGuildName, message)
-}
+	db := persistance.GetDB()
 
-func LogIncomingUserInteraction(s *discordgo.Session, requestUser string, guildId string, message string) {
-	rGuild, _ := s.State.Guild(guildId)
-	rGuildName := rGuild.Name
+	user, _ := persistance.GetUser(userId)
 
-	log.Printf("%s (%s) > %s\n", requestUser, rGuildName, message)
-}
+	event := models.Event{}
+	event.EventType = eventType
+	event.EventTime = time.Now()
+	event.EventUser = userId
+	event.EventData = message
+	event.EventServer = serverId
 
-func LogOutgoingMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	requestUser := m.Author.Username
-	rGuild, _ := s.State.Guild(m.GuildID)
-	rGuildName := rGuild.Name
-	message := util.ReplaceIDsWithNames(m, s)
+	createdEvent, _ := db.Create("events", event)
 
-	log.Printf("%s (%s) < %s\n", requestUser, rGuildName, message)
-}
+	// Unmarshal data
+	marshaledEvent := make([]models.Event, 1)
+	err := surrealdb.Unmarshal(createdEvent, &marshaledEvent)
+	if err != nil {
+		panic(err)
+	}
 
-func LogOutgoingUserInteraction(s *discordgo.Session, requestUser string, guildId string, message string) {
-	rGuild, _ := s.State.Guild(guildId)
-	rGuildName := rGuild.Name
+	relateString := fmt.Sprintf("RELATE users:%s->did->events:%s", user.ID, marshaledEvent[0].ID)
 
-	log.Printf("%s (%s) < %s\n", requestUser, rGuildName, message)
+	db.Query(relateString, nil)
 }
 
 func LogError(err string) {

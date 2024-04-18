@@ -1,6 +1,11 @@
 package commands
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
+
+	"github.com/bwmarrin/discordgo"
+)
 
 func Invite(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
@@ -12,6 +17,8 @@ func Invite(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if err != nil {
 		retString = "Error getting application info"
 	}
+
+	logging.LogEvent(eventType.COMMAND_INVITE, i.Interaction.Member.User.ID, "User has requested an invite link", i.Interaction.GuildID)
 
 	url = discordgo.EndpointOAuth2 + "authorize?client_id=" + app.ID + "&permissions=517547084864&scope=bot"
 	retString = "Invite me to your server: " + url
