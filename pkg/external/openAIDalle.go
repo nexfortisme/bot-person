@@ -63,8 +63,8 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 		}
 
 		path := filepath.Join("img", fmt.Sprintf("%s.jpg", TruncateString(removePunctuation(prompt))))
-		
-		logging.LogEvent(eventType.EXTERNAL_DALLE_RESPONSE, "Dalle", path, path)
+
+		logging.LogEvent(eventType.EXTERNAL_DALLE_RESPONSE, "SYSTEM", path, "SYSTEM")
 
 		response, err := http.Get(openAIResponse.Data[0].URL)
 		if err != nil {
