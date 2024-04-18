@@ -23,14 +23,14 @@ func initDB() {
 		panic(err)
 	}
 
+	if _, err = db.Use(util.GetDBNamespace(), util.GetDBName()); err != nil {
+		panic(err)
+	}
+
 	if _, err = db.Signin(map[string]interface{}{
 		"user": util.GetDBUser(),
 		"pass": util.GetDBPassword(),
 	}); err != nil {
-		panic(err)
-	}
-
-	if _, err = db.Use(util.GetDBNamespace(), util.GetDBName()); err != nil {
 		panic(err)
 	}
 
