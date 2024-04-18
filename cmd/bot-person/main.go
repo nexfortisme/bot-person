@@ -256,7 +256,7 @@ var (
 		"loot-box":  commands.Lootbox,
 		"broken":    commands.Broken,
 		"burn":      commands.Burn,
-		"invite": commands.Invite,
+		"invite":    commands.Invite,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -277,7 +277,6 @@ func main() {
 
 	// Step 3: Connect to the database
 	databseConnection := persistance.GetDB()
-	logging.LogEvent(eventType.BOT_START, "SYSTEM", "Bot Person is starting up.", "SYSTEM")
 
 	// Step 4: Declare and create the Discord Session
 	var discordSession *discordgo.Session
@@ -295,6 +294,8 @@ func main() {
 			log.Fatal("Error connecting bot to server")
 		}
 	}
+
+	logging.LogEvent(eventType.BOT_START, "SYSTEM", "Bot Person is starting up.", "SYSTEM")
 
 	// Step 5: Add the messageReceive handler to the discord session
 	discordSession.AddHandler(messageReceive)
