@@ -19,7 +19,7 @@ func GetOpenAIGPTResponse(prompt string) string {
 		"messages": [{"role": "system", "content": "You generate responses no longer than 1750 characters long."}, {"role": "user", "content": "%s"}]
 	}`
 
-	data := fmt.Sprintf(dataTemplate, prompt)
+	data := fmt.Sprintf(dataTemplate, util.EscapeQuotes(prompt))
 
 	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", strings.NewReader(data))
 	if err != nil {

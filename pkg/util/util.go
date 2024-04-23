@@ -135,3 +135,9 @@ func Contains(s []string, str string) bool {
 
 	return false
 }
+
+func EscapeQuotes(str string) string {
+	// retString := strings.ReplaceAll(str, "\'", "\'")
+
+	return strings.Replace(str, "\"", "\\\"", -1)
+}
