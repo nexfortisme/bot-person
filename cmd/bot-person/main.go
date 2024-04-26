@@ -226,6 +226,18 @@ var (
 			Name:        "invite",
 			Description: "Get an invite link to invite Bot Person to your server.",
 		},
+		{
+			Name:        "hsr-code",
+			Description: "Get the Honkai Star Rail gift code url from a code.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "prompt",
+					Description: "The code to be entered",
+					Required:    true,
+				},
+			},
+		},
 		/*
 			Todo:
 				headsOrTails
@@ -257,6 +269,7 @@ var (
 		"broken":    commands.Broken,
 		"burn":      commands.Burn,
 		"invite":    commands.Invite,
+		"hsr-code":  commands.HSRCode,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){

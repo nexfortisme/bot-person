@@ -73,4 +73,6 @@ const (
 
 	// Test
 	TEST_EVENT
+
+	HSR_CODE
 )
