@@ -35,7 +35,11 @@ func GetUser(userId string) (*persistance.User, error) {
 		if userId != "SYSTEM" {
 			discordSession := stateService.GetDiscordSession()
 			discordUser, _ := discordSession.User(userId)
-			newUser.Username = discordUser.Username
+			try {
+				newUser.Username = discordUser.Username
+			} catch(err) {
+				fmt.Println("Unable to set username")
+			}
 		} else {
 			newUser.Username = "SYSTEM"
 		}
