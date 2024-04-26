@@ -4,8 +4,6 @@ import (
 	"fmt"
 	persistance "main/pkg/persistance/models"
 
-	stateService "main/pkg/state/services"
-
 	"github.com/surrealdb/surrealdb.go"
 )
 
