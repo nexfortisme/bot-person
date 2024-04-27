@@ -51,11 +51,6 @@ func ReadEnv() {
 	fmt.Println("DB_PASSWORD: ", db_password)
 	fmt.Println("DB_NAMESPACE: ", db_namespace)
 	fmt.Println("DB_NAME: ", db_name)
-
-	fmt.Println("OPEN_AI_API_KEY: ", open_ai_api_key)
-	fmt.Println("DISCORD_API_KEY: ", discord_api_key)
-	fmt.Println("DEV_DISCORD_API_KEY: ", dev_discord_api_key)
-	fmt.Println("FINNHUB_API_KEY: ", finn_hub_api_key)
 }
 
 func GetDBHost() string {
