@@ -1,7 +1,6 @@
 package persistance
 
 import (
-	"fmt"
 	persistance "main/pkg/persistance/models"
 
 	"github.com/surrealdb/surrealdb.go"
@@ -59,8 +58,6 @@ func GetUser(userId string) (*persistance.User, error) {
 
 		return &createdUser[0], nil
 	}
-
-	fmt.Printf("User: %+v\n", selectedUser[0])
 
 	return &selectedUser[0], nil
 }
