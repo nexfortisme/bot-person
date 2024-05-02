@@ -20,6 +20,7 @@ var (
 	discord_api_key     string
 	dev_discord_api_key string
 	finn_hub_api_key    string
+	elevenlabs_api_key  string
 )
 
 func ReadEnv() {
@@ -45,6 +46,7 @@ func ReadEnv() {
 	discord_api_key = os.Getenv("DISCORD_API_KEY")
 	dev_discord_api_key = os.Getenv("DEV_DISCORD_API_KEY")
 	finn_hub_api_key = os.Getenv("FINNHUB_API_KEY")
+	elevenlabs_api_key = os.Getenv("ELEVEN_LABS_API_KEY")
 
 	fmt.Println("DB_HOST: ", db_host)
 	fmt.Println("DB_USER: ", db_user)
@@ -87,6 +89,10 @@ func GetDevDiscordKey() string {
 
 func GetFinnHubKey() string {
 	return finn_hub_api_key
+}
+
+func GetElevenLabsKey() string {
+	return elevenlabs_api_key
 }
 
 func UserIsAdmin(userId string) bool {

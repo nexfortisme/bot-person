@@ -14,6 +14,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+var connections = make(map[string]*discordgo.VoiceConnection)
+
 func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	var incomingMessage string
@@ -81,12 +83,13 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
 	} else if strings.HasPrefix(incomingMessage, "/join") {
-		commands.TTS(s, m)
+		connections[m.ChannelID] = commands.TTS(s, m)
 	} else if strings.HasPrefix(incomingMessage, "/leave") {
-		commands.Leave(s, m)
+		commands.Leave(connections[m.ChannelID])
 	} else {
-		// Process the message
-		// processMessage(s, m)
+		if(connections[m.ChannelID] != nil) {
+			external.ProcessElevenlabsMessage(incomingMessage, m, connections[m.ChannelID])
+		}
 	}
 
 	// Only process messages that mention the bot
