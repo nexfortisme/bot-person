@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"main/pkg/commands"
+	"main/pkg/external"
 	"main/pkg/handlers"
 	"main/pkg/logging"
 	"main/pkg/messages"
@@ -330,6 +331,9 @@ func main() {
 	if !skipCmdReg {
 		registerSlashCommands(discordSession)
 	}
+
+	// Starting queue processing for tts messages
+	go external.ProcessQueue()
 
 	// Step 8: Done
 	log.Println("Bot is now running")

@@ -7,33 +7,31 @@ import (
 )
 
 func TTS(s *discordgo.Session, m *discordgo.MessageCreate) *discordgo.VoiceConnection {
-	// Find the guild for the message
-	guild, err := s.State.Guild(m.GuildID)
-	if err != nil {
-		fmt.Println("Error finding guild")
-		return nil
-	}
 
 	var vc *discordgo.VoiceConnection
+	var channel, err = s.Channel(m.ChannelID)
 
-	// Find the voice state for the user
-	for _, vs := range guild.VoiceStates {
-		if vs.UserID == m.Author.ID {
-			// Join the user's voice channel
-			vc, err = s.ChannelVoiceJoin(guild.ID, vs.ChannelID, false, true)
-			if err != nil {
-				fmt.Println("Error joining the voice channel:", err)
-				return nil
-			}
-			fmt.Println("Joined voice channel:", vc.ChannelID)
-			break
+	// Check to see if channel is a voice channel
+	if channel.Type != discordgo.ChannelTypeGuildVoice {
+		fmt.Println("Channel is not a voice channel")
+		return nil
+	} else {
+		vc, err = s.ChannelVoiceJoin(m.GuildID, m.ChannelID, false, true)
+		if err != nil {
+			fmt.Println("Error joining the voice channel:", err)
+			return nil
 		}
+		fmt.Println("Joined voice channel:", vc.ChannelID)
 	}
 
 	return vc
 }
 
 func Leave(vc *discordgo.VoiceConnection) {
+
+	if vc == nil {
+		return
+	}
 
 	// Disconnect from the voice channel
 	err := vc.Disconnect()

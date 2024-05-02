@@ -13,6 +13,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type Message struct {
+    message    string
+    connection *discordgo.VoiceConnection
+}
+
+var messageQueue = make(chan Message, 100) // buffer size of 100
+
 func ElevenLabs(text string, connection *discordgo.VoiceConnection) error {
 	url := "https://api.elevenlabs.io/v1/text-to-speech/onwK4e9ZLuTAKqWW03F9"
 
@@ -66,5 +73,22 @@ func ProcessElevenlabsMessage(message string, m *discordgo.MessageCreate ,connec
 		messageString = fmt.Sprintf("%s says %s", m.Author.Username, message)
 	}
 
-	ElevenLabs(messageString, connection)
+	msg := Message {
+		message: messageString,
+		connection: connection,
+	}
+
+	// ElevenLabs(messageString, connection)
+	messageQueue <- msg
+}
+
+func ProcessQueue() {
+    for {
+        // Read a message from the queue
+        msg := <-messageQueue
+
+        // Process the message
+        ElevenLabs(msg.message, msg.connection)
+    }
+
 }
