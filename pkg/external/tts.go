@@ -1,4 +1,4 @@
-package commands
+package external
 
 import (
 	"fmt"
@@ -6,17 +6,17 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func TTS(s *discordgo.Session, m *discordgo.MessageCreate) *discordgo.VoiceConnection {
+func Join(s *discordgo.Session, i *discordgo.Interaction) *discordgo.VoiceConnection {
 
 	var vc *discordgo.VoiceConnection
-	var channel, err = s.Channel(m.ChannelID)
+	var channel, err = s.Channel(i.ChannelID)
 
 	// Check to see if channel is a voice channel
 	if channel.Type != discordgo.ChannelTypeGuildVoice {
 		fmt.Println("Channel is not a voice channel")
 		return nil
 	} else {
-		vc, err = s.ChannelVoiceJoin(m.GuildID, m.ChannelID, false, true)
+		vc, err = s.ChannelVoiceJoin(i.GuildID, i.ChannelID, false, true)
 		if err != nil {
 			fmt.Println("Error joining the voice channel:", err)
 			return nil

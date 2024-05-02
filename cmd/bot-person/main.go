@@ -239,6 +239,14 @@ var (
 				},
 			},
 		},
+		{
+			Name:        "join",
+			Description: "Have bot join the channel you are in. Must be type in channel chat.",
+		},
+		{
+			Name:        "leave",
+			Description: "Have bot leave the channel you are in. Must be type in channel chat.",
+		},
 		/*
 			Todo:
 				headsOrTails
@@ -271,6 +279,8 @@ var (
 		"burn":      commands.Burn,
 		"invite":    commands.Invite,
 		"hsr-code":  commands.HSRCode,
+		"join":      commands.Join,
+		"leave":     commands.Leave,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){

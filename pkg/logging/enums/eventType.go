@@ -75,4 +75,8 @@ const (
 	TEST_EVENT
 
 	HSR_CODE
+
+	TTS_JOIN
+	TTS_LEAVE
+	TTS_MESSAGE
 )

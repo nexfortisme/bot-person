@@ -2,11 +2,13 @@ package external
 
 import (
 	"fmt"
-	"regexp"
 	"io"
+	"main/pkg/logging"
+	eventType "main/pkg/logging/enums"
 	"main/pkg/util"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/bwmarrin/dgvoice"
@@ -72,6 +74,8 @@ func ProcessElevenlabsMessage(message string, m *discordgo.MessageCreate ,connec
 	} else {
 		messageString = fmt.Sprintf("%s says %s", m.Author.Username, message)
 	}
+
+	logging.LogEvent(eventType.TTS_JOIN, m.Author.ID, fmt.Sprintf("Bot Said: %s", messageString), m.GuildID)
 
 	msg := Message {
 		message: messageString,

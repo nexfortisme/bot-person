@@ -1,7 +1,6 @@
 package messages
 
 import (
-	"main/pkg/commands"
 	"main/pkg/external"
 	"main/pkg/persistance"
 	"main/pkg/util"
@@ -82,12 +81,8 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		logging.LogEvent(eventType.LENNY, m.Author.ID, "Lenny command used", m.GuildID)
 
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
-	} else if strings.HasPrefix(incomingMessage, "/join") {
-		connections[m.ChannelID] = commands.TTS(s, m)
-	} else if strings.HasPrefix(incomingMessage, "/leave") {
-		commands.Leave(connections[m.ChannelID])
 	} else {
-		if(connections[m.ChannelID] != nil) {
+		if connections[m.ChannelID] != nil {
 			external.ProcessElevenlabsMessage(incomingMessage, m, connections[m.ChannelID])
 		}
 	}
