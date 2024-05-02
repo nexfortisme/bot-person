@@ -1,7 +1,6 @@
 package messages
 
 import (
-	"main/pkg/commands"
 	"main/pkg/external"
 	"main/pkg/persistance"
 	"main/pkg/util"
@@ -13,6 +12,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 )
+
+var connections = make(map[string]*discordgo.VoiceConnection)
 
 func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
@@ -80,13 +81,10 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		logging.LogEvent(eventType.LENNY, m.Author.ID, "Lenny command used", m.GuildID)
 
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
-	} else if strings.HasPrefix(incomingMessage, "/join") {
-		commands.TTS(s, m)
-	} else if strings.HasPrefix(incomingMessage, "/leave") {
-		commands.Leave(s, m)
 	} else {
-		// Process the message
-		// processMessage(s, m)
+		if connections[m.ChannelID] != nil {
+			external.ProcessElevenlabsMessage(incomingMessage, m, connections[m.ChannelID])
+		}
 	}
 
 	// Only process messages that mention the bot

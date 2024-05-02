@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"main/pkg/commands"
+	"main/pkg/external"
 	"main/pkg/handlers"
 	"main/pkg/logging"
 	"main/pkg/messages"
@@ -238,6 +239,14 @@ var (
 				},
 			},
 		},
+		{
+			Name:        "join",
+			Description: "Have bot join the channel you are in. Must be type in channel chat.",
+		},
+		{
+			Name:        "leave",
+			Description: "Have bot leave the channel you are in. Must be type in channel chat.",
+		},
 		/*
 			Todo:
 				headsOrTails
@@ -270,6 +279,8 @@ var (
 		"burn":      commands.Burn,
 		"invite":    commands.Invite,
 		"hsr-code":  commands.HSRCode,
+		"join":      commands.Join,
+		"leave":     commands.Leave,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -330,6 +341,9 @@ func main() {
 	if !skipCmdReg {
 		registerSlashCommands(discordSession)
 	}
+
+	// Starting queue processing for tts messages
+	go external.ProcessQueue()
 
 	// Step 8: Done
 	log.Println("Bot is now running")
