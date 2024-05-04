@@ -58,7 +58,7 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 		}
 	} else {
-		flavorText, _ = util.GetStreakStringAndModifier(user.UserStats.ImageCount)
+		flavorText, _ = util.GetStreakStringAndModifier(user.UserStats.BonusStreak)
 		embedFields = []*discordgo.MessageEmbedField{
 			{
 				Name:  "Bonus Award",
@@ -76,21 +76,21 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	var embedTitle string
-	if rewardStatus != persistanceEnums.MISSED {
-		embedTitle = "Missed Bonus"
-	} else if rewardStatus == persistanceEnums.TOO_EARLY {
+	if rewardStatus == persistanceEnums.TOO_EARLY {
 		embedTitle = "Too Early"
+	} else if rewardStatus == persistanceEnums.MISSED {
+		embedTitle = "Missed Bonus"
 	} else {
 		embedTitle = "Bonus Reward!"
 	}
 
 	var embedColor int
 	if rewardStatus == persistanceEnums.TOO_EARLY {
-		embedColor = 0xFFFF00
+		embedColor = 0xFFFF00 // Yellow
 	} else if rewardStatus == persistanceEnums.MISSED {
-		embedColor = 0xFF0000
+		embedColor = 0xFF0000 // Red
 	} else {
-		embedColor = 0x00FF00
+		embedColor = 0x00FF00 // Green
 	}
 
 	bonusEmbed = &discordgo.MessageEmbed{
