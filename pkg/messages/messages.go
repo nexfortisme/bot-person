@@ -81,10 +81,6 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		logging.LogEvent(eventType.LENNY, m.Author.ID, "Lenny command used", m.GuildID)
 
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
-	} else {
-		if connections[m.ChannelID] != nil {
-			external.ProcessElevenlabsMessage(incomingMessage, m, connections[m.ChannelID])
-		}
 	}
 
 	// Only process messages that mention the bot
