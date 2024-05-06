@@ -6,17 +6,17 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Join(s *discordgo.Session, i *discordgo.Interaction) *discordgo.VoiceConnection {
+func Join(s *discordgo.Session, channelId string, guildId string) *discordgo.VoiceConnection {
 
 	var vc *discordgo.VoiceConnection
-	var channel, err = s.Channel(i.ChannelID)
+	var channel, err = s.Channel(channelId)
 
 	// Check to see if channel is a voice channel
 	if channel.Type != discordgo.ChannelTypeGuildVoice {
 		fmt.Println("Channel is not a voice channel")
 		return nil
 	} else {
-		vc, err = s.ChannelVoiceJoin(i.GuildID, i.ChannelID, false, true)
+		vc, err = s.ChannelVoiceJoin(guildId, channelId, false, true)
 		if err != nil {
 			fmt.Println("Error joining the voice channel:", err)
 			return nil
