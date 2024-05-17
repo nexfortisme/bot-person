@@ -83,16 +83,31 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
 	} else if strings.HasPrefix(incomingMessage, "!join") {
-		// Join the user's voice channel
-		connections[m.ChannelID] = external.Join(s, m.ChannelID, m.GuildID)
-		logging.LogEvent(eventType.TTS_JOIN, m.Author.ID, fmt.Sprintf("Bot Joined Channel: %s", m.ChannelID), m.GuildID)
-		s.ChannelMessageSend(m.ChannelID, "Bot Joined Channel")
+
+		voiceConnection := external.Join(s, m.ChannelID, m.GuildID)
+
+		if voiceConnection == nil {
+			logging.LogEvent(eventType.TTS_JOIN, m.Author.ID, fmt.Sprintf("Not A Voice Channel: %s", m.ChannelID), m.GuildID)
+			s.ChannelMessageSend(m.ChannelID, "Channel Must Be A Voice Channel")
+		} else {
+			connections[m.ChannelID] = voiceConnection
+			logging.LogEvent(eventType.TTS_JOIN, m.Author.ID, fmt.Sprintf("Bot Joined Channel: %s", m.ChannelID), m.GuildID)
+			s.ChannelMessageSend(m.ChannelID, "Bot Joined Channel")
+		}
 	} else if strings.HasPrefix(incomingMessage, "!leave") {
-		// Leave the user's voice channel
-		external.Leave(connections[m.ChannelID])
-		logging.LogEvent(eventType.TTS_LEAVE, m.Author.ID, fmt.Sprintf("Bot Left Channel: %s", m.ChannelID), m.GuildID)
-		s.ChannelMessageSend(m.ChannelID, "Bot Left Channel")
-		connections[m.ChannelID] = nil
+
+		voiceConnection := connections[m.ChannelID]
+
+		if voiceConnection == nil {
+			s.ChannelMessageSend(m.ChannelID, "Bot is not in a voice channel")
+			logging.LogEvent(eventType.TTS_LEAVE, m.Author.ID, fmt.Sprintf("Bot Not In Channel: %s", m.ChannelID), m.GuildID)
+		} else {
+			// Leave the user's voice channel
+			external.Leave(connections[m.ChannelID])
+			logging.LogEvent(eventType.TTS_LEAVE, m.Author.ID, fmt.Sprintf("Bot Left Channel: %s", m.ChannelID), m.GuildID)
+			s.ChannelMessageSend(m.ChannelID, "Bot Left Channel")
+			connections[m.ChannelID] = nil
+		}
 	} else {
 		if connections[m.ChannelID] != nil {
 			fmt.Println("Processing message")
