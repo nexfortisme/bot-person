@@ -1,11 +1,9 @@
 package persistance
 
 import (
-	"fmt"
-	"log"
 	persistance "main/pkg/persistance/models"
 
-	"github.com/bwmarrin/discordgo"
+	"github.com/surrealdb/surrealdb.go"
 )
 
 type BPInteraction int
@@ -21,70 +19,101 @@ const (
 	BPLennyFaceInteracton
 )
 
-// func IncrementInteractionTracking(flag BPInteraction, user discordgo.User) {
+func GetUserStats(userId string) persistance.MyStats {
 
-// 	userId := user.ID
-// 	username := user.Username
+	user, _ := GetUser(userId)
 
-// 	foundUser := false
-// 	foundUser = handleUserStatIncrementing(flag, userId)
-
-// 	if !foundUser {
-// 		createNewUserTracking(flag, userId, username)
-// 	}
-// }
-
-func printUserStocks(user persistance.User) string {
-
-	if len(user.UserStats.Stocks) == 0 {
-		return "You don't have any stocks."
-	}
-
-	retString := "You have the following stocks:\n"
-
-	for _, element := range user.UserStats.Stocks {
-		retString += fmt.Sprintf("\t%s: %.2f\n", element.StockTicker, element.StockCount)
-	}
-
-	return retString
-}
-
-// func SlashGetBotStats(s *discordgo.Session) string {
-
-// 	guildCount := len(s.State.Guilds)
-
-// 	var globalMessageCount int = 0
-// 	var globalGoodBotCount int = 0
-// 	var globalBadBotCount int = 0
-// 	var globalImageCount int = 0
-// 	// var globalLongestBonusStreak int = 0
-
-// 	var globalTokenCirculation float64 = 0.0
-
-// 	var returnMessage string
-
-// 	for _, element := range botTracking.UserStats {
-
-// 		globalMessageCount += element.UserStats.MessageCount
-// 		globalGoodBotCount += element.UserStats.GoodBotCount
-// 		globalBadBotCount += element.UserStats.BadBotCount
-// 		globalImageCount += element.UserStats.ImageCount
-
-// 		globalTokenCirculation += element.UserStats.ImageTokens
-// 	}
-
-// 	returnMessage = fmt.Sprintf("Across %d servers, Bot Person has/is/did:\nInteractions: %d\nBeen Good: %d\nBeen Bad: %d\nGenerated Images: %d\nTotal Tokens In Circulation: %.2f", guildCount, globalMessageCount, globalGoodBotCount, globalGoodBotCount, globalImageCount, globalTokenCirculation)
-
-// 	return returnMessage
-// }
-
-func PrintUSerStocksHelper(user discordgo.User) (string, error) {
-	userStruct, err := GetUser(user.ID)
-
+	interactionCountData, err := db.Query("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId NOT IN [12, 13] GROUP ALL", map[string]interface{}{
+		"userId": userId,
+	})
 	if err != nil {
-		log.Println("Error getting user: " + err.Error())
-		return "", err
+		panic(err)
 	}
 
-	return printUserStocks(*userStruct), nil
+	goodBotCountData, err := db.Query("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId IN [34] GROUP ALL", map[string]interface{}{
+		"userId": userId,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	badBotCountData, err := db.Query("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId IN [33] GROUP ALL", map[string]interface{}{
+		"userId": userId,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	lootBoxCountData, err := db.Query("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId IN [9] GROUP ALL", map[string]interface{}{
+		"userId": userId,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	imageCountData, err := db.Query("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId IN [16] GROUP ALL", map[string]interface{}{
+		"userId": userId,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	chatCountData, err := db.Query("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId IN [12, 13] GROUP ALL", map[string]interface{}{
+		"userId": userId,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Unmarshal data
+	interactionCount := make([]persistance.UserEventCount, 1)
+	_, err = surrealdb.UnmarshalRaw(interactionCountData, &interactionCount)
+	if err != nil {
+		panic(err)
+	}
+
+	goodBotCount := make([]persistance.UserEventCount, 1)
+	_, err = surrealdb.UnmarshalRaw(goodBotCountData, &goodBotCount)
+	if err != nil {
+		panic(err)
+	}
+
+	badBotCount := make([]persistance.UserEventCount, 1)
+	_, err = surrealdb.UnmarshalRaw(badBotCountData, &badBotCount)
+	if err != nil {
+		panic(err)
+	}
+
+	lootBoxCount := make([]persistance.UserEventCount, 1)
+	_, err = surrealdb.UnmarshalRaw(lootBoxCountData, &lootBoxCount)
+	if err != nil {
+		panic(err)
+	}
+
+	imageCount := make([]persistance.UserEventCount, 1)
+	_, err = surrealdb.UnmarshalRaw(imageCountData, &imageCount)
+	if err != nil {
+		panic(err)
+	}
+
+	chatCount := make([]persistance.UserEventCount, 1)
+	_, err = surrealdb.UnmarshalRaw(chatCountData, &chatCount)
+	if err != nil {
+		panic(err)
+	}
+
+	var myStats persistance.MyStats
+
+	myStats.InteractionCount = interactionCount[0].Count
+	myStats.GoodBotCount = goodBotCount[0].Count
+	myStats.BadBotCount = badBotCount[0].Count
+	myStats.LootBoxCount = lootBoxCount[0].Count
+	myStats.ImageCount = imageCount[0].Count
+	myStats.ChatCount = chatCount[0].Count
+
+	myStats.ImageTokens = user.UserStats.ImageTokens
+	myStats.BonusStreak = user.UserStats.BonusStreak
+	myStats.LastBonus = user.UserStats.LastBonus
+
+	return myStats
 }
