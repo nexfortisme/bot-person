@@ -2,30 +2,18 @@ package persistance
 
 import (
 	persistance "main/pkg/persistance/models"
-
-	"github.com/surrealdb/surrealdb.go"
 )
 
 func GetUser(userId string) (*persistance.User, error) {
 
-	db := GetDB()
+	user := persistance.User{}
 
-	// Get user by ID
-	data, err := db.Query("SELECT * FROM users WHERE UserId = $userId", map[string]interface{}{
-		"userId": userId,
-	})
+	err := RunQuery("SELECT * FROM users WHERE UserId = ?", user, userId)
 	if err != nil {
 		panic(err)
 	}
 
-	// Unmarshal data
-	selectedUser := make([]persistance.User, 1)
-	_, err = surrealdb.UnmarshalRaw(data, &selectedUser)
-	if err != nil {
-		panic(err)
-	}
-
-	if selectedUser[0].ID == "" || err != nil {
+	if user.ID == "" || user.ID == "0" {
 
 		newUser := persistance.User{}
 
@@ -44,30 +32,23 @@ func GetUser(userId string) (*persistance.User, error) {
 		newUser.UserId = userId
 		newUser.UserStats.ImageTokens = 50
 
-		resp, err := db.Create("users", newUser)
-		if err != nil {
-			return nil, err
-		}
-
-		// Unmarshal data
-		createdUser := make([]persistance.User, 1)
-		err = surrealdb.Unmarshal(resp, &createdUser)
+		err = RunQuery("INSERT INTO users (UserId, Username, UserStats) VALUES (?, ?, ?)", nil, userId, newUser.Username, newUser.UserStats)
 		if err != nil {
 			panic(err)
 		}
 
-		return &createdUser[0], nil
+		return &newUser, nil
 	}
 
-	return &selectedUser[0], nil
+	return &user, nil
 }
 
 func UpdateUser(updateUser persistance.User) bool {
 
-	db := GetDB()
-
-	if _, err := db.Update(updateUser.ID, updateUser); err != nil {
-		return false
+	err := RunQuery("UPDATE users SET Username = ?, UserStats = ? WHERE UserId = ?", nil, updateUser.Username, updateUser.UserStats, updateUser.UserId)
+	if err != nil {
+		panic(err)
 	}
+
 	return true
 }

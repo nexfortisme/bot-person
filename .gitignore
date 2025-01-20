@@ -9,3 +9,4 @@ testing
 /images
 .env
 *.mp3
+db.sqlite*

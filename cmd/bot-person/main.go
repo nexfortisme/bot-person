@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"main/pkg/commands"
-	"main/pkg/external"
 	"main/pkg/handlers"
 	"main/pkg/logging"
 	"main/pkg/messages"
@@ -308,7 +307,7 @@ func main() {
 
 	if devMode {
 		log.Println("Entering Dev Mode...")
-		discordSession, err = discordgo.New("Bot " + util.GetDevDiscordKey())
+		discordSession, err = discordgo.New(util.GetDevDiscordKey())
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
 		}
@@ -327,7 +326,7 @@ func main() {
 	// Step 6: Open the discord session
 	err = discordSession.Open()
 	if err != nil {
-		log.Fatal("Error opening bot websocket. " + err.Error())
+		log.Fatal("Error opening bot websocket. Error: " + err.Error())
 	}
 
 	// Step 6.5: Set the session in the state
@@ -342,8 +341,7 @@ func main() {
 		registerSlashCommands(discordSession)
 	}
 
-	
-	go external.ProcessQueue()
+	// go external.ProcessQueue()
 
 	// Step 8: Done
 	log.Println("Bot is now running")

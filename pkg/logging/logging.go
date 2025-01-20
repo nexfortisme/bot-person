@@ -1,44 +1,24 @@
 package logging
 
 import (
-	"fmt"
 	"log"
 	"main/pkg/persistance"
-	"time"
 
 	logging "main/pkg/logging/enums"
 	models "main/pkg/logging/models"
-
-	"github.com/surrealdb/surrealdb.go"
 )
 
 func LogEvent(eventType logging.EventType, userId string, message string, serverId string) {
 
-	db := persistance.GetDB()
-
-	user, _ := persistance.GetUser(userId)
-
 	event := models.Event{}
-	event.EventType = eventType
-	event.EventTime = time.Now()
-	event.EventUser = userId
-	event.EventData = message
-	event.EventServer = serverId
 
-	createdEvent, _ := db.Create("events", event)
-
-	// Unmarshal data
-	marshaledEvent := make([]models.Event, 1)
-	err := surrealdb.Unmarshal(createdEvent, &marshaledEvent)
+	err := persistance.RunQuery("INSERT INTO events (EventType, EventUser, EventData, EventServer) VALUES (?, ?, ?, ?)", nil, event.EventType.ToInt(), userId, message, serverId)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error logging event: %v", err)
 	}
 
-	relateString := fmt.Sprintf("RELATE users:%s->did->events:%s", user.ID, marshaledEvent[0].ID)
-
-	db.Query(relateString, nil)
 }
 
 func LogError(err string) {
-	log.Fatalf(err)
+	persistance.RunQuery("INSERT INTO events (EventType, EventUser, EventData, EventServer) VALUES (?, ?, ?, ?)", logging.ERROR, "SYSTEM", err, "SYSTEM")
 }

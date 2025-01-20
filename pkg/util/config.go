@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -47,12 +46,6 @@ func ReadEnv() {
 	dev_discord_api_key = os.Getenv("DEV_DISCORD_API_KEY")
 	finn_hub_api_key = os.Getenv("FINNHUB_API_KEY")
 	elevenlabs_api_key = os.Getenv("ELEVEN_LABS_API_KEY")
-
-	fmt.Println("DB_HOST: ", db_host)
-	fmt.Println("DB_USER: ", db_user)
-	fmt.Println("DB_PASSWORD: ", db_password)
-	fmt.Println("DB_NAMESPACE: ", db_namespace)
-	fmt.Println("DB_NAME: ", db_name)
 }
 
 func GetDBHost() string {
