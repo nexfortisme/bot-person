@@ -46,7 +46,7 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		embedFields = []*discordgo.MessageEmbedField{
 			{
 				Name:  "Current Streak",
-				Value: fmt.Sprintf("%d days", user.UserStats.BonusStreak),
+				Value: fmt.Sprintf("%d days", user.BonusStreak),
 			},
 			{
 				Name:  "Streak Missed",
@@ -54,11 +54,11 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 			{
 				Name:  "Current Balance",
-				Value: fmt.Sprintf("%.2f tokens", user.UserStats.ImageTokens),
+				Value: fmt.Sprintf("%.2f tokens", user.ImageTokens),
 			},
 		}
 	} else {
-		flavorText, _ = util.GetStreakStringAndModifier(user.UserStats.BonusStreak)
+		flavorText, _ = util.GetStreakStringAndModifier(user.BonusStreak)
 		embedFields = []*discordgo.MessageEmbedField{
 			{
 				Name:  "Bonus Award",
@@ -66,11 +66,11 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 			{
 				Name:  "Current Streak",
-				Value: fmt.Sprintf("%d days", user.UserStats.BonusStreak),
+				Value: fmt.Sprintf("%d days", user.BonusStreak),
 			},
 			{
 				Name:  "Current Balance",
-				Value: fmt.Sprintf("%.2f tokens", user.UserStats.ImageTokens),
+				Value: fmt.Sprintf("%.2f tokens", user.ImageTokens),
 			},
 		}
 	}
@@ -102,7 +102,7 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	var buttonLabel string
 	if rewardStatus == persistanceEnums.MISSED {
-		buttonLabel = fmt.Sprintf("Save Streak (%.2f tokens)", user.UserStats.ImageTokens/10)
+		buttonLabel = fmt.Sprintf("Save Streak (%.2f tokens)", user.ImageTokens/10)
 	} else {
 		buttonLabel = "Save Streak"
 	}

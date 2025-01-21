@@ -29,7 +29,7 @@ func Burn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		burnAmount = option.FloatValue()
 
-		if user.UserStats.ImageTokens < burnAmount {
+		if user.ImageTokens < burnAmount {
 
 			logging.LogEvent(eventType.COMMAND_BURN, i.Interaction.Member.User.ID, "User does not have enough tokens to burn", i.Interaction.GuildID)
 
@@ -42,12 +42,12 @@ func Burn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		} else {
 			
-			user.UserStats.ImageTokens -= burnAmount
+			user.ImageTokens -= burnAmount
 			persistance.UpdateUser(*user);
 
 			logging.LogEvent(eventType.COMMAND_BURN, i.Interaction.Member.User.ID, fmt.Sprintf("User has burnt %f tokens", burnAmount), i.Interaction.GuildID)
 
-			removeTokenResponse := fmt.Sprintf("%.2f tokens removed. New Balance: %.2f", burnAmount, user.UserStats.ImageTokens)
+			removeTokenResponse := fmt.Sprintf("%.2f tokens removed. New Balance: %.2f", burnAmount, user.ImageTokens)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

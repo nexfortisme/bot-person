@@ -38,17 +38,17 @@ func ResetStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	user, _ := persistance.GetUser(originalUserID)
 
 	// Resetting the streak
-	user.UserStats.BonusStreak = 1
+	user.BonusStreak = 1
 
 	//Getting return string and modifier
-	_, modifier := util.GetStreakStringAndModifier(user.UserStats.BonusStreak)
+	_, modifier := util.GetStreakStringAndModifier(user.BonusStreak)
 
 	// Getting Final Bonus Reward
 	finalReward := util.GetUserBonus(5, 50, modifier)
 
 	// Updating User Record
-	user.UserStats.LastBonus = time.Now()
-	user.UserStats.ImageTokens += finalReward
+	user.LastBonus = time.Now().String()
+	user.ImageTokens += finalReward
 
 	// Updating User Stats
 	persistance.UpdateUser(*user)
@@ -64,11 +64,11 @@ func ResetStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 			{
 				Name:  "Current Streak",
-				Value: fmt.Sprintf("%d days", user.UserStats.BonusStreak),
+				Value: fmt.Sprintf("%d days", user.BonusStreak),
 			},
 			{
 				Name:  "Current Balance",
-				Value: fmt.Sprintf("%.2f tokens", user.UserStats.ImageTokens),
+				Value: fmt.Sprintf("%.2f tokens", user.ImageTokens),
 			},
 		},
 	}

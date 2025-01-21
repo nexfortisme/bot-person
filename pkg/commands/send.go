@@ -30,7 +30,7 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		transferrAmount = option.FloatValue()
 
-		if sender.UserStats.ImageTokens < transferrAmount {
+		if sender.ImageTokens < transferrAmount {
 
 			logging.LogEvent(eventType.COMMAND_SEND, i.Interaction.Member.User.ID, "User does not have enough tokens to send", i.Interaction.GuildID)
 
@@ -68,7 +68,7 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprint(sender.UserStats.ImageTokens),
+					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprint(sender.ImageTokens),
 				},
 			})
 			return

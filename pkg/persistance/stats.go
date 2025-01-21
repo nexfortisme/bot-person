@@ -2,6 +2,7 @@ package persistance
 
 import (
 	persistance "main/pkg/persistance/models"
+	"time"
 )
 
 type BPInteraction int
@@ -31,39 +32,38 @@ func GetUserStats(userId string) persistance.MyStats {
 	var imageCountData int64
 	var chatCountData int64
 
-
 	// Interaction Count
-	err = RunQuery("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId NOT IN [12, 13] GROUP ALL", &interactionCountData, userId);
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId NOT IN (12, 13)", &interactionCountData, userId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Good Bot Count
-	err = RunQuery("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId IN [34] GROUP ALL", &goodBotCountData, userId);
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId IN (34)", &goodBotCountData, userId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Bad Bot Count
-	err = RunQuery("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId IN [33] GROUP ALL", &badBotCountData, userId);
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId IN (33)", &badBotCountData, userId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Loot Box Count
-	err = RunQuery("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId IN [9] GROUP ALL", &lootBoxCountData, userId);
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId IN (9)", &lootBoxCountData, userId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Image Count
-	err = RunQuery("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId IN [16] GROUP ALL", &imageCountData, userId);
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId IN (16)", &imageCountData, userId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Chat Count
-	err = RunQuery("SELECT count() AS count FROM events WHERE eventUser = $userId AND eventId IN [12, 13] GROUP ALL", &chatCountData, userId);
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId IN (12, 13)", &chatCountData, userId)
 	if err != nil {
 		panic(err)
 	}
@@ -77,9 +77,13 @@ func GetUserStats(userId string) persistance.MyStats {
 	myStats.ImageCount = int(imageCountData)
 	myStats.ChatCount = int(chatCountData)
 
-	myStats.ImageTokens = user.UserStats.ImageTokens
-	myStats.BonusStreak = user.UserStats.BonusStreak
-	myStats.LastBonus = user.UserStats.LastBonus
+	myStats.ImageTokens = user.ImageTokens
+	myStats.BonusStreak = user.BonusStreak
+	lastBonus, err := time.Parse(time.RFC3339, user.LastBonus)
+	if err != nil {
+		panic(err)
+	}
+	myStats.LastBonus = lastBonus
 
 	return myStats
 }

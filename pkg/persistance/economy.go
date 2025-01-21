@@ -10,7 +10,6 @@ import (
 	"time"
 
 	persistance "main/pkg/persistance/eums"
-	models "main/pkg/persistance/models"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/hako/durafmt"
@@ -18,9 +17,12 @@ import (
 
 func AddBotPersonTokens(tokenAmount float64, userId string) bool {
 
-	user, _ := GetUser(userId)
-	user.UserStats.ImageTokens += tokenAmount
+	user, err := GetUser(userId)
+	if err != nil {
+		return false
+	}
 
+	user.ImageTokens += tokenAmount
 	UpdateUser(*user)
 
 	return true
@@ -29,10 +31,10 @@ func AddBotPersonTokens(tokenAmount float64, userId string) bool {
 func RemoveBotPersonTokens(tokenAmount float64, userId string) bool {
 
 	user, _ := GetUser(userId)
-	user.UserStats.ImageTokens -= tokenAmount
+	user.ImageTokens -= tokenAmount
 
-	if user.UserStats.ImageTokens < 0 {
-		user.UserStats.ImageTokens = 0
+	if user.ImageTokens < 0 {
+		user.ImageTokens = 0
 	}
 
 	UpdateUser(*user)
@@ -50,12 +52,12 @@ func TransferBotPersonTokens(tokenAmount float64, fromUserId string, toUserId st
 	}
 
 	// The User exists but is trying to transfer more tokens than they have
-	if fromUser.UserStats.ImageTokens < tokenAmount {
+	if fromUser.ImageTokens < tokenAmount {
 		return false
 	}
 
-	toUser.UserStats.ImageTokens += tokenAmount
-	fromUser.UserStats.ImageTokens -= tokenAmount
+	toUser.ImageTokens += tokenAmount
+	fromUser.ImageTokens -= tokenAmount
 	return UpdateUser(*toUser) && UpdateUser(*fromUser)
 }
 
@@ -70,16 +72,17 @@ func GetUserReward(userId string) (float64, persistance.RewardStatus, error) {
 	modifier := 1
 
 	// Checking to see if the user has a LastBonus time
-	if (user.UserStats.LastBonus != time.Time{}) {
+	if (user.LastBonus != time.Time{}.String()) {
 
-		// Checking diff between now and lastBonus time
-		diff := time.Since(user.UserStats.LastBonus)
+		// Parse LastBonus string into time and check diff between now and lastBonus time
+		lastBonusTime, _ := time.Parse(time.RFC3339, user.LastBonus)
+		diff := time.Since(lastBonusTime)
 
 		// if diff is less than 1 day (86400 seconds), then throws error
 		if diff.Seconds() <= 86400 {
-
-			// Doing math to for countdown to next bonus
-			nextBonus := user.UserStats.LastBonus.AddDate(0, 0, 1)
+			// Doing math for countdown to next bonus
+			lastBonusTime, _ := time.Parse(time.RFC3339, user.LastBonus)
+			nextBonus := lastBonusTime.AddDate(0, 0, 1)
 			timeToNextBonus := time.Until(nextBonus)
 			formattedString := durafmt.Parse(timeToNextBonus).LimitFirstN(3)
 
@@ -88,7 +91,8 @@ func GetUserReward(userId string) (float64, persistance.RewardStatus, error) {
 			return -1.0, persistance.TOO_EARLY, errors.New(errString)
 		}
 
-		timeWindow := user.UserStats.LastBonus.Add(time.Hour * 48)
+		lastBonusTime, _ = time.Parse(time.RFC3339, user.LastBonus)
+		timeWindow := lastBonusTime.Add(time.Hour * 48)
 		timeWindowDiff := time.Since(timeWindow)
 
 		if timeWindowDiff > 0 {
@@ -101,9 +105,9 @@ func GetUserReward(userId string) (float64, persistance.RewardStatus, error) {
 	finalReward := util.GetUserBonus(5, 50, modifier)
 
 	// Updating User Record
-	user.UserStats.LastBonus = time.Now()
-	user.UserStats.ImageTokens += finalReward
-	user.UserStats.BonusStreak++
+	user.LastBonus = time.Now().String()
+	user.ImageTokens += finalReward
+	user.BonusStreak++
 
 	if !UpdateUser(*user) {
 		return -1.0, persistance.AVAILABLE, errors.New("error updating user record")
@@ -121,10 +125,10 @@ func BuyLootbox(userId string) (float64, int, error) {
 		return -1, -1, err
 	}
 
-	if user.UserStats.ImageTokens < 5 {
+	if user.ImageTokens < 5 {
 		return -1, -1, errors.New("you do not have the 5 tokens needed to purchase a lootbox")
 	} else {
-		user.UserStats.ImageTokens -= 5
+		user.ImageTokens -= 5
 	}
 
 	random := rand.New(rand.NewSource(time.Now().UnixMilli()))
@@ -145,7 +149,7 @@ func BuyLootbox(userId string) (float64, int, error) {
 		reward += 50
 	}
 
-	user.UserStats.ImageTokens += float64(reward)
+	user.ImageTokens += float64(reward)
 
 	if !UpdateUser(*user) {
 		return -1, -1, errors.New("error updating user record")
@@ -203,70 +207,70 @@ func APictureIsWorthAThousand(incomingMessage string, m *discordgo.MessageCreate
 	AddBotPersonTokens(tokenAddAmount, m.Author.ID)
 }
 
-func AddStock(userId string, stockTicker string, quantity float64) error {
+// func AddStock(userId string, stockTicker string, quantity float64) error {
 
-	user, err := GetUser(userId)
+// 	user, err := GetUser(userId)
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	userPortfolio := user.UserStats.Stocks
+// 	userPortfolio := user.UserStats.Stocks
 
-	for index, element := range userPortfolio {
-		if element.StockTicker == stockTicker {
-			element.StockCount += quantity
-			userPortfolio[index] = element
-			UpdateUser(*user)
-			return nil
-		}
-	}
+// 	for index, element := range userPortfolio {
+// 		if element.StockTicker == stockTicker {
+// 			element.StockCount += quantity
+// 			userPortfolio[index] = element
+// 			UpdateUser(*user)
+// 			return nil
+// 		}
+// 	}
 
-	newStock := models.Stock{StockTicker: stockTicker, StockCount: quantity}
-	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock)
-	UpdateUser(*user)
+// 	newStock := models.Stock{StockTicker: stockTicker, StockCount: quantity}
+// 	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock)
+// 	UpdateUser(*user)
 
-	return nil
-}
+// 	return nil
+// }
 
-func RemoveStock(userId string, stockTicker string, quantity float64) error {
+// func RemoveStock(userId string, stockTicker string, quantity float64) error {
 
-	user, err := GetUser(userId)
+// 	user, err := GetUser(userId)
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	userPortfolio := user.UserStats.Stocks
+// 	userPortfolio := user.UserStats.Stocks
 
-	for index, element := range userPortfolio {
-		if element.StockTicker == stockTicker {
-			element.StockCount -= quantity
-			userPortfolio[index] = element
-			UpdateUser(*user)
-			return nil
-		}
-	}
+// 	for index, element := range userPortfolio {
+// 		if element.StockTicker == stockTicker {
+// 			element.StockCount -= quantity
+// 			userPortfolio[index] = element
+// 			UpdateUser(*user)
+// 			return nil
+// 		}
+// 	}
 
-	return errors.New("stock not found")
-}
+// 	return errors.New("stock not found")
+// }
 
-func GetUserStock(userId string, stockTicker string) (models.Stock, error) {
+// func GetUserStock(userId string, stockTicker string) (models.Stock, error) {
 
-	user, err := GetUser(userId)
+// 	user, err := GetUser(userId)
 
-	if err != nil {
-		return models.Stock{}, err
-	}
+// 	if err != nil {
+// 		return models.Stock{}, err
+// 	}
 
-	userPortfolio := user.UserStats.Stocks
+// 	userPortfolio := user.UserStats.Stocks
 
-	for _, element := range userPortfolio {
-		if element.StockTicker == stockTicker {
-			return element, nil
-		}
-	}
+// 	for _, element := range userPortfolio {
+// 		if element.StockTicker == stockTicker {
+// 			return element, nil
+// 		}
+// 	}
 
-	return models.Stock{}, errors.New("stock not found")
+// 	return models.Stock{}, errors.New("stock not found")
 
-}
+// }

@@ -46,7 +46,7 @@ func MyStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			{},
 			{
 				Name:   "Image(s) Requested",
-				Value:  fmt.Sprintf("%d Image(s)", user.UserStats.ImageCount),
+				Value:  fmt.Sprintf("%d Image(s)", userStats.ImageCount),
 				Inline: true,
 			},
 			{
@@ -57,18 +57,18 @@ func MyStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			{},
 			{
 				Name:   "Bonus Streak",
-				Value:  fmt.Sprintf("%d Day(s)", user.UserStats.BonusStreak),
+				Value:  fmt.Sprintf("%d Day(s)", user.BonusStreak),
 				Inline: true,
 			},
 			{
 				Name:   "Token Balance",
-				Value:  fmt.Sprintf("%.2f Token(s)", user.UserStats.ImageTokens),
+				Value:  fmt.Sprintf("%.2f Token(s)", user.ImageTokens),
 				Inline: true,
 			},
 			{},
 			{
 				Name:  "Last Bonus",
-				Value: fmt.Sprintf("<t:%d:R>", user.UserStats.LastBonus.Unix()),
+				Value: fmt.Sprintf("<t:%d:R>", userStats.LastBonus.Unix()),
 			},
 		},
 	}

@@ -42,6 +42,7 @@ func InitializeDatabase(db *sqlite.Conn) {
 	createUsersTable := `
 	CREATE TABLE IF NOT EXISTS Users (
 		ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		UserId TEXT,
 		Username TEXT,
 		ImageTokens REAL,
 		BonusStreak INTEGER,
@@ -156,26 +157,54 @@ func RunQuery(query string, output interface{}, params ...interface{}) error {
 			continue
 		}
 
-		// Use reflection to create and populate a new instance of the slice element type
-		slicePtr := output
-		slice := reflect.ValueOf(slicePtr).Elem()
-		elementType := slice.Type().Elem()
-		newElement := reflect.New(elementType).Elem()
-
-		// Iterate through struct fields and populate from columns
-		for i := 0; i < elementType.NumField(); i++ {
-			field := elementType.Field(i)
-			switch field.Type.Kind() {
-			case reflect.Int64:
-				newElement.Field(i).SetInt(stmt.ColumnInt64(i))
-			case reflect.String:
-				newElement.Field(i).SetString(stmt.ColumnText(i))
-			default:
-				return fmt.Errorf("unsupported field type %v for field %s", field.Type, field.Name)
-			}
+		outputValue := reflect.ValueOf(output)
+		if outputValue.Kind() != reflect.Ptr {
+			return fmt.Errorf("output must be a pointer")
 		}
 
-		slice.Set(reflect.Append(slice, newElement))
+		elemValue := outputValue.Elem()
+		if elemValue.Kind() == reflect.Struct {
+			// Populate a single struct
+			for i := 0; i < elemValue.NumField(); i++ {
+				field := elemValue.Field(i)
+				switch field.Kind() {
+				case reflect.Int64:
+					field.SetInt(stmt.ColumnInt64(i))
+				case reflect.Int:
+					field.SetInt(stmt.ColumnInt64(i))
+				case reflect.String:
+					field.SetString(stmt.ColumnText(i))
+				case reflect.Float64:
+					field.SetFloat(stmt.ColumnFloat(i))
+				default:
+					return fmt.Errorf("unsupported field type %v", field.Kind())
+				}
+			}
+		} else if elemValue.Kind() == reflect.Slice {
+			// Populate a slice
+			elementType := elemValue.Type().Elem()
+			newElement := reflect.New(elementType).Elem()
+
+			for i := 0; i < elementType.NumField(); i++ {
+				field := elementType.Field(i)
+				switch field.Type.Kind() {
+				case reflect.Int64:
+					newElement.Field(i).SetInt(stmt.ColumnInt64(i))
+				case reflect.Int:
+					newElement.Field(i).SetInt(stmt.ColumnInt64(i))
+				case reflect.String:
+					newElement.Field(i).SetString(stmt.ColumnText(i))
+				case reflect.Float64:
+					newElement.Field(i).SetFloat(stmt.ColumnFloat(i))
+				default:
+					return fmt.Errorf("unsupported field type %v for field %s", field.Type, field.Name)
+				}
+			}
+
+			elemValue.Set(reflect.Append(elemValue, newElement))
+		} else {
+			return fmt.Errorf("output must be a pointer to a struct or a slice")
+		}
 	}
 
 	return nil

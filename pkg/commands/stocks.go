@@ -62,7 +62,7 @@ func Stocks(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		purchasePrice := currentPriceF64 * purchaseAmount
 
-		if user.UserStats.ImageTokens < purchasePrice {
+		if user.ImageTokens < purchasePrice {
 
 			retString := fmt.Sprintf("You don't have the tokens needed to purchase %.2f shares of %s. Please try again with a lower amount.", purchaseAmount, stockTicker)
 
@@ -76,13 +76,13 @@ func Stocks(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		} else {
 
-			persistance.AddStock(i.Interaction.Member.User.ID, stockTicker, purchaseAmount)
+			// persistance.AddStock(i.Interaction.Member.User.ID, stockTicker, purchaseAmount)
 
 			persistance.RemoveBotPersonTokens(purchasePrice, i.Interaction.Member.User.ID)
 
 			user, _ = persistance.GetUser(i.Interaction.Member.User.ID)
 
-			retString := fmt.Sprintf("You have purchased %f shares of %s for %.2f tokens. Your new balance is %.2f tokens.", purchaseAmount, stockTicker, purchasePrice, user.UserStats.ImageTokens)
+			retString := fmt.Sprintf("You have purchased %f shares of %s for %.2f tokens. Your new balance is %.2f tokens.", purchaseAmount, stockTicker, purchasePrice, user.ImageTokens)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -95,7 +95,7 @@ func Stocks(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	} else {
 
-		userStock, err := persistance.GetUserStock(i.Interaction.Member.User.ID, stockTicker)
+		// userStock, err := persistance.GetUserStock(i.Interaction.Member.User.ID, stockTicker)
 
 		if err != nil {
 			retString := fmt.Sprintf("You do not have any shares of %s. Please try again.", stockTicker)
@@ -109,39 +109,39 @@ func Stocks(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		if userStock.StockCount < purchaseAmount {
+		// if userStock.StockCount < purchaseAmount {
 
-			retString := fmt.Sprintf("You do not have enough shares of %s to sell %.2f shares. Please try again with a lower amount.", stockTicker, purchaseAmount)
+		// 	retString := fmt.Sprintf("You do not have enough shares of %s to sell %.2f shares. Please try again with a lower amount.", stockTicker, purchaseAmount)
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: retString,
-				},
-			})
-			return
+		// 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		// 		Data: &discordgo.InteractionResponseData{
+		// 			Content: retString,
+		// 		},
+		// 	})
+		// 	return
 
-		} else {
+		// } else {
 
-			sellPrice := currentPriceF64 * purchaseAmount
+		// 	sellPrice := currentPriceF64 * purchaseAmount
 
-			persistance.RemoveStock(i.Interaction.Member.User.ID, stockTicker, purchaseAmount)
+		// 	// persistance.RemoveStock(i.Interaction.Member.User.ID, stockTicker, purchaseAmount)
 
-			persistance.AddBotPersonTokens(sellPrice, i.Interaction.Member.User.ID)
+		// 	persistance.AddBotPersonTokens(sellPrice, i.Interaction.Member.User.ID)
 
-			user, _ = persistance.GetUser(i.Interaction.Member.User.ID)
+		// 	user, _ = persistance.GetUser(i.Interaction.Member.User.ID)
 
-			retString := fmt.Sprintf("You have sold %f shares of %s for %.2f tokens. Your new balance is %.2f tokens.", purchaseAmount, stockTicker, sellPrice, user.UserStats.ImageTokens)
+		// 	retString := fmt.Sprintf("You have sold %f shares of %s for %.2f tokens. Your new balance is %.2f tokens.", purchaseAmount, stockTicker, sellPrice, user.ImageTokens)
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: retString,
-				},
-			})
-			return
+		// 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		// 		Data: &discordgo.InteractionResponseData{
+		// 			Content: retString,
+		// 		},
+		// 	})
+		// 	return
 
-		}
+		// }
 
 	}
 }

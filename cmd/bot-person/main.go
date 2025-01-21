@@ -307,7 +307,7 @@ func main() {
 
 	if devMode {
 		log.Println("Entering Dev Mode...")
-		discordSession, err = discordgo.New(util.GetDevDiscordKey())
+		discordSession, err = discordgo.New("Bot " + util.GetDevDiscordKey())
 		if err != nil {
 			log.Fatal("Error connecting bot to server")
 		}

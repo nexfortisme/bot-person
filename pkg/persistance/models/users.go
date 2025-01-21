@@ -1,8 +1,10 @@
 package persistance
 
 type User struct {
-	ID        string    `json:"id,omitempty"`
-	UserId    string    `json:"UserId"`
-	UserStats UserStats `json:"UserStats"`
-	Username  string    `json:"Username"`
+	ID          string  `json:"id,omitempty"`
+	UserId      string  `json:"UserId"`
+	Username    string  `json:"Username"`
+	ImageTokens float64 `json:"ImageTokens"`
+	BonusStreak int     `json:"BonusStreak"`
+	LastBonus   string  `json:"LastBonus"`
 }

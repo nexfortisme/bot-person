@@ -41,7 +41,7 @@ func SaveStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var saveStreakMessage string
 
 	// Calculating cost and creating save streak string
-	saveStreakCost = user.UserStats.ImageTokens * 0.1
+	saveStreakCost = user.ImageTokens * 0.1
 	saveStreakMessage = fmt.Sprintf("You have saved your streak! It Cost %.2f tokens", saveStreakCost)
 
 	// Removing tokens from user
@@ -51,17 +51,17 @@ func SaveStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	user, _ = persistance.GetUser(i.Interaction.Member.User.ID)
 
 	// Updating the streak
-	user.UserStats.BonusStreak++
+	user.BonusStreak++
 
 	//Getting return string and modifier
-	_, modifier := util.GetStreakStringAndModifier(user.UserStats.BonusStreak)
+	_, modifier := util.GetStreakStringAndModifier(user.BonusStreak)
 
 	// Getting Final Bonus Reward
 	finalReward := util.GetUserBonus(5, 50, modifier)
 
 	// Updating User Record
-	user.UserStats.LastBonus = time.Now()
-	user.UserStats.ImageTokens += finalReward
+	user.LastBonus = time.Now().String()
+	user.ImageTokens += finalReward
 
 	// Updating User Stats
 	persistance.UpdateUser(*user)
@@ -77,11 +77,11 @@ func SaveStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 			{
 				Name:  "Current Streak",
-				Value: fmt.Sprintf("%d days", user.UserStats.BonusStreak),
+				Value: fmt.Sprintf("%d days", user.BonusStreak),
 			},
 			{
 				Name:  "Current Balance",
-				Value: fmt.Sprintf("%.2f tokens", user.UserStats.ImageTokens),
+				Value: fmt.Sprintf("%.2f tokens", user.ImageTokens),
 			},
 		},
 	}

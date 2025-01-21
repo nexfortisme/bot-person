@@ -28,13 +28,13 @@ func Balance(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		user := option.UserValue(s)
 
 		checkUser, _ := persistance.GetUser(user.ID)
-		balanceResponse = user.Username + " has " + fmt.Sprintf("%.2f", checkUser.UserStats.ImageTokens) + " tokens."
+		balanceResponse = user.Username + " has " + fmt.Sprintf("%.2f", checkUser.ImageTokens) + " tokens."
 
 		logging.LogEvent(eventType.COMMAND_BALANCE, i.Interaction.Member.User.ID, fmt.Sprintf("User has checked the balance of %s", user.ID), i.Interaction.GuildID)
 	} else {
 		
 		user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
-		balanceResponse = "You have " + fmt.Sprintf("%.2f", user.UserStats.ImageTokens) + " tokens."
+		balanceResponse = "You have " + fmt.Sprintf("%.2f", user.ImageTokens) + " tokens."
 
 		logging.LogEvent(eventType.COMMAND_BALANCE, i.Interaction.Member.User.ID, "User has checked their balance", i.Interaction.GuildID)
 	}

@@ -1,13 +1,14 @@
 package persistance
 
-import "time"
-
 type UserStats struct {
-	ImageCount   int     `json:"ImageCount"`
-	ImageTokens  float64 `json:"ImageTokens"`
+	UserId string `json:"UserId"`
 
-	LastBonus   time.Time `json:"LastBonus"`
-	BonusStreak int       `json:"BonusStreak"`
-	
-	Stocks []Stock `json:"Stocks"`
+	InteractionCount int `json:"InteractionCount"`
+	ChatCount        int `json:"ChatCount"`
+	GoodBotCount     int `json:"GoodBotCount"`
+	BadBotCount      int `json:"BadBotCount"`
+
+	ImageCount int `json:"ImageCount"`
+
+	LootBoxCount int `json:"LootBoxCount"`
 }
