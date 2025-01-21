@@ -35,3 +35,5 @@ The bot comes with some flags that can be useful when starting and running the b
 	- Daily bonus for Tokens that ranges from between .5 and 5 tokens
 	- Ability to transfer tokens to other users
 	- LootBox game where a user can spend 5 tokens and gets 3.63 to 50 tokens back on an RNG roll from a randomly generated seed
+
+foo
