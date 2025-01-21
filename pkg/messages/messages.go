@@ -1,7 +1,6 @@
 package messages
 
 import (
-	"fmt"
 	"main/pkg/external"
 	"main/pkg/persistance"
 	"main/pkg/util"
@@ -82,39 +81,8 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		logging.LogEvent(eventType.LENNY, m.Author.ID, "Lenny command used", m.GuildID)
 
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
-	} else if strings.HasPrefix(incomingMessage, "!join") {
-
-		voiceConnection := external.Join(s, m.ChannelID, m.GuildID)
-
-		if voiceConnection == nil {
-			logging.LogEvent(eventType.TTS_JOIN, m.Author.ID, fmt.Sprintf("Not A Voice Channel: %s", m.ChannelID), m.GuildID)
-			s.ChannelMessageSend(m.ChannelID, "Channel Must Be A Voice Channel")
-		} else {
-			connections[m.ChannelID] = voiceConnection
-			logging.LogEvent(eventType.TTS_JOIN, m.Author.ID, fmt.Sprintf("Bot Joined Channel: %s", m.ChannelID), m.GuildID)
-			s.ChannelMessageSend(m.ChannelID, "Bot Joined Channel")
-		}
-	} else if strings.HasPrefix(incomingMessage, "!leave") {
-
-		voiceConnection := connections[m.ChannelID]
-
-		if voiceConnection == nil {
-			s.ChannelMessageSend(m.ChannelID, "Bot is not in a voice channel")
-			logging.LogEvent(eventType.TTS_LEAVE, m.Author.ID, fmt.Sprintf("Bot Not In Channel: %s", m.ChannelID), m.GuildID)
-		} else {
-			// Leave the user's voice channel
-			external.Leave(connections[m.ChannelID])
-			logging.LogEvent(eventType.TTS_LEAVE, m.Author.ID, fmt.Sprintf("Bot Left Channel: %s", m.ChannelID), m.GuildID)
-			s.ChannelMessageSend(m.ChannelID, "Bot Left Channel")
-			connections[m.ChannelID] = nil
-		}
-	} else {
-		if connections[m.ChannelID] != nil {
-			fmt.Println("Processing message")
-			external.ProcessElevenlabsMessage(incomingMessage, m, connections[m.ChannelID])
-		}
-	}
-
+	} 
+	
 	// Only process messages that mention the bot
 	id := s.State.User.ID
 	if !mentionsBot(m.Mentions, id) && !mentionsKeyphrase(m) {
