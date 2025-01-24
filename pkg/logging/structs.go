@@ -13,4 +13,3 @@ type Event struct {
 	EventData   string            `json:"eventData"`
 	EventServer string            `json:"eventServer"`
 }
-
