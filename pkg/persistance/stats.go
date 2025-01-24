@@ -1,7 +1,6 @@
 package persistance
 
 import (
-	persistance "main/pkg/persistance/models"
 	"time"
 )
 
@@ -18,7 +17,7 @@ const (
 	BPLennyFaceInteracton
 )
 
-func GetUserStats(userId string) persistance.MyStats {
+func GetUserStats(userId string) MyStats {
 
 	user, err := GetUser(userId)
 	if err != nil {
@@ -68,7 +67,7 @@ func GetUserStats(userId string) persistance.MyStats {
 		panic(err)
 	}
 
-	var myStats persistance.MyStats
+	var myStats MyStats
 
 	myStats.InteractionCount = int(interactionCountData)
 	myStats.GoodBotCount = int(goodBotCountData)

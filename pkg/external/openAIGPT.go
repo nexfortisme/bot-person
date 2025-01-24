@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	external "main/pkg/external/models"
 	"main/pkg/logging"
 	"main/pkg/util"
 	"net/http"
@@ -35,7 +34,7 @@ func GetOpenAIGPTResponse(prompt string) string {
 	}
 
 	buf, _ := io.ReadAll(resp.Body)
-	rspOAI := external.OpenAIGPTResponse{}
+	rspOAI := OpenAIGPTResponse{}
 	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
 	// need to add proper error handling
 	err = json.Unmarshal([]byte(string(buf)), &rspOAI)

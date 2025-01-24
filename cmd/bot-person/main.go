@@ -341,8 +341,6 @@ func main() {
 		registerSlashCommands(discordSession)
 	}
 
-	// go external.ProcessQueue()
-
 	// Step 8: Done
 	log.Println("Bot is now running")
 

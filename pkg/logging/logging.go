@@ -5,12 +5,11 @@ import (
 	"main/pkg/persistance"
 
 	logging "main/pkg/logging/enums"
-	models "main/pkg/logging/models"
 )
 
 func LogEvent(eventType logging.EventType, userId string, message string, serverId string) {
 
-	event := models.Event{}
+	event := Event{}
 
 	err := persistance.RunQuery("INSERT INTO events (EventType, EventUser, EventData, EventServer) VALUES (?, ?, ?, ?)", nil, event.EventType.ToInt(), userId, message, serverId)
 	if err != nil {

@@ -1,13 +1,12 @@
 package persistance
 
 import (
-	persistance "main/pkg/persistance/models"
 	"time"
 )
 
-func GetUser(userId string) (*persistance.User, error) {
+func GetUser(userId string) (*User, error) {
 
-	user := persistance.User{}
+	user := User{}
 
 	err := RunQuery("SELECT * FROM users WHERE UserId = ?", &user, userId)
 	if err != nil {
@@ -17,7 +16,7 @@ func GetUser(userId string) (*persistance.User, error) {
 	// If the user is not found, create a new user
 	if user.ID == "" || user.ID == "0" {
 
-		newUser := persistance.User{}
+		newUser := User{}
 
 		if userId != "SYSTEM" {
 			// discordSession := stateService.GetDiscordSession()
@@ -47,7 +46,7 @@ func GetUser(userId string) (*persistance.User, error) {
 	return &user, nil
 }
 
-func UpdateUser(updateUser persistance.User) bool {
+func UpdateUser(updateUser User) bool {
 
 	err := RunQuery("UPDATE users SET Username = ?, ImageTokens = ?, BonusStreak = ?, LastBonus = ? WHERE UserId = ?", nil, updateUser.Username, updateUser.ImageTokens, updateUser.BonusStreak, updateUser.LastBonus, updateUser.UserId)
 	if err != nil {
@@ -57,8 +56,8 @@ func UpdateUser(updateUser persistance.User) bool {
 	return true
 }
 
-func GetUserStatsObj(userId string) (*persistance.UserStats, error) {
-	userStats := persistance.UserStats{}
+func GetUserStatsObj(userId string) (*UserStats, error) {
+	userStats := UserStats{}
 
 	err := RunQuery("SELECT * FROM userStats WHERE UserId = ?", userStats, userId)
 	if err != nil {
@@ -68,7 +67,7 @@ func GetUserStatsObj(userId string) (*persistance.UserStats, error) {
 	return &userStats, nil
 }
 
-func UpdateUserStats(userStats persistance.UserStats) bool {
+func UpdateUserStats(userStats UserStats) bool {
 	err := RunQuery("UPDATE userStats SET InteractionCount = InteractionCount + 1, ChatCount = ?, GoodBotCount = ?, BadBotCount = ?, ImageCount = ?, LootBoxCount = ? WHERE UserId = ?", nil, userStats.ChatCount, userStats.GoodBotCount, userStats.BadBotCount, userStats.ImageCount, userStats.LootBoxCount, userStats.UserId)
 	if err != nil {
 		panic(err)
