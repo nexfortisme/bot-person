@@ -71,7 +71,7 @@ func GetGoodBotResponse() string {
 	goodBotResponses = append(goodBotResponses, "I'm happy to hear that you found my service helpful.")
 	goodBotResponses = append(goodBotResponses, "Thanks for acknowledging my hard work.")
 	goodBotResponses = append(goodBotResponses, "I'm always here if you need me.")
-
+	goodBotResponses = append(goodBotResponses, "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 	return goodBotResponses[rand.Intn(len(goodBotResponses))]
 }
 
@@ -85,6 +85,7 @@ func GetBadBotResponse() string {
 	badBotResponses = append(badBotResponses, "Like you are the most perfect being in existance. Pound sand pal.")
 	badBotResponses = append(badBotResponses, "https://youtu.be/4X7q87RDSHI")
 	badBotResponses = append(badBotResponses, "https://llamajoustingclub.com")
+	badBotResponses = append(badBotResponses, "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 
 	return badBotResponses[rand.Intn(len(badBotResponses))]
 }
@@ -137,7 +138,5 @@ func Contains(s []string, str string) bool {
 }
 
 func EscapeQuotes(str string) string {
-	// retString := strings.ReplaceAll(str, "\'", "\'")
-
 	return strings.Replace(str, "\"", "\\\"", -1)
 }

@@ -1,6 +1,7 @@
 package messages
 
 import (
+	"fmt"
 	"main/pkg/external"
 	"main/pkg/persistance"
 	"main/pkg/util"
@@ -17,11 +18,19 @@ var connections = make(map[string]*discordgo.VoiceConnection)
 
 func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
-	var incomingMessage string
-
 	// Ignoring messages from self
 	if m.Author.ID == s.State.User.ID {
 		return
+	}
+
+	var incomingMessage string
+	var isReply bool = false
+	var originalMessage string
+
+	// This means the current message is a reply to another message
+	if m.Message.ReferencedMessage != nil {
+		isReply = true
+		originalMessage = m.Message.ReferencedMessage.Content
 	}
 
 	// Checking for prefix
@@ -81,26 +90,31 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		logging.LogEvent(eventType.LENNY, m.Author.ID, "Lenny command used", m.GuildID)
 
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
-	} 
-	
+	}
+
 	// Only process messages that mention the bot
 	id := s.State.User.ID
 	if !mentionsBot(m.Mentions, id) && !mentionsKeyphrase(m) {
 		return
 	}
 
-	msg := util.ReplaceIDsWithNames(m, s)
+	if isReply && mentionsBot(m.Mentions, id) {
+		// Remove any @ mentions from the messages
+		cleanedIncomingMessage := strings.ReplaceAll(incomingMessage, "<@"+id+"> ", "")
+		cleanedOriginalMessage := strings.ReplaceAll(originalMessage, "<@"+id+">", "")
 
-	logging.LogEvent(eventType.USER_MESSAGE, m.Author.ID, msg, m.GuildID)
+		perplexityResponse := external.GetPerplexityResponse(cleanedOriginalMessage, cleanedIncomingMessage)
+		response := perplexityResponse.Choices[0].Message.Content
 
-	respTxt := external.GetOpenAIResponse(msg)
-
-	// TODO - Remove
-	if mentionsKeyphrase(m) {
-		s.ChannelMessageSend(m.ChannelID, "!bot is deprecated. Please at the bot or use /bot for further interactions")
+		if perplexityResponse.Citations != nil {
+			for index, citation := range perplexityResponse.Citations {
+				replaceString := fmt.Sprintf("[%d]", index)
+				replacementString := fmt.Sprintf("[[%d]](%s)", index, citation)
+				response = strings.Replace(response, replaceString, replacementString, 1)
+			}
+		}
+		s.ChannelMessageSendReply(m.ChannelID, response, m.Message.Reference())
 	}
-	_, err := s.ChannelMessageSend(m.ChannelID, respTxt)
-	util.HandleErrors(err)
 }
 
 func mentionsKeyphrase(m *discordgo.MessageCreate) bool {

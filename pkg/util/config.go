@@ -20,6 +20,7 @@ var (
 	dev_discord_api_key string
 	finn_hub_api_key    string
 	elevenlabs_api_key  string
+	perplexity_api_key  string
 )
 
 func ReadEnv() {
@@ -46,6 +47,7 @@ func ReadEnv() {
 	dev_discord_api_key = os.Getenv("DEV_DISCORD_API_KEY")
 	finn_hub_api_key = os.Getenv("FINNHUB_API_KEY")
 	elevenlabs_api_key = os.Getenv("ELEVEN_LABS_API_KEY")
+	perplexity_api_key = os.Getenv("PERPLEXITY_API_KEY")
 }
 
 func GetDBHost() string {
@@ -70,6 +72,10 @@ func GetDBName() string {
 
 func GetOpenAIKey() string {
 	return open_ai_api_key
+}
+
+func GetPerplexityAPIKey() string {
+	return perplexity_api_key
 }
 
 func GetDiscordKey() string {
