@@ -238,27 +238,18 @@ var (
 				},
 			},
 		},
-		// {
-		// 	Name:        "join",
-		// 	Description: "Have bot join the channel you are in. Must be type in channel chat.",
-		// },
-		// {
-		// 	Name:        "leave",
-		// 	Description: "Have bot leave the channel you are in. Must be type in channel chat.",
-		// },
-		/*
-			Todo:
-				headsOrTails
-					Bet tokens and get an RNG roll of heads or tails
-				gamble
-					Same as the previous gamble
-				economy
-					A way to see the status of the bot person economy
-				leaderboard
-					A way to see the top 10 users with the most tokens
-				Streaks
-					A way to see the top 10 users with the longest streaks
-		*/
+		{
+			Name:        "search",
+			Description: "Search the web for information",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "prompt",
+					Description: "The search query",
+					Required:    true,
+				},
+			},
+		},
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -278,8 +269,7 @@ var (
 		"burn":      commands.Burn,
 		"invite":    commands.Invite,
 		"hsr-code":  commands.HSRCode,
-		// "join":      commands.Join,
-		// "leave":     commands.Leave,
+		"search":    commands.Search,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -305,6 +295,7 @@ func main() {
 	var discordSession *discordgo.Session
 	var err error
 
+	// Checking to see if we are in dev mode
 	if devMode {
 		log.Println("Entering Dev Mode...")
 		discordSession, err = discordgo.New("Bot " + util.GetDevDiscordKey())

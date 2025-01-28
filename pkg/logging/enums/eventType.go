@@ -81,6 +81,8 @@ const (
 	TTS_MESSAGE
 	
 	ERROR
+
+	COMMAND_SEARCH
 )
 
 func (e EventType) ToInt() int {
@@ -147,6 +149,8 @@ func (e EventType) ToInt() int {
 		return 30
 	case ERROR:
 		return 31
+	case COMMAND_SEARCH:
+		return 32
 	default:
 		return 0
 	}

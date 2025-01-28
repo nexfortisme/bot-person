@@ -104,6 +104,12 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		cleanedOriginalMessage := strings.ReplaceAll(originalMessage, "<@"+id+">", "")
 
 		perplexityResponse := external.GetPerplexityResponse(cleanedOriginalMessage, cleanedIncomingMessage)
+
+		if len(perplexityResponse.Choices) == 0 {
+			s.ChannelMessageSendReply(m.ChannelID, "Error getting response from Perplexity.", m.Message.Reference())
+			return
+		}
+
 		response := perplexityResponse.Choices[0].Message.Content
 
 		if perplexityResponse.Citations != nil {
