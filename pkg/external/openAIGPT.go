@@ -14,7 +14,7 @@ func GetOpenAIGPTResponse(prompt string) string {
 	client := &http.Client{}
 
 	dataTemplate := `{
-		"model": "gpt-4o",
+		"model": "gpt-4.5-preview",
 		"messages": [{"role": "system", "content": "You generate responses no longer than 1750 characters long."}, {"role": "user", "content": "%s"}]
 	}`
 
