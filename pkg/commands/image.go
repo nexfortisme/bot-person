@@ -23,21 +23,21 @@ func Image(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
-	if user.ImageTokens < 10 {
+	// if user.ImageTokens < 10 {
 
-		logging.LogEvent(eventType.COMMAND_IMAGE, i.Interaction.Member.User.ID, "NOT ENOUGH TOKENS", i.Interaction.GuildID)
+	// 	logging.LogEvent(eventType.COMMAND_IMAGE, i.Interaction.Member.User.ID, "NOT ENOUGH TOKENS", i.Interaction.GuildID)
 
-		// Getting user stat data
-		imageReturnString := "You don't have enough tokens (10) to generate an image."
+	// 	// Getting user stat data
+	// 	imageReturnString := "You don't have enough tokens (10) to generate an image."
 
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: imageReturnString,
-			},
-		})
-		return
-	}
+	// 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
+	// 		Data: &discordgo.InteractionResponseData{
+	// 			Content: imageReturnString,
+	// 		},
+	// 	})
+	// 	return
+	// }
 
 	// Pulling the propt out of the optionsMap
 	if option, ok := userImageOptionMap["prompt"]; ok {
