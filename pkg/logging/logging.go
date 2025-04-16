@@ -11,7 +11,7 @@ func LogEvent(eventType logging.EventType, userId string, message string, server
 
 	event := Event{}
 
-	err := persistance.RunQuery("INSERT INTO events (EventType, EventUser, EventData, EventServer) VALUES (?, ?, ?, ?)", nil, event.EventType.ToInt(), userId, message, serverId)
+	err := persistance.RunQuery("INSERT INTO events (EventType, EventUser, EventData, EventServer) VALUES (?, ?, ?, ?)", event.EventType.ToInt(), userId, message, serverId)
 	if err != nil {
 		log.Fatalf("Error logging event: %v", err)
 	}
