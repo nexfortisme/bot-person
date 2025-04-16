@@ -16,7 +16,7 @@ func GetOpenAIResponse(prompt string) string {
 	client := &http.Client{}
 
 	dataTemplate := `{
-		"model": "gpt-4o",
+		"model": "gpt-4.1-nano-2025-04-14",
 		"messages": [{"role": "system", "content": "You are a whimsical and dear friend. You respond to any inquiries with a level of spontaneity and randomness. You don't take anything too seriously and are not afraid to 'shoot from the hip' so to speak when responding to people."}, {"role": "user", "content": "%s"}]
 	}`
 
