@@ -1,9 +1,5 @@
 package persistance
 
-import (
-	"time"
-)
-
 type BPInteraction int
 
 const (
@@ -32,37 +28,37 @@ func GetUserStats(userId string) MyStats {
 	var chatCountData int64
 
 	// Interaction Count
-	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId NOT IN (12, 13)", &interactionCountData, userId)
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType NOT IN (12, 13)", &interactionCountData, userId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Good Bot Count
-	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId IN (34)", &goodBotCountData, userId)
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType IN (34)", &goodBotCountData, userId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Bad Bot Count
-	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId IN (33)", &badBotCountData, userId)
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType IN (33)", &badBotCountData, userId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Loot Box Count
-	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId IN (9)", &lootBoxCountData, userId)
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType IN (9)", &lootBoxCountData, userId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Image Count
-	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId IN (16)", &imageCountData, userId)
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType IN (16)", &imageCountData, userId)
 	if err != nil {
 		panic(err)
 	}
 
 	// Chat Count
-	err = RunQuery("SELECT count(*) AS count FROM events WHERE eventUser = ? AND eventId IN (12, 13)", &chatCountData, userId)
+	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType IN (12, 13)", &chatCountData, userId)
 	if err != nil {
 		panic(err)
 	}
@@ -78,11 +74,12 @@ func GetUserStats(userId string) MyStats {
 
 	myStats.ImageTokens = user.ImageTokens
 	myStats.BonusStreak = user.BonusStreak
-	lastBonus, err := time.Parse(time.RFC3339, user.LastBonus)
-	if err != nil {
-		panic(err)
-	}
-	myStats.LastBonus = lastBonus
+
+	// lastBonus, err := time.Parse(time.RFC3339, user.LastBonus)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// myStats.LastBonus = lastBonus
 
 	return myStats
 }

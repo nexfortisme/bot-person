@@ -66,10 +66,10 @@ func MyStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				Inline: true,
 			},
 			{},
-			{
-				Name:  "Last Bonus",
-				Value: fmt.Sprintf("<t:%d:R>", userStats.LastBonus.Unix()),
-			},
+			// {
+			// 	Name:  "Last Bonus",
+			// 	Value: fmt.Sprintf("<t:%d:R>", userStats.LastBonus.Unix()),
+			// },
 		},
 	}
 

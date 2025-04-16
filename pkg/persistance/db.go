@@ -163,6 +163,13 @@ func RunQuery(query string, output interface{}, params ...interface{}) error {
 		}
 
 		elemValue := outputValue.Elem()
+
+		// Handle basic types (int64, string, etc.)
+		if elemValue.Kind() == reflect.Int64 || elemValue.Kind() == reflect.Int {
+			elemValue.SetInt(stmt.ColumnInt64(0))
+			continue
+		}
+
 		if elemValue.Kind() == reflect.Struct {
 			// Populate a single struct
 			for i := 0; i < elemValue.NumField(); i++ {
@@ -203,7 +210,7 @@ func RunQuery(query string, output interface{}, params ...interface{}) error {
 
 			elemValue.Set(reflect.Append(elemValue, newElement))
 		} else {
-			return fmt.Errorf("output must be a pointer to a struct or a slice")
+			return fmt.Errorf("output must be a pointer to a struct, slice, or basic type")
 		}
 	}
 
