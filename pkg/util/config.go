@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -16,6 +17,7 @@ var (
 	elevenlabs_api_key  string
 	perplexity_api_key  string
 	open_ai_model       string
+	admins              []string
 )
 
 func ReadEnv() {
@@ -38,6 +40,7 @@ func ReadEnv() {
 	elevenlabs_api_key = os.Getenv("ELEVEN_LABS_API_KEY")
 	perplexity_api_key = os.Getenv("PERPLEXITY_API_KEY")
 	open_ai_model = os.Getenv("OPEN_AI_MODEL")
+	admins = strings.Split(os.Getenv("ADMINS"), ",")
 }
 
 func GetOpenAIKey() string {
@@ -69,5 +72,10 @@ func GetElevenLabsKey() string {
 }
 
 func UserIsAdmin(userId string) bool {
+	for _, admin := range admins {
+		if admin == userId {
+			return true
+		}
+	}
 	return false
 }
