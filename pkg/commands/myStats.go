@@ -19,7 +19,7 @@ func MyStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	myStatsEmbed := &discordgo.MessageEmbed{
 		Title:       "Your Stats",
-		Description: user.ID,
+		Description: fmt.Sprintf("User ID: %s", user.ID),
 		Color:       0x00ff00,
 		Fields: []*discordgo.MessageEmbedField{
 			{
