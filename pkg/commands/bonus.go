@@ -13,7 +13,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
+type Bonus struct{}
+
+func (b *Bonus) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name:        "bonus",
+		Description: "Use this command every 24 hours for a small bundle of tokens",
+	}
+}
+
+func (b *Bonus) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	logging.LogEvent(eventType.COMMAND_BONUS, i.Interaction.Member.User.ID, "User has checked their bonus", i.Interaction.GuildID)
 
@@ -159,4 +168,13 @@ func Bonus(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 		})
 	}
+}
+
+// TODO - Rewite this to be more accurate to current functionality
+func (b *Bonus) HelpString() string {
+	return "The `/bonus` command allows you to claim your daily bonus tokens. You can only claim this once in a 24 hour period. There are greater rewards for keeping a streak alive. If you miss a day, you will be offered instructions to save your streak through the `/save-streak` command."
+}
+
+func (b *Bonus) CommandCost() int {
+	return 0
 }

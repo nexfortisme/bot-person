@@ -10,8 +10,25 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Burn(s *discordgo.Session, i *discordgo.InteractionCreate) {
+type Burn struct{}
 
+func (b *Burn) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name:        "burn",
+			Description: "A way, for whatever reason, you can burn tokens.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionNumber,
+					Name:        "amount",
+					Description: "The amount of tokens you want to send.",
+					MinValue:    &integerOptionMinValue,
+					Required:    true,
+				},
+			},
+	}
+}
+
+func (b *Burn) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	var burnAmount float64
 	user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
@@ -58,4 +75,12 @@ func Burn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 	}
 
+}
+
+func (b *Burn) HelpString() string {
+	return "The `/burn` command allows you to burn Bot Person tokens. This is irreversible and you will not be able to get those tokens back."
+}
+
+func (b *Burn) CommandCost() int {
+	return 0
 }

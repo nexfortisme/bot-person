@@ -10,7 +10,24 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Search(s *discordgo.Session, i *discordgo.InteractionCreate) {
+type Search struct{}
+
+func (se *Search) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name:        "search",
+		Description: "Search the web for information",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "prompt",
+				Description: "The search query",
+				Required:    true,
+			},
+		},
+	}
+}
+
+func (se *Search) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	options := i.ApplicationCommandData().Options
 
@@ -50,7 +67,7 @@ func Search(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			for index, citation := range perplexityResponse.Citations {
 				replaceString := fmt.Sprintf("[%d]", index)
 				replacementString := fmt.Sprintf("[[%d]](%s)", index, citation)
-				response = strings.Replace(response, replaceString, replacementString, 1)
+				response = strings.Replace(response, replaceString, replacementString, -1)
 			}
 		}
 
@@ -59,4 +76,12 @@ func Search(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 	}
 
+}
+
+func (se *Search) HelpString() string {
+	return "The `/search` command allows you to search the web for information. You can specify the search query with the `prompt` option."
+}
+
+func (se *Search) CommandCost() int {
+	return 0
 }

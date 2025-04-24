@@ -11,7 +11,24 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Image(s *discordgo.Session, i *discordgo.InteractionCreate) {
+type Image struct{}
+
+func (im *Image) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name:        "image",
+		Description: fmt.Sprintf("Ask Bot Person to generate an image for you. Costs %d Token(s) per image", im.CommandCost()),
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "prompt",
+				Description: "The actual prompt that Bot Person will generate an image from.",
+				Required:    true,
+			},
+		},
+	}
+}
+
+func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Access options in the order provided by the user.
 	userImageOptions := i.ApplicationCommandData().Options
 
@@ -74,7 +91,7 @@ func Image(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		user.ImageTokens -= 10
+		user.ImageTokens -= float64(im.CommandCost())
 		persistance.UpdateUser(*user)
 
 		logging.LogEvent(eventType.COMMAND_IMAGE, i.Interaction.Member.User.ID, option.StringValue(), i.Interaction.GuildID)
@@ -92,6 +109,14 @@ func Image(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 	}
+}
+
+func (im *Image) HelpString() string {
+	return fmt.Sprintf("The `/images` command allows you to request an image from OpenAI's Dall-E API at the cost of %d Bot Person token per image. The image returned is based on what you give in the `prompt` option.", im.CommandCost())
+}
+
+func (im *Image) CommandCost() int {
+	return 1
 }
 
 func ParseDalleRequest(s *discordgo.Session, prompt string) (discordgo.File, error) {

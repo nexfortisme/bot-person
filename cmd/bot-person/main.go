@@ -41,235 +41,45 @@ var (
 	fsInterrupt bool
 
 	createdConfig         = false
-	integerOptionMinValue = 0.1
 
 	slashCommands = []*discordgo.ApplicationCommand{
-		{
-			Name:        "bot",
-			Description: "A command to ask the bot for a response from their infinite wisdom.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "prompt",
-					Description: "The actual prompt that the bot will ponder on.",
-					Required:    true,
-				},
-			},
-		},
-		{
-			Name:        "bot-gpt",
-			Description: "Interact with OpenAI's GPT-4 API and see what out future AI overlords have to say.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "prompt",
-					Description: "The actual prompt that the bot will ponder on.",
-					Required:    true,
-				},
-			},
-		},
-		{
-			Name:        "my-stats",
-			Description: "Get usage stats.",
-		},
-		{
-			Name:        "bot-stats",
-			Description: "Get global usage stats.",
-		},
-		{
-			Name:        "about",
-			Description: "Get information about Bot Person.",
-		},
-		{
-			Name:        "donations",
-			Description: "List of the people who contributed to Bot Person's on-going service.",
-		},
-		{
-			Name:        "help",
-			Description: "List of commands to use with Bot Person.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "command",
-					Description: "Which command you want to get help with.",
-					Type:        discordgo.ApplicationCommandOptionString,
-					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{
-							Name:  "Bot",
-							Value: "bot",
-						},
-						{
-							Name:  "Bot GPT",
-							Value: "bot-gpt",
-						},
-						{
-							Name:  "My Stats",
-							Value: "my-stats",
-						},
-						{
-							Name:  "Bot Stats",
-							Value: "bot-stats",
-						},
-						{
-							Name:  "About",
-							Value: "about",
-						},
-						{
-							Name:  "Donations",
-							Value: "donations",
-						},
-						{
-							Name:  "Images",
-							Value: "images",
-						},
-						{
-							Name:  "Balance",
-							Value: "balance",
-						},
-						{
-							Name:  "Send",
-							Value: "send",
-						},
-						{
-							Name:  "Bonus",
-							Value: "bonus",
-						},
-						{
-							Name:  "Loot Box",
-							Value: "loot-box",
-						},
-						{
-							Name:  "Broken",
-							Value: "broken",
-						},
-						{
-							Name:  "Burn",
-							Value: "burn",
-						},
-						{
-							Name:  "Invite",
-							Value: "invite",
-						},
-					},
-					Required: false,
-				},
-			},
-		},
-		{
-			Name:        "image",
-			Description: "Ask Bot Person to generate an image for you. Costs 1 Token per image",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "prompt",
-					Description: "The actual prompt that Bot Person will generate an image from.",
-					Required:    true,
-				},
-			},
-		},
-		{
-			Name:        "balance",
-			Description: "Check your balance or the balance of another user.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionUser,
-					Name:        "user",
-					Description: "The person you want to check the balance of.",
-					Required:    false,
-				},
-			},
-		},
-		{
-			Name:        "send",
-			Description: "Send tokens to another user",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionUser,
-					Name:        "recepient",
-					Description: "The person you want to send tokens to.",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionNumber,
-					Name:        "amount",
-					Description: "The amount of tokens you want to send.",
-					MinValue:    &integerOptionMinValue,
-					Required:    true,
-				},
-			},
-		},
-		{
-			Name:        "bonus",
-			Description: "Use this command every 24 hours for a small bundle of tokens",
-		},
-		{
-			Name:        "loot-box",
-			Description: "Spend 5 tokens to get an RNG box",
-		},
-		{
-			Name:        "broken",
-			Description: "Get more information if something about bot person is broken",
-		},
-		{
-			Name:        "burn",
-			Description: "A way, for whatever reason, you can burn tokens.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionNumber,
-					Name:        "amount",
-					Description: "The amount of tokens you want to send.",
-					MinValue:    &integerOptionMinValue,
-					Required:    true,
-				},
-			},
-		},
-		{
-			Name:        "invite",
-			Description: "Get an invite link to invite Bot Person to your server.",
-		},
-		{
-			Name:        "hsr-code",
-			Description: "Get the Honkai Star Rail gift code url from a code.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "prompt",
-					Description: "The code to be entered",
-					Required:    true,
-				},
-			},
-		},
-		{
-			Name:        "search",
-			Description: "Search the web for information",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "prompt",
-					Description: "The search query",
-					Required:    true,
-				},
-			},
-		},
+		(&commands.Bot{}).ApplicationCommand(),
+		(&commands.BotGPT{}).ApplicationCommand(),
+		(&commands.MyStats{}).ApplicationCommand(),
+		(&commands.BotStats{}).ApplicationCommand(),
+		(&commands.About{}).ApplicationCommand(),
+		(&commands.Donations{}).ApplicationCommand(),
+		(&commands.Help{}).ApplicationCommand(),
+		(&commands.Image{}).ApplicationCommand(),
+		(&commands.Balance{}).ApplicationCommand(),
+		(&commands.Send{}).ApplicationCommand(),
+		(&commands.Bonus{}).ApplicationCommand(),
+		(&commands.Lootbox{}).ApplicationCommand(),
+		(&commands.Broken{}).ApplicationCommand(),
+		(&commands.Burn{}).ApplicationCommand(),
+		(&commands.Invite{}).ApplicationCommand(),
+		(&commands.HSRCode{}).ApplicationCommand(),
+		(&commands.Search{}).ApplicationCommand(),
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"bot":       commands.Bot,
-		"bot-gpt":   commands.BotGPT,
-		"my-stats":  commands.MyStats,
-		"bot-stats": commands.BotStats,
-		"about":     commands.About,
-		"donations": commands.Donations,
-		"help":      commands.Help,
-		"image":     commands.Image,
-		"balance":   commands.Balance,
-		"send":      commands.Send,
-		"bonus":     commands.Bonus,
-		"loot-box":  commands.Lootbox,
-		"broken":    commands.Broken,
-		"burn":      commands.Burn,
-		"invite":    commands.Invite,
-		"hsr-code":  commands.HSRCode,
-		"search":    commands.Search,
+		"bot":       (&commands.Bot{}).Execute,
+		"bot-gpt":   (&commands.BotGPT{}).Execute,
+		"my-stats":  (&commands.MyStats{}).Execute,
+		"bot-stats": (&commands.BotStats{}).Execute,
+		"about":     (&commands.About{}).Execute,
+		"donations": (&commands.Donations{}).Execute,
+		"help":      (&commands.Help{}).Execute,
+		"image":     (&commands.Image{}).Execute,
+		"balance":   (&commands.Balance{}).Execute,
+		"send":      (&commands.Send{}).Execute,
+		"bonus":     (&commands.Bonus{}).Execute,
+		"loot-box":  (&commands.Lootbox{}).Execute,
+		"broken":    (&commands.Broken{}).Execute,
+		"burn":      (&commands.Burn{}).Execute,
+		"invite":    (&commands.Invite{}).Execute,
+		"hsr-code":  (&commands.HSRCode{}).Execute,
+		"search":    (&commands.Search{}).Execute,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){

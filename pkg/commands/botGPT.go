@@ -10,7 +10,24 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func BotGPT(s *discordgo.Session, i *discordgo.InteractionCreate) {
+type BotGPT struct {}
+
+func (b *BotGPT) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name: "bot-gpt",
+		Description: "Interact with OpenAI's GPT-4 API and see what out future AI overlords have to say.",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type: discordgo.ApplicationCommandOptionString,
+				Name: "prompt",
+				Description: "The actual prompt that the bot will ponder on.",
+				Required: true,
+			},
+		},
+	}
+}
+
+func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	// Access options in the order provided by the user.
 	options := i.ApplicationCommandData().Options
@@ -70,6 +87,14 @@ func BotGPT(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 	}
+}
+
+func (b *BotGPT) HelpString() string {
+	return "The `/bot-gpt` command allows you to prompt OpenAI's GPT-3 or GPT-4 chat model. You can ask it whatever as part of the `prompt` and once it generates a response, it will update the message with what came back. This is slower than the `/bot` command due to the chat model being more complex."
+}
+
+func (b *BotGPT) CommandCost() int {
+	return 0
 }
 
 func ParseGPTSlashCommand(s *discordgo.Session, prompt string) string {

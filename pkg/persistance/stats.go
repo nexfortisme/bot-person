@@ -1,5 +1,10 @@
 package persistance
 
+import (
+	"strings"
+	"time"
+)
+
 type BPInteraction int
 
 const (
@@ -75,11 +80,16 @@ func GetUserStats(userId string) MyStats {
 	myStats.ImageTokens = user.ImageTokens
 	myStats.BonusStreak = user.BonusStreak
 
-	// lastBonus, err := time.Parse(time.RFC3339, user.LastBonus)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// myStats.LastBonus = lastBonus
+
+	// Convert the string timestamp to a time.Time object
+	lastBonus, err := time.Parse("2006-01-02 15:04:05.999999 -0700 MST", strings.Split(user.LastBonus, " m=")[0])
+	if err != nil {
+		// Set a default time if parsing fails
+		lastBonus = time.Now()
+	}
+
+	// Set the LastBonus field to the parsed time
+	myStats.LastBonus = lastBonus
 
 	return myStats
 }

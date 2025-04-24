@@ -10,7 +10,23 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Bot(s *discordgo.Session, i *discordgo.InteractionCreate) {
+type Bot struct {}
+
+func (b *Bot) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name: "bot",
+		Description: "A command to ask the bot for a response from their infinite wisdom.",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type: discordgo.ApplicationCommandOptionString,
+				Name: "prompt",
+				Description: "The actual prompt that the bot will ponder on.",
+			},
+		},
+	}
+}
+
+func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	// Access options in the order provided by the user.
 	options := i.ApplicationCommandData().Options
@@ -40,7 +56,7 @@ func Bot(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 
 		// Going out to make the OpenAI call to get the proper response
-		botResponseString = ParseSlashCommand(s, option.StringValue())
+		botResponseString = parseSlashCommand(option.StringValue())
 
 		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, botResponseString, i.Interaction.GuildID)
 
@@ -61,7 +77,11 @@ func Bot(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-func ParseSlashCommand(s *discordgo.Session, prompt string) string {
+func (b *Bot) HelpString() string {
+	return "A command to ask the bot for a response from their infinite wisdom."
+}
+
+func parseSlashCommand(prompt string) string {
 	respTxt := external.GetOpenAIResponse(prompt)
 	respTxt = "Request: " + prompt + " " + respTxt
 	return respTxt

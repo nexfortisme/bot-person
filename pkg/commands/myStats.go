@@ -10,7 +10,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func MyStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
+type MyStats struct {}
+
+func (m *MyStats) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name: "my-stats",
+		Description: "Get usage stats.",
+	}
+}
+
+func (m *MyStats) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	logging.LogEvent(eventType.COMMAND_MY_STATS, i.Interaction.Member.User.ID, "My Stats command used", i.Interaction.GuildID)
 
@@ -66,10 +75,10 @@ func MyStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				Inline: true,
 			},
 			{},
-			// {
-			// 	Name:  "Last Bonus",
-			// 	Value: fmt.Sprintf("<t:%d:R>", userStats.LastBonus.Unix()),
-			// },
+			{
+				Name:  "Last Bonus",
+				Value: fmt.Sprintf("<t:%d:R>", userStats.LastBonus.Unix()),
+			},
 		},
 	}
 
@@ -80,4 +89,12 @@ func MyStats(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			// Components: []discordgo.MessageComponent{actionRow},
 		},
 	})
+}
+
+func (m *MyStats) HelpString() string {
+	return "The `/my-stats` command allows you to see your current stats. This includes the number of interactions you have had with the bot, the number of images requested from the `/image` command, your current `/bonus` streak, the number of save streak tokens you have, and what stocks you currently own, if any."
+}
+
+func (m *MyStats) CommandCost() int {
+	return 0
 }

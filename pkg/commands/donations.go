@@ -7,8 +7,17 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Donations(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	
+type Donations struct{}
+
+func (d *Donations) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name:        "donations",
+		Description: "List of the people who contributed to Bot Person's on-going service.",
+	}
+}
+
+func (d *Donations) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
 	logging.LogEvent(eventType.COMMAND_DONATIONS, i.Interaction.Member.User.ID, "Donations command used", i.Interaction.GuildID)
 
 	// Getting user stat data
@@ -20,4 +29,12 @@ func Donations(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			Content: donationMessageString,
 		},
 	})
+}
+
+func (d *Donations) HelpString() string {
+	return "The `/donations` command gives credit to those who have donated to keeping the lights on for Bot Person and gives further information for those who wish to contribute."
+}
+
+func (d *Donations) CommandCost() int {
+	return 0
 }
