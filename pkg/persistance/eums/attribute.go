@@ -1,4 +1,4 @@
-package persistance
+package enums
 
 type Attribute string
 

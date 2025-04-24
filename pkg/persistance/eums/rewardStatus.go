@@ -1,4 +1,4 @@
-package persistance
+package enums
 
 type RewardStatus int
 

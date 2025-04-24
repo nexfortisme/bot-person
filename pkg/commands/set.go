@@ -60,6 +60,7 @@ func (st *Set) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 					Content: "Error getting attribute",
 				},
 			})
+			return
 		}
 
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -80,6 +81,7 @@ func (st *Set) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 					Content: "Error setting attribute",
 				},
 			})
+			return
 		}
 
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
