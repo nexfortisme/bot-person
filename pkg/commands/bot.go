@@ -56,7 +56,7 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 
 		// Going out to make the OpenAI call to get the proper response
-		botResponseString = parseSlashCommand(option.StringValue())
+		botResponseString = parseSlashCommand(option.StringValue(), i.Interaction.Member.User.ID)
 
 		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, botResponseString, i.Interaction.GuildID)
 
@@ -81,8 +81,8 @@ func (b *Bot) HelpString() string {
 	return "A command to ask the bot for a response from their infinite wisdom."
 }
 
-func parseSlashCommand(prompt string) string {
-	respTxt := external.GetOpenAIResponse(prompt)
+func parseSlashCommand(prompt string, userId string) string {
+	respTxt := external.GetOpenAIResponse(prompt, userId)
 	respTxt = "Request: " + prompt + " " + respTxt
 	return respTxt
 }

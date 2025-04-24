@@ -51,3 +51,10 @@ type User struct {
 	BonusStreak int     `json:"BonusStreak"`
 	LastBonus   string  `json:"LastBonus"`
 }
+
+type UserAttribute struct {
+	ID        string `json:"id"`
+	UserId    string `json:"userId"`
+	Attribute string `json:"attribute"`
+	Value     string `json:"value"`
+}
