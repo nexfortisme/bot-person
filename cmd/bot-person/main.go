@@ -40,7 +40,7 @@ var (
 
 	fsInterrupt bool
 
-	createdConfig         = false
+	createdConfig = false
 
 	slashCommands = []*discordgo.ApplicationCommand{
 		(&commands.Bot{}).ApplicationCommand(),
@@ -60,6 +60,7 @@ var (
 		(&commands.Invite{}).ApplicationCommand(),
 		(&commands.HSRCode{}).ApplicationCommand(),
 		(&commands.Search{}).ApplicationCommand(),
+		(&commands.Set{}).ApplicationCommand(),
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -80,6 +81,7 @@ var (
 		"invite":    (&commands.Invite{}).Execute,
 		"hsr-code":  (&commands.HSRCode{}).Execute,
 		"search":    (&commands.Search{}).Execute,
+		"set":       (&commands.Set{}).Execute,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){

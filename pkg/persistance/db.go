@@ -99,8 +99,17 @@ func InitializeDatabase(db *sqlite.Conn) {
 		FOREIGN KEY (EventUser) REFERENCES Users(ID)
 	);`
 
+	createUserAttributesTable := `
+	CREATE TABLE IF NOT EXISTS UserAttributes (
+		ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		UserId TEXT,
+		Attribute TEXT,
+		Value TEXT,
+		FOREIGN KEY (UserId) REFERENCES Users(ID)
+	);`
+
 	// Execute the table creation statements
-	tables := []string{createUsersTable, createUserStatsTable, createStocksTable, createLogsTable, createRewardStatusTable, createEventsTable}
+	tables := []string{createUsersTable, createUserStatsTable, createStocksTable, createLogsTable, createRewardStatusTable, createEventsTable, createUserAttributesTable}
 
 	for _, table := range tables {
 		err := sqlitex.Execute(db, table, nil)
