@@ -10,8 +10,33 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
+var integerOptionMinValue = 0.1
 
+type Send struct{}
+
+func (sn *Send) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name:        "send",
+			Description: "Send tokens to another user",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "recepient",
+					Description: "The person you want to send tokens to.",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionNumber,
+					Name:        "amount",
+					Description: "The amount of tokens you want to send.",
+					MinValue:    &integerOptionMinValue,
+					Required:    true,
+				},
+			},
+	}
+}
+
+func (sn *Send) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	sender, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
 	var transferrAmount float64
@@ -68,7 +93,7 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprint(sender.ImageTokens),
+					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprintf("%.2f", sender.ImageTokens),
 				},
 			})
 			return
@@ -86,3 +111,11 @@ func Send(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 	}
 }
+
+func (sn *Send) HelpString() string {
+	return "The `/send` command allows you to send Bot Person tokens to other users in the server. You can specify the user to send to with the `user` option and the amount to send with the `amount` option."
+}
+
+func (sn *Send) CommandCost() int {
+	return 0
+}	

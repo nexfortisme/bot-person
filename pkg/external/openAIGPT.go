@@ -14,12 +14,21 @@ func GetOpenAIGPTResponse(prompt string) string {
 	client := &http.Client{}
 
 	dataTemplate := `{
-		"model": %s,
-		"messages": [{"role": "system", "content": "You generate responses no longer than 1750 characters long."}, {"role": "user", "content": "%s"}]
+		"model": "%s",
+		"messages": [
+			{
+				"role": "user", 
+				"content": "%s"
+			}
+		]
 	}`
 
 	data := fmt.Sprintf(dataTemplate, util.EscapeQuotes(util.GetOpenAIModel()), util.EscapeQuotes(prompt))
 
+	// Remove newline characters from the data string
+	// data = strings.ReplaceAll(data, "\n", "")
+	// data = strings.ReplaceAll(data, "\t", "")
+	
 	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", strings.NewReader(data))
 	if err != nil {
 		logging.LogError("Error creating POST request")

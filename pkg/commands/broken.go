@@ -7,8 +7,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Broken(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	
+type Broken struct{}
+
+func (b *Broken) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name:        "broken",
+		Description: "Get more information if something about bot person is broken",
+	}
+}
+
+func (b *Broken) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	logging.LogEvent(eventType.COMMAND_BROKEN, i.Interaction.Member.User.ID, "Broken command used", i.Interaction.GuildID)
 
 	// Getting user stat data
@@ -20,4 +28,12 @@ func Broken(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			Content: brokenMessage,
 		},
 	})
+}
+
+func (b *Broken) HelpString() string {
+	return "The `/broken` command allows you to get more information if something about Bot Person is broken. You can create an issue on the GitHub repository or join the Bot Person discord and let us know there."
+}
+
+func (b *Broken) CommandCost() int {
+	return 0
 }

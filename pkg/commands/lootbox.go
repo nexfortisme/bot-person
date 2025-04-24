@@ -12,7 +12,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Lootbox(s *discordgo.Session, i *discordgo.InteractionCreate) {
+type Lootbox struct{}
+
+func (l *Lootbox) ApplicationCommand() *discordgo.ApplicationCommand {
+	return &discordgo.ApplicationCommand{
+		Name:        "loot-box",
+		Description: "Spend 5 tokens to get an RNG box",
+	}
+}
+
+func (l *Lootbox) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	lootboxReward, lootboxSeed, err := persistance.BuyLootbox(i.Interaction.Member.User.ID)
 	var lootboxReturnMessage string
@@ -51,4 +60,13 @@ func Lootbox(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		s.InteractionResponseDelete(i.Interaction)
 	}
 
+}
+
+// TODO - Rewite this, it doesnt sit right with me
+func (l *Lootbox) HelpString() string {
+	return "The `/loot-box` command allows you to open a loot box for 5 Bot Person Tokens and receive between 2 and 500 Bot Person tokens as a reward."
+}
+
+func (l *Lootbox) CommandCost() int {
+	return 5
 }
