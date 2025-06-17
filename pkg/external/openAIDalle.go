@@ -21,13 +21,12 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 	httpClient := &http.Client{}
 
 	requestDataTemplate := `{
-		"model": "dall-e-3",
+		"model": "%s",
 		"prompt": "%s",
 		"n": 1,
-		"size": "1024x1024",
-		"quality": "hd"
+		"size": "1024x1024"
 	  }`
-	requestData := fmt.Sprintf(requestDataTemplate, prompt)
+	requestData := fmt.Sprintf(requestDataTemplate, util.GetImageGenerationModel(), prompt)
 
 	postRequest, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/images/generations", strings.NewReader(requestData))
 	if err != nil {

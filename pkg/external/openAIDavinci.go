@@ -17,7 +17,7 @@ import (
 func GetOpenAIResponse(prompt string, userId string) string {
 	client := &http.Client{}
 
-	prePrompt, err := persistance.GetUserAttribute(userId, attribute.BOT_PREPROMPT)	
+	prePrompt, err := persistance.GetUserAttribute(userId, attribute.BOT_PREPROMPT)
 	if err != nil {
 		prePrompt = "You are a whimsical and dear friend. You respond to any inquiries with a level of spontaneity and randomness. You don't take anything too seriously and are not afraid to 'shoot from the hip' so to speak when responding to people."
 	}

@@ -10,14 +10,15 @@ import (
 )
 
 var (
-	open_ai_api_key     string
-	discord_api_key     string
-	dev_discord_api_key string
-	elevenlabs_api_key  string
-	perplexity_api_key  string
-	bot_open_ai_model   string
-	open_ai_model       string
-	admins              []string
+	open_ai_api_key        string
+	discord_api_key        string
+	dev_discord_api_key    string
+	elevenlabs_api_key     string
+	perplexity_api_key     string
+	bot_open_ai_model      string
+	open_ai_model          string
+	image_generation_model string
+	admins                 []string
 )
 
 func ReadEnv() {
@@ -40,6 +41,7 @@ func ReadEnv() {
 	perplexity_api_key = os.Getenv("PERPLEXITY_API_KEY")
 	bot_open_ai_model = os.Getenv("BOT_OPEN_AI_MODEL")
 	open_ai_model = os.Getenv("OPEN_AI_MODEL")
+	image_generation_model = os.Getenv("IMAGE_GENERATION_MODEL")
 	admins = strings.Split(os.Getenv("ADMINS"), ",")
 }
 
@@ -49,6 +51,10 @@ func GetOpenAIKey() string {
 
 func GetOpenAIModel() string {
 	return open_ai_model
+}
+
+func GetImageGenerationModel() string {
+	return image_generation_model
 }
 
 func GetPerplexityAPIKey() string {
