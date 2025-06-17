@@ -72,24 +72,32 @@ type PerplexityMessage struct {
 }
 
 type PerplexityResponse struct {
-	ID        string   `json:"id"`
-	Model     string   `json:"model"`
-	Object    string   `json:"object"`
-	Created   int      `json:"created"`
-	Citations []string `json:"citations"`
-	Choices   []PerplexityChoice `json:"choices"`
-	Usage     PerplexityUsage `json:"usage"`
+	ID            string                   `json:"id"`
+	Model         string                   `json:"model"`
+	Object        string                   `json:"object"`
+	Created       int                      `json:"created"`
+	Citations     []string                 `json:"citations"`
+	SearchResults []PerplexitySearchResult `json:"search_results"`
+	Choices       []PerplexityChoice       `json:"choices"`
+	Usage         PerplexityUsage          `json:"usage"`
 }
 
 type PerplexityChoice struct {
-	Index          int              `json:"index"`
-	FinishReason   string           `json:"finish_reason"`
-	Message        PerplexityMessage `json:"message"`
-	Delta          PerplexityMessage `json:"delta"`
+	Index        int               `json:"index"`
+	FinishReason string            `json:"finish_reason"`
+	Message      PerplexityMessage `json:"message"`
+	Delta        PerplexityMessage `json:"delta"`
 }
 
 type PerplexityUsage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
+	PromptTokens      int    `json:"prompt_tokens"`
+	CompletionTokens  int    `json:"completion_tokens"`
+	TotalTokens       int    `json:"total_tokens"`
+	SearchContextSize string `json:"search_context_size"`
+}
+
+type PerplexitySearchResult struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
+	Date  string `json:"date"`
 }

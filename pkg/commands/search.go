@@ -71,9 +71,16 @@ func (se *Search) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) 
 			}
 		}
 
-		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		if len(response) > 2000 {
+			response = response[:1996] + "..."
+		}
+
+		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Content: &response,
 		})
+		if err != nil {
+			fmt.Println("Error editing interaction response:", err)
+		}
 	}
 
 }
