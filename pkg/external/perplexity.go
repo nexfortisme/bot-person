@@ -17,6 +17,7 @@ func GetPerplexityResponse(originalPrompt string, userPrompt string) PerplexityR
 	dataTemplate := `{
 		"model": "sonar",
 		"messages": [
+			{"role": "system", "content": "Please keep responses concise and to the point. Do not include any additional information or commentary."},
 			{"role": "user", "content": "%s"},
 			{"role": "assistant", "content": "The first message is context, the second message is the user's message pertaining to the first."},
 			{"role": "user", "content": "%s"}

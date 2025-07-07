@@ -21,17 +21,22 @@ var (
 	admins                 []string
 )
 
-func ReadEnv() {
+func ReadEnv(useEnvFile bool) {
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("Error getting current working directory: %v", err)
-	}
+	if useEnvFile {
+		cwd, err := os.Getwd()
+		if err != nil {
 
-	envFilePath := filepath.Join(cwd, ".env")
-	err = godotenv.Overload(envFilePath)
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+			log.Printf("Tryign to get osEnv: %v", os.Getenv("OPEN_AI_API_KEY"))
+
+			log.Fatalf("Error getting current working directory: %v", err)
+		}
+
+		envFilePath := filepath.Join(cwd, ".env")
+		err = godotenv.Overload(envFilePath)
+		if err != nil {
+			log.Fatalf("Error loading .env file: %v", err)
+		}
 	}
 
 	open_ai_api_key = os.Getenv("OPEN_AI_API_KEY")
@@ -46,11 +51,11 @@ func ReadEnv() {
 
 	// Validate required environment variables
 	requiredVars := map[string]string{
-		"OPEN_AI_API_KEY":     open_ai_api_key,
-		"DISCORD_API_KEY":     discord_api_key,
-		"BOT_OPEN_AI_MODEL":   bot_open_ai_model,
-		"OPEN_AI_MODEL":       open_ai_model,
-		"PERPLEXITY_API_KEY":  perplexity_api_key,
+		"OPEN_AI_API_KEY":        open_ai_api_key,
+		"DISCORD_API_KEY":        discord_api_key,
+		"BOT_OPEN_AI_MODEL":      bot_open_ai_model,
+		"OPEN_AI_MODEL":          open_ai_model,
+		"PERPLEXITY_API_KEY":     perplexity_api_key,
 		"IMAGE_GENERATION_MODEL": image_generation_model,
 	}
 

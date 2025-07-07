@@ -3,6 +3,7 @@ package persistance
 import (
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"sync"
 
@@ -19,15 +20,22 @@ var (
 
 func initDB() {
 	var err error
-	db, err = sqlite.OpenConn("db.sqlite", 0)
+	
+	// Get database path from environment variable, fallback to "db.sqlite"
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "db.sqlite"
+	}
+	
+	db, err = sqlite.OpenConn(dbPath, 0)
 	if err != nil {
-		fmt.Println("Error connecting to database.")
+		fmt.Printf("Error connecting to database at %s.\n", dbPath)
 		panic(err)
 	}
 
 	InitializeDatabase(db)
 
-	fmt.Println("Database Connected.")
+	fmt.Printf("Database Connected at %s.\n", dbPath)
 }
 
 func GetDB() *sqlite.Conn {

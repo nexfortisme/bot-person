@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+
+# Database files (will be mounted externally)
+db.sqlite*
+
+# Logs
+*.log
+logfile
+
+# Images (will be mounted externally)
+img/
+images/
+*.png
+*.jpg
+*.jpeg
+
+# Executables
+*.exe
+main
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Testing files
+testing/ 

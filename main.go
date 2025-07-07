@@ -26,7 +26,8 @@ import (
 
 var (
 	// config  util.ConfigStruct
-	devMode bool
+	devMode    bool
+	useEnvFile bool = false
 
 	fiveMinuteTicker = time.NewTicker(5 * time.Minute)
 
@@ -95,10 +96,11 @@ func main() {
 	// Step One: Read in flag variables
 	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
 	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
+	flag.BoolVar(&useEnvFile, "useEnvFile", true, "Flag for using the .env file")
 	flag.Parse()
 
 	// Step 2: Read in environment variables
-	util.ReadEnv()
+	util.ReadEnv(useEnvFile)
 
 	// Step 3: Connect to the database
 	databseConnection := persistance.GetDB()
@@ -107,8 +109,13 @@ func main() {
 	var discordSession *discordgo.Session
 	var err error
 
+	var inDevMode = devMode || os.Getenv("DEV_MODE") == "true"
+
+	log.Printf("DEV_MODE: %v", os.Getenv("DEV_MODE"))
+	log.Printf("devMode: %v", devMode)
+
 	// Checking to see if we are in dev mode
-	if devMode {
+	if inDevMode {
 		log.Println("Entering Dev Mode...")
 		discordSession, err = discordgo.New("Bot " + util.GetDevDiscordKey())
 		if err != nil {
