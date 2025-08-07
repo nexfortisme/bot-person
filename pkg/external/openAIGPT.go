@@ -16,6 +16,7 @@ func GetOpenAIGPTResponse(prompt string) string {
 	dataTemplate := `{
 		"model": "%s",
 		"messages": [
+			{"role": "system", "content": "You are a single source of truth. You give the response and don't ask at follow up questions."},
 			{
 				"role": "user", 
 				"content": "%s"
@@ -28,7 +29,7 @@ func GetOpenAIGPTResponse(prompt string) string {
 	// Remove newline characters from the data string
 	// data = strings.ReplaceAll(data, "\n", "")
 	// data = strings.ReplaceAll(data, "\t", "")
-	
+
 	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", strings.NewReader(data))
 	if err != nil {
 		logging.LogError("Error creating POST request")

@@ -1,7 +1,7 @@
 package external
 
 type DalleImages struct {
-	URL string `json:"url"`
+	B64_JSON string `json:"b64_json"`
 }
 
 type DalleResponse struct {

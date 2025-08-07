@@ -1,6 +1,8 @@
 package external
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -64,11 +66,25 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 
 		logging.LogEvent(eventType.EXTERNAL_DALLE_RESPONSE, "SYSTEM", path, "SYSTEM")
 
-		response, err := http.Get(openAIResponse.Data[0].URL)
-		if err != nil {
-			panic(err)
+		// response, err := http.Get(openAIResponse.Data[0].B64_JSON)
+		b64 := openAIResponse.Data[0].B64_JSON
+		if i := strings.Index(b64, ","); i != -1 && strings.Contains(b64[:i], ";base64") {
+			b64 = b64[i+1:]
 		}
-		defer response.Body.Close()
+
+		// Try standard base64 first
+		data, err := base64.StdEncoding.DecodeString(b64)
+		if err != nil {
+			// Fallback for URL-safe / unpadded strings
+			data, err = base64.RawStdEncoding.DecodeString(b64)
+			if err != nil {
+				// Last try: URL encoding
+				data, err = base64.RawURLEncoding.DecodeString(b64)
+			}
+		}
+		if err != nil {
+			return discordgo.File{}, errors.New("invalid base64: " + err.Error())
+		}
 
 		// Create a new file to save the image to
 		file, err := os.Create(path)
@@ -78,7 +94,7 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 		defer file.Close()
 
 		// Copy the image data to the file
-		_, err = io.Copy(file, response.Body)
+		_, err = io.Copy(file, bytes.NewReader(data))
 		if err != nil {
 			panic(err)
 		}
