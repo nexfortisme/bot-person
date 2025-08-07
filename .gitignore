@@ -10,3 +10,4 @@ testing
 .env
 *.mp3
 db.sqlite*
+.kiro
