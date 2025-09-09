@@ -2,12 +2,14 @@ package util
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"log"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 func HandleErrors(err error) {
@@ -139,4 +141,14 @@ func Contains(s []string, str string) bool {
 
 func EscapeQuotes(str string) string {
 	return strings.Replace(str, "\"", "\\\"", -1)
+}
+
+func CreateDirectoryIfNotExists(dirPath string) error {
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		err := os.MkdirAll(dirPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

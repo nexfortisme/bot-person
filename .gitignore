@@ -11,3 +11,5 @@ testing
 *.mp3
 db.sqlite*
 .kiro
+.DS_Store
+/gpt

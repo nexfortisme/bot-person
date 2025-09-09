@@ -2,7 +2,13 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"main/pkg/external"
+	"main/pkg/util"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"main/pkg/logging"
 	eventType "main/pkg/logging/enums"
@@ -10,18 +16,18 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type BotGPT struct {}
+type BotGPT struct{}
 
 func (b *BotGPT) ApplicationCommand() *discordgo.ApplicationCommand {
 	return &discordgo.ApplicationCommand{
-		Name: "bot-gpt",
+		Name:        "bot-gpt",
 		Description: "Interact with OpenAI's GPT-4 API and see what out future AI overlords have to say.",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Type: discordgo.ApplicationCommandOptionString,
-				Name: "prompt",
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "prompt",
 				Description: "The actual prompt that the bot will ponder on.",
-				Required: true,
+				Required:    true,
 			},
 		},
 	}
@@ -61,31 +67,80 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// Check if the response will be too long and truncate if necessary
 		prompt := option.StringValue()
 		botResponseString = ParseGPTSlashCommand(s, prompt)
-		if len("Request: "+prompt+" ")+len(botResponseString) > 2000 {
-			truncatedLength := 2000 - len("Request: "+prompt+" ") - len("...") // account for ellipsis
-			if truncatedLength > 0 {
-				botResponseString = botResponseString[:truncatedLength] + "..."
-			} else {
-				botResponseString = "Response too long to display."
+
+		if len(botResponseString) > 2000 {
+			err := util.CreateDirectoryIfNotExists("gpt")
+			if err != nil {
+				fmt.Println("Error creating directory:", err)
+			}
+
+			currentTime := time.Now().Format("2006-01-02-15-04-05")
+			filePath := filepath.Join("gpt", fmt.Sprintf("too-long-%s.txt", currentTime))
+			file, err := os.Create(filePath)
+			if err != nil {
+				fmt.Println("Error creating file:", err)
+			}
+			defer file.Close()
+
+			_, err = io.Copy(file, strings.NewReader(botResponseString))
+			if err != nil {
+				fmt.Println("Error writing file:", err)
+			}
+
+			readFile, err := os.Open(filePath)
+			if err != nil {
+				fmt.Println("Error opening file:", err)
+			}
+			defer readFile.Close()
+
+			fileInfo, err := readFile.Stat()
+
+			fileObj := &discordgo.File{
+				Name:        fileInfo.Name(),
+				ContentType: "text/plain",
+				Reader:      readFile,
+			}
+
+			// Updating the initial message with the response from the OpenAI API
+			_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Files: []*discordgo.File{fileObj},
+			})
+
+			if err != nil {
+				// Not 100% sure this is the approach I want to take with handling errors from the API
+				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					Content: "Something went oopsie with sending the file.",
+				})
+				return
+			}
+		} else {
+			// Updating the initial message with the response from the OpenAI API
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &botResponseString,
+			})
+			if err != nil {
+
+				fmt.Println("Error editing interaction response:", err)
+
+				// Not 100% sure this is the approach I want to take with handling errors from the API
+				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					Content: "Something went wrong.",
+				})
+				return
 			}
 		}
 
+		// if len("Request: "+prompt+" ")+len(botResponseString) > 2000 {
+		// 	truncatedLength := 2000 - len("Request: "+prompt+" ") - len("...") // account for ellipsis
+		// 	if truncatedLength > 0 {
+		// 		botResponseString = botResponseString[:truncatedLength] + "..."
+		// 	} else {
+		// 		botResponseString = "Response too long to display."
+		// 	}
+		// }
+
 		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, botResponseString, i.Interaction.GuildID)
 
-		// Updating the initial message with the response from the OpenAI API
-		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-			Content: &botResponseString,
-		})
-		if err != nil {
-
-			fmt.Println("Error editing interaction response:", err)
-
-			// Not 100% sure this is the approach I want to take with handling errors from the API
-			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				Content: "Something went wrong.",
-			})
-			return
-		}
 	}
 }
 

@@ -16,7 +16,7 @@ func GetOpenAIGPTResponse(prompt string) string {
 	dataTemplate := `{
 		"model": "%s",
 		"messages": [
-			{"role": "system", "content": "You are a single source of truth. You give the response and don't ask at follow up questions."},
+			{"role": "system", "content": "You are a single source of truth. Give responses that answer the question asked but don't ask follow up questions."},
 			{
 				"role": "user", 
 				"content": "%s"

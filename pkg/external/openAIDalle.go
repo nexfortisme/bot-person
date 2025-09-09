@@ -56,7 +56,7 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 		return discordgo.File{}, errors.New("API Response Error. (Most Likely Picked Up By OpenAI Query Filter)")
 	} else {
 
-		err = createDirectoryIfNotExists("img")
+		err = util.CreateDirectoryIfNotExists("img")
 		if err != nil {
 			fmt.Println("Error creating directory:", err)
 			return discordgo.File{}, errors.New("error creating directory")
@@ -129,15 +129,15 @@ func removePunctuation(s string) string {
 	return result.String()
 }
 
-func createDirectoryIfNotExists(dirPath string) error {
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		err := os.MkdirAll(dirPath, os.ModePerm)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
+// func createDirectoryIfNotExists(dirPath string) error {
+// 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+// 		err := os.MkdirAll(dirPath, os.ModePerm)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
 
 func TruncateString(input string) string {
 	if len(input) > 50 {
