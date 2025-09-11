@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"main/pkg/external"
+	"main/pkg/util"
 
 	"main/pkg/logging"
 	eventType "main/pkg/logging/enums"
@@ -10,16 +11,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type Bot struct {}
+type Bot struct{}
 
 func (b *Bot) ApplicationCommand() *discordgo.ApplicationCommand {
 	return &discordgo.ApplicationCommand{
-		Name: "bot",
+		Name:        "bot",
 		Description: "A command to ask the bot for a response from their infinite wisdom.",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Type: discordgo.ApplicationCommandOptionString,
-				Name: "prompt",
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "prompt",
 				Description: "The actual prompt that the bot will ponder on.",
 			},
 		},
@@ -60,19 +61,33 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, botResponseString, i.Interaction.GuildID)
 
-		// Updating the initial message with the response from the OpenAI API
-		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-			Content: &botResponseString,
-		})
-		if err != nil {
-
-			fmt.Println("Error editing interaction response:", err)
-
-			// Not 100% sure this is the approach I want to take with handling errors from the API
-			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				Content: "Something went wrong.",
+		if len(botResponseString) > 2000 {
+			fileObj := util.HandleTooLongResponse(botResponseString)
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Files: []*discordgo.File{fileObj},
 			})
-			return
+			if err != nil {
+				fmt.Println("Error editing interaction response:", err)
+				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					Content: "Something went wrong.",
+				})
+			}
+		} else {
+
+			// Updating the initial message with the response from the OpenAI API
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &botResponseString,
+			})
+			if err != nil {
+
+				fmt.Println("Error editing interaction response:", err)
+
+				// Not 100% sure this is the approach I want to take with handling errors from the API
+				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					Content: "Something went wrong.",
+				})
+				return
+			}
 		}
 	}
 }

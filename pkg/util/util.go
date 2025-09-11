@@ -2,9 +2,11 @@ package util
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -151,4 +153,40 @@ func CreateDirectoryIfNotExists(dirPath string) error {
 		}
 	}
 	return nil
+}
+
+func HandleTooLongResponse(response string) *discordgo.File {
+	err := CreateDirectoryIfNotExists("gpt")
+	if err != nil {
+		fmt.Println("Error creating directory:", err)
+	}
+
+	currentTime := time.Now().Format("2006-01-02-15-04-05")
+	filePath := filepath.Join("gpt", fmt.Sprintf("too-long-%s.txt", currentTime))
+	file, err := os.Create(filePath)
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, strings.NewReader(response))
+	if err != nil {
+		fmt.Println("Error writing file:", err)
+	}
+
+	readFile, err := os.Open(filePath)
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+	}
+	defer readFile.Close()
+
+	fileInfo, err := readFile.Stat()
+
+	fileObj := &discordgo.File{
+		Name:        fileInfo.Name(),
+		ContentType: "text/plain",
+		Reader:      readFile,
+	}
+
+	return fileObj
 }

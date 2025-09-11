@@ -2,13 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"io"
 	"main/pkg/external"
 	"main/pkg/util"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
 
 	"main/pkg/logging"
 	eventType "main/pkg/logging/enums"
@@ -69,40 +64,11 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		botResponseString = ParseGPTSlashCommand(s, prompt)
 
 		if len(botResponseString) > 2000 {
-			err := util.CreateDirectoryIfNotExists("gpt")
-			if err != nil {
-				fmt.Println("Error creating directory:", err)
-			}
 
-			currentTime := time.Now().Format("2006-01-02-15-04-05")
-			filePath := filepath.Join("gpt", fmt.Sprintf("too-long-%s.txt", currentTime))
-			file, err := os.Create(filePath)
-			if err != nil {
-				fmt.Println("Error creating file:", err)
-			}
-			defer file.Close()
-
-			_, err = io.Copy(file, strings.NewReader(botResponseString))
-			if err != nil {
-				fmt.Println("Error writing file:", err)
-			}
-
-			readFile, err := os.Open(filePath)
-			if err != nil {
-				fmt.Println("Error opening file:", err)
-			}
-			defer readFile.Close()
-
-			fileInfo, err := readFile.Stat()
-
-			fileObj := &discordgo.File{
-				Name:        fileInfo.Name(),
-				ContentType: "text/plain",
-				Reader:      readFile,
-			}
+			fileObj := util.HandleTooLongResponse(botResponseString)
 
 			// Updating the initial message with the response from the OpenAI API
-			_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 				Files: []*discordgo.File{fileObj},
 			})
 

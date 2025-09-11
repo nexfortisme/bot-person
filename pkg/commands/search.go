@@ -5,6 +5,7 @@ import (
 	"main/pkg/external"
 	"main/pkg/logging"
 	eventType "main/pkg/logging/enums"
+	"main/pkg/util"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -72,14 +73,20 @@ func (se *Search) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) 
 		}
 
 		if len(response) > 2000 {
-			response = response[:1996] + "..."
-		}
-
-		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-			Content: &response,
-		})
-		if err != nil {
-			fmt.Println("Error editing interaction response:", err)
+			fileObj := util.HandleTooLongResponse(response)
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Files: []*discordgo.File{fileObj},
+			})
+			if err != nil {
+				fmt.Println("Error editing interaction response:", err)
+			}
+		} else {
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &response,
+			})
+			if err != nil {
+				fmt.Println("Error editing interaction response:", err)
+			}
 		}
 	}
 
