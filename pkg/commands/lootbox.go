@@ -23,6 +23,22 @@ func (l *Lootbox) ApplicationCommand() *discordgo.ApplicationCommand {
 
 func (l *Lootbox) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
+	lastLootbox, err := logging.GetLatestEvent(i.Interaction.Member.User.ID, eventType.COMMAND_LOOTBOX)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if lastLootbox.EventTime.After(time.Now().Add(-time.Minute * 10)) {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "You must wait 10 minutes between lootbox purchases.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+		return
+	}
+
 	lootboxReward, lootboxSeed, err := persistance.BuyLootbox(i.Interaction.Member.User.ID)
 	var lootboxReturnMessage string
 
