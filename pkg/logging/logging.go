@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"main/pkg/persistance"
+	"main/pkg/util"
 	"time"
 
 	logging "main/pkg/logging/enums"
@@ -13,9 +14,7 @@ import (
 
 func LogEvent(eventType logging.EventType, userId string, message string, serverId string) {
 
-	fmt.Printf("EventType: %d, UserId: %s, Message: %s, ServerId: %s\n", eventType, userId, message, serverId)
-
-	queryString := fmt.Sprintf("INSERT INTO Events (EventType, EventUser, EventData, EventServer) VALUES (%d, '%s', '%s', '%s')", eventType, userId, message, serverId)
+	queryString := fmt.Sprintf("INSERT INTO Events (EventType, EventUser, EventData, EventServer) VALUES (%d, '%s', '%s', '%s')", eventType, userId, util.EscapeQuotes(message), serverId)
 
 	db := persistance.GetDB()
 
