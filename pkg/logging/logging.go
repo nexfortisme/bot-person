@@ -14,7 +14,9 @@ import (
 
 func LogEvent(eventType logging.EventType, userId string, message string, serverId string) {
 
-	queryString := fmt.Sprintf("INSERT INTO Events (EventType, EventUser, EventData, EventServer) VALUES (%d, '%s', '%s', '%s')", eventType, userId, util.EscapeQuotes(message), serverId)
+
+
+	queryString := fmt.Sprintf("INSERT INTO Events (EventType, EventUser, EventData, EventServer) VALUES (%d, %s, %s, %s)", eventType, userId, util.EscapeQuotes(message), serverId)
 
 	db := persistance.GetDB()
 
