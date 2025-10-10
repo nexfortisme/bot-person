@@ -62,6 +62,7 @@ var (
 		(&commands.HSRCode{}).ApplicationCommand(),
 		(&commands.Search{}).ApplicationCommand(),
 		(&commands.Set{}).ApplicationCommand(),
+		// (&commands.Testing{}).ApplicationCommand(),
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -83,6 +84,7 @@ var (
 		"hsr-code":  (&commands.HSRCode{}).Execute,
 		"search":    (&commands.Search{}).Execute,
 		"set":       (&commands.Set{}).Execute,
+		// "testing":   (&commands.Testing{}).Execute,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -111,8 +113,8 @@ func main() {
 
 	var inDevMode = devMode || os.Getenv("DEV_MODE") == "true"
 
-	log.Printf("DEV_MODE: %v", os.Getenv("DEV_MODE"))
-	log.Printf("devMode: %v", devMode)
+	// log.Printf("DEV_MODE: %v", os.Getenv("DEV_MODE"))
+	// log.Printf("devMode: %v", devMode)
 
 	// Checking to see if we are in dev mode
 	if inDevMode {

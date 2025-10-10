@@ -13,8 +13,6 @@ import (
 
 func LogEvent(eventType logging.EventType, userId string, message string, serverId string) {
 
-	// queryString := fmt.Sprintf("INSERT INTO Events (EventType, EventUser, EventData, EventServer) VALUES (%d, `%s`, `%s`, `%s`)", eventType, userId, util.EscapeQuotes(message), serverId)
-
 	db := persistance.GetDB()
 
 	err := sqlitex.Execute(
@@ -73,5 +71,22 @@ func GetLatestEvent(userId string, eventType logging.EventType) (Event, error) {
 }
 
 func LogError(err string) {
-	persistance.RunQuery("INSERT INTO Events (EventType, EventUser, EventData, EventServer) VALUES (?, ?, ?, ?)", logging.ERROR, "SYSTEM", err, "SYSTEM")
+
+	db := persistance.GetDB()
+
+	insertErr := sqlitex.Execute(
+		db,
+		"INSERT INTO Events (EventType, EventUser, EventData, EventServer) VALUES (?, ?, ?, ?)",
+		&sqlitex.ExecOptions{
+			Args: []any{
+				logging.ERROR,
+				"SYSTEM",
+				err,   // no escaping needed
+				"SYSTEM",
+			},
+		},
+	)
+	if insertErr != nil {
+		log.Fatalf("Error logging Error: %v", insertErr)
+	}
 }

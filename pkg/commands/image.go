@@ -74,16 +74,15 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		if err != nil {
 
-			errString := fmt.Sprintf("Something Went Wrong: %s", err.Error())
+			errString := fmt.Sprintf("%s", err.Error())
 
-			// Not 100% sure this is the approach I want to take with handling errors from the API
 			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 				Content: &errString,
 			})
 
 			if err != nil {
 				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-					Content: "Something went wrong. Send help.",
+					Content: "Something went really wrong. Send help.",
 				})
 			}
 

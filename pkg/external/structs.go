@@ -101,3 +101,91 @@ type PerplexitySearchResult struct {
 	URL   string `json:"url"`
 	Date  string `json:"date"`
 }
+
+type Response struct {
+	ID               string    `json:"id"`
+	Object           string    `json:"object"`
+	CreatedAt        int64     `json:"created_at"`
+	Status           string    `json:"status"`
+	Background       bool      `json:"background"`
+	Billing          Billing   `json:"billing"`
+	Error            *Error    `json:"error"`
+	Incomplete       any       `json:"incomplete_details"`
+	Instructions     any       `json:"instructions"`
+	MaxOutputTokens  *int      `json:"max_output_tokens"`
+	MaxToolCalls     *int      `json:"max_tool_calls"`
+	Model            string    `json:"model"`
+	Output           []Output  `json:"output"`
+	ParallelToolCall bool      `json:"parallel_tool_calls"`
+	Reasoning        Reasoning `json:"reasoning"`
+	Usage            Usage     `json:"usage"`
+	ServiceTier      string    `json:"service_tier"`
+	Text             Text      `json:"text"`
+	Tools            []Tool    `json:"tools"`
+	User             *string   `json:"user"`
+	Metadata         map[string]any `json:"metadata"`
+}
+
+type Error struct {
+	Message string `json:"message"`
+	Type    string `json:"type"`
+	Param   string `json:"param"`
+	Code 	string `json:"code"`
+}
+
+type Billing struct {
+	Payer string `json:"payer"`
+}
+
+type Output struct {
+	ID        string   `json:"id"`
+	Type      string   `json:"type"`
+	Status    string   `json:"status"`
+	Background string  `json:"background,omitempty"`
+	OutputFormat string `json:"output_format,omitempty"`
+	Quality   string   `json:"quality,omitempty"`
+	Result    string   `json:"result,omitempty"`
+	RevisedPrompt string `json:"revised_prompt,omitempty"`
+	Size      string   `json:"size,omitempty"`
+	Content   []OutputContent `json:"content,omitempty"`
+	Role      string   `json:"role,omitempty"`
+}
+
+type OutputContent struct {
+	Type        string   `json:"type"`
+	Text        string   `json:"text"`
+	Logprobs    []any    `json:"logprobs"`
+	Annotations []any    `json:"annotations"`
+}
+
+type Reasoning struct {
+	Effort  string `json:"effort"`
+	Summary any    `json:"summary"`
+}
+
+type Usage struct {
+	InputTokens int `json:"input_tokens"`
+	OutputTokens int `json:"output_tokens"`
+	TotalTokens int `json:"total_tokens"`
+}
+
+type Text struct {
+	Format    TextFormat `json:"format"`
+	Verbosity string     `json:"verbosity"`
+}
+
+type TextFormat struct {
+	Type string `json:"type"`
+}
+
+type Tool struct {
+	Type              string `json:"type"`
+	Background        string `json:"background"`
+	Moderation        string `json:"moderation"`
+	N                 int    `json:"n"`
+	OutputCompression int    `json:"output_compression"`
+	OutputFormat      string `json:"output_format"`
+	Quality           string `json:"quality"`
+	Size              string `json:"size"`
+}
+

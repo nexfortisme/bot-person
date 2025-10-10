@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -163,4 +164,14 @@ func HandleTooLongResponse(response string) *discordgo.File {
         ContentType: "text/plain",
         Reader:      buf,
     }
+}
+
+func SaveResponseToFile(response []byte, fileName string) error {
+	err := CreateDirectoryIfNotExists("testing")
+	if err != nil {
+		return err
+	}
+	responseFilePath := filepath.Join("testing", fileName)
+	err = os.WriteFile(responseFilePath, response, 0644)
+	return err
 }
