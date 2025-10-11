@@ -39,7 +39,7 @@ func (sn *Send) ApplicationCommand() *discordgo.ApplicationCommand {
 func (sn *Send) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	sender, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
-	var transferrAmount float64
+	var transferrAmount int
 
 	// Access options in the order provided by the user.
 	options := i.ApplicationCommandData().Options
@@ -53,7 +53,7 @@ func (sn *Send) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Checking to see that the user has the number of tokens needed to send
 	if option, ok := optionMap["amount"]; ok {
 
-		transferrAmount = option.FloatValue()
+		transferrAmount = int(option.IntValue())
 
 		if sender.ImageTokens < transferrAmount {
 

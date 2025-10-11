@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"main/pkg/external"
+	"main/pkg/persistance"
 	"main/pkg/util"
 	"os"
 	"path/filepath"
@@ -40,6 +41,18 @@ func (b *Slop) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		optionMap[opt.Name] = opt
 	}
 
+	user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
+
+	if user.ImageTokens < b.CommandCost() {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "You don't have enough tokens to generate a slop.",
+			},
+		})
+		return
+	}
+
 	// Pulling the propt out of the optionsMap
 	if option, ok := optionMap["prompt"]; ok {
 
@@ -53,6 +66,9 @@ func (b *Slop) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				Content: placeholderBotResponse,
 			},
 		})
+
+		user.ImageTokens -= b.CommandCost()
+		persistance.UpdateUser(*user)
 
 		// Going out to make the OpenAI call to get the proper response
 		// botResponseString = ParseGPTSlashCommand(s, option.StringValue(
