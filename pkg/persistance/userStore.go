@@ -31,7 +31,7 @@ func GetUser(userId string) (*User, error) {
 		}
 
 		newUser.UserId = userId
-		newUser.ImageTokens = 50
+		newUser.ImageTokens = 10 // Starting token amount
 		newUser.BonusStreak = 0
 		newUser.LastBonus = time.Now().String()
 
