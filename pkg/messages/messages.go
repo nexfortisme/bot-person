@@ -37,6 +37,12 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// This means the current message is a reply to another message
 	if m.Message.ReferencedMessage != nil {
 		isReply = true
+
+		if( m.ReferencedMessage.Interaction == nil ) {
+			replyType = "message"
+			return
+		}
+
 		switch m.ReferencedMessage.Interaction.Name {
 		case "bot":
 			replyType = "bot"
