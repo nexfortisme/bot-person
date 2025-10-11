@@ -106,7 +106,7 @@ func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo
 			fmt.Println("Context done")
 			return // Its Done I guess
 		case <-ticker.C:
-			
+
 			videoResponse, err = external.GetSoraJobStatus(videoResponse.ID)
 
 			fmt.Printf("Video Response: %+v\n", videoResponse)
@@ -149,7 +149,7 @@ func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo
 					})
 					return
 				}
-			
+
 				fileInfo, err := reader.Stat()
 				if err != nil {
 					s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
@@ -157,7 +157,7 @@ func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo
 					})
 					return
 				}
-			
+
 				fileObj := &discordgo.File{
 					Name:        fileInfo.Name(),
 					ContentType: "video/mp4",
@@ -165,10 +165,10 @@ func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo
 				}
 
 				slopsReadyString := fmt.Sprintf("Slop is ready! %s", videoResponse.ID)
-				
+
 				_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: &slopsReadyString,
-					Files: []*discordgo.File{fileObj},
+					Files:   []*discordgo.File{fileObj},
 				})
 				if err != nil {
 					// Not 100% sure this is the approach I want to take with handling errors from the API
@@ -177,7 +177,12 @@ func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo
 					})
 					return
 				}
-				return;
+				return
+			} else if videoResponse.Status == "failed" {
+				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					Content: "Video Generation Failed: " + videoResponse.Error.Message,
+				})
+				return
 			} else {
 				currentStatusString := fmt.Sprintf("Video Status: %s. Progress: %d%%", videoResponse.Status, videoResponse.Progress)
 				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
