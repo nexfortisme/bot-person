@@ -40,7 +40,7 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
-	if user.ImageTokens < float64(im.CommandCost()) {
+	if user.ImageTokens < im.CommandCost() {
 
 		logging.LogEvent(eventType.COMMAND_IMAGE, i.Interaction.Member.User.ID, "NOT ENOUGH TOKENS", i.Interaction.GuildID)
 
@@ -89,7 +89,7 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		user.ImageTokens -= float64(im.CommandCost())
+		user.ImageTokens -= im.CommandCost()
 		persistance.UpdateUser(*user)
 
 		logging.LogEvent(eventType.COMMAND_IMAGE, i.Interaction.Member.User.ID, option.StringValue(), i.Interaction.GuildID)

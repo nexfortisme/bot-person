@@ -29,7 +29,7 @@ func (b *Burn) ApplicationCommand() *discordgo.ApplicationCommand {
 }
 
 func (b *Burn) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	var burnAmount float64
+	var burnAmount int
 	user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
 	// Access options in the order provided by the user.
@@ -44,7 +44,7 @@ func (b *Burn) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	// Checking to see that the user has the number of tokens needed to send
 	if option, ok := optionMap["amount"]; ok {
 
-		burnAmount = option.FloatValue()
+		burnAmount = int(option.IntValue())
 
 		if user.ImageTokens < burnAmount {
 
@@ -62,9 +62,9 @@ func (b *Burn) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			user.ImageTokens -= burnAmount
 			persistance.UpdateUser(*user);
 
-			logging.LogEvent(eventType.COMMAND_BURN, i.Interaction.Member.User.ID, fmt.Sprintf("User has burnt %f tokens", burnAmount), i.Interaction.GuildID)
+			logging.LogEvent(eventType.COMMAND_BURN, i.Interaction.Member.User.ID, fmt.Sprintf("User has burnt %d tokens", burnAmount), i.Interaction.GuildID)
 
-			removeTokenResponse := fmt.Sprintf("%.2f tokens removed. New Balance: %.2f", burnAmount, user.ImageTokens)
+			removeTokenResponse := fmt.Sprintf("%d tokens removed. New Balance: %d", burnAmount, user.ImageTokens)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

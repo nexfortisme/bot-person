@@ -55,14 +55,15 @@ var (
 		(&commands.Balance{}).ApplicationCommand(),
 		(&commands.Send{}).ApplicationCommand(),
 		(&commands.Bonus{}).ApplicationCommand(),
-		(&commands.Lootbox{}).ApplicationCommand(),
+		// (&commands.Lootbox{}).ApplicationCommand(),
 		(&commands.Broken{}).ApplicationCommand(),
 		(&commands.Burn{}).ApplicationCommand(),
 		(&commands.Invite{}).ApplicationCommand(),
-		(&commands.HSRCode{}).ApplicationCommand(),
+		// (&commands.HSRCode{}).ApplicationCommand(),
 		(&commands.Search{}).ApplicationCommand(),
 		(&commands.Set{}).ApplicationCommand(),
 		// (&commands.Testing{}).ApplicationCommand(),
+		(&commands.Slop{}).ApplicationCommand(),
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -77,14 +78,15 @@ var (
 		"balance":   (&commands.Balance{}).Execute,
 		"send":      (&commands.Send{}).Execute,
 		"bonus":     (&commands.Bonus{}).Execute,
-		"loot-box":  (&commands.Lootbox{}).Execute,
+		// "loot-box":  (&commands.Lootbox{}).Execute,
 		"broken":    (&commands.Broken{}).Execute,
 		"burn":      (&commands.Burn{}).Execute,
 		"invite":    (&commands.Invite{}).Execute,
-		"hsr-code":  (&commands.HSRCode{}).Execute,
+		// "hsr-code":  (&commands.HSRCode{}).Execute,
 		"search":    (&commands.Search{}).Execute,
 		"set":       (&commands.Set{}).Execute,
 		// "testing":   (&commands.Testing{}).Execute,
+		"slop":      (&commands.Slop{}).Execute,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){

@@ -6,7 +6,7 @@ type MyStats struct {
 	InteractionCount int       `json:"interactionCount"`
 	GoodBotCount     int       `json:"goodBotCount"`
 	BadBotCount      int       `json:"badBotCount"`
-	ImageTokens      float64   `json:"imageTokens"`
+	ImageTokens      int   `json:"imageTokens"`
 	BonusStreak      int       `json:"bonusStreak"`
 	LastBonus        time.Time `json:"lastBonus"`
 	LootBoxCount     int       `json:"lootBoxCount"`
@@ -47,7 +47,7 @@ type User struct {
 	ID          string  `json:"id,omitempty"`
 	UserId      string  `json:"UserId"`
 	Username    string  `json:"Username"`
-	ImageTokens float64 `json:"ImageTokens"`
+	ImageTokens int `json:"ImageTokens"`
 	BonusStreak int     `json:"BonusStreak"`
 	LastBonus   string  `json:"LastBonus"`
 }

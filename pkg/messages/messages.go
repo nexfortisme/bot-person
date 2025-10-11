@@ -55,7 +55,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	persistance.APictureIsWorthAThousand(m.Message.Content, m)
+	// persistance.APictureIsWorthAThousand(m.Message.Content, m)
 
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if strings.HasPrefix(m.Message.Content, "bad bot") {
@@ -80,8 +80,8 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 				return
 			}
 
-			tokenCount, _ := strconv.ParseFloat(req[2], 64)
-			success := persistance.AddBotPersonTokens(tokenCount, req[1][2:len(req[1])-1])
+			tokenCount, _ := strconv.ParseInt(req[2], 10, 64)
+			success := persistance.AddBotPersonTokens(int(tokenCount), req[1][2:len(req[1])-1])
 			if success {
 				s.ChannelMessageSend(m.ChannelID, "Tokens were successfully added.")
 			} else {
@@ -146,7 +146,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		if user.ImageTokens < float64((&commands.Image{}).CommandCost()) {
+		if user.ImageTokens < (&commands.Image{}).CommandCost() {
 			s.ChannelMessageSend(m.ChannelID, "You don't have enough tokens to generate a follow up image.")
 			return
 		}
@@ -176,7 +176,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		user.ImageTokens -= float64((&commands.Image{}).CommandCost())
+		user.ImageTokens -= (&commands.Image{}).CommandCost()
 		persistance.UpdateUser(*user)
 
 		logging.LogEvent(eventType.COMMAND_IMAGE, m.Author.ID, followUpImagePrompt, m.GuildID)

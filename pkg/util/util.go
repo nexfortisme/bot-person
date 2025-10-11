@@ -122,13 +122,11 @@ func GetStreakStringAndModifier(streak int) (string, int) {
 	return returnString, modifier
 }
 
-func GetUserBonus(min int, max int, modifier int) float64 {
+func GetUserBonus(min int, max int, modifier int) int {
 	randomizer := rand.New(rand.NewSource(time.Now().UnixMilli()))
 	reward := randomizer.Intn(max-min) + min
 	reward *= modifier
-	rewardF64 := float64(reward) / 10.0
-	finalReward := LowerFloatPrecision(rewardF64)
-	return finalReward
+	return reward
 }
 
 func Contains(s []string, str string) bool {

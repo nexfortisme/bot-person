@@ -13,3 +13,4 @@ db.sqlite*
 .kiro
 .DS_Store
 /gpt
+/videos

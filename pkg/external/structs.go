@@ -189,3 +189,23 @@ type Tool struct {
 	Size              string `json:"size"`
 }
 
+type VideoJob struct {
+    CompletedAt         int64       `json:"completed_at"`          // Unix timestamp for when the job completed
+    CreatedAt           int64       `json:"created_at"`            // Unix timestamp for when the job was created
+    Error               *JobError   `json:"error,omitempty"`       // Error details if generation failed
+    ExpiresAt           int64       `json:"expires_at"`            // Unix timestamp for when assets expire
+    ID                  string      `json:"id"`                    // Unique identifier for the video job
+    Model               string      `json:"model"`                 // Generation model used
+    Object              string      `json:"object"`                // Object type (always "video")
+    Progress            int         `json:"progress"`              // Completion percentage
+    RemixedFromVideoID  string      `json:"remixed_from_video_id"` // ID of source video if it's a remix
+    Seconds             string      `json:"seconds"`               // Duration of generated clip (in seconds)
+    Size                string      `json:"size"`                  // Video resolution
+    Status              string      `json:"status"`                // Current lifecycle status
+}
+
+// If "error" is an object with details, define it:
+type JobError struct {
+    Message string `json:"message,omitempty"`
+    Code    string `json:"code,omitempty"`
+}

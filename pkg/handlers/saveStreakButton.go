@@ -35,17 +35,17 @@ func SaveStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	// Getting User
-	user, _ := persistance.GetUser(originalUserID);
+	user, _ := persistance.GetUser(originalUserID)
 
 	var saveStreakCost float64
 	var saveStreakMessage string
 
 	// Calculating cost and creating save streak string
-	saveStreakCost = user.ImageTokens * 0.1
-	saveStreakMessage = fmt.Sprintf("You have saved your streak! It Cost %.2f tokens", saveStreakCost)
+	saveStreakCost = float64(user.ImageTokens) * 0.1
+	saveStreakMessage = fmt.Sprintf("You have saved your streak! It Cost %d tokens", int(saveStreakCost))
 
 	// Removing tokens from user
-	persistance.RemoveBotPersonTokens(saveStreakCost, originalUserID)
+	persistance.RemoveBotPersonTokens(int(saveStreakCost), originalUserID)
 
 	// Refetching stats
 	user, _ = persistance.GetUser(i.Interaction.Member.User.ID)

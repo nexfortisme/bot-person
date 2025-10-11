@@ -2,20 +2,16 @@ package persistance
 
 import (
 	"errors"
-	"fmt"
 	"main/pkg/util"
 	"math/rand"
-	"strconv"
-	"strings"
 	"time"
 
 	persistance "main/pkg/persistance/eums"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/hako/durafmt"
 )
 
-func AddBotPersonTokens(tokenAmount float64, userId string) bool {
+func AddBotPersonTokens(tokenAmount int, userId string) bool {
 
 	user, err := GetUser(userId)
 	if err != nil {
@@ -28,7 +24,7 @@ func AddBotPersonTokens(tokenAmount float64, userId string) bool {
 	return true
 }
 
-func RemoveBotPersonTokens(tokenAmount float64, userId string) bool {
+func RemoveBotPersonTokens(tokenAmount int, userId string) bool {
 
 	user, _ := GetUser(userId)
 	user.ImageTokens -= tokenAmount
@@ -42,7 +38,7 @@ func RemoveBotPersonTokens(tokenAmount float64, userId string) bool {
 	return true
 }
 
-func TransferBotPersonTokens(tokenAmount float64, fromUserId string, toUserId string) bool {
+func TransferBotPersonTokens(tokenAmount int, fromUserId string, toUserId string) bool {
 
 	fromUser, fromErr := GetUser(fromUserId)
 	toUser, toErr := GetUser(toUserId)
@@ -61,7 +57,7 @@ func TransferBotPersonTokens(tokenAmount float64, fromUserId string, toUserId st
 	return UpdateUser(*toUser) && UpdateUser(*fromUser)
 }
 
-func GetUserReward(userId string) (float64, persistance.RewardStatus, error) {
+func GetUserReward(userId string) (int, persistance.RewardStatus, error) {
 
 	// Getting user and setting necessary variables
 	user, err := GetUser(userId)
@@ -102,7 +98,7 @@ func GetUserReward(userId string) (float64, persistance.RewardStatus, error) {
 	}
 
 	// Get Final Bonus Reward
-	finalReward := util.GetUserBonus(5, 50, modifier)
+	finalReward := util.GetUserBonus(1, 4, modifier)
 
 	// Updating User Record
 	user.LastBonus = time.Now().String()
@@ -117,7 +113,7 @@ func GetUserReward(userId string) (float64, persistance.RewardStatus, error) {
 
 }
 
-func BuyLootbox(userId string) (float64, int, error) {
+func BuyLootbox(userId string) (int, int, error) {
 
 	user, err := GetUser(userId)
 
@@ -135,10 +131,10 @@ func BuyLootbox(userId string) (float64, int, error) {
 	lootboxSeed := random.Intn(9999999999) + 1000000000
 
 	val := hashLootBoxSeed(lootboxSeed)
-	reward := 0.0
+	reward := 0
 
 	if val <= 7992 {
-		reward += 3.63
+		reward += 3
 	} else if val > 7992 && val <= 9590 {
 		reward += 8
 	} else if val > 9590 && val <= 9910 {
@@ -149,7 +145,7 @@ func BuyLootbox(userId string) (float64, int, error) {
 		reward += 50
 	}
 
-	user.ImageTokens += float64(reward)
+	user.ImageTokens += reward
 
 	if !UpdateUser(*user) {
 		return -1, -1, errors.New("error updating user record")
@@ -196,81 +192,13 @@ func hashLootBoxSeed(bar int) int {
 	return total % 10000
 }
 
-func APictureIsWorthAThousand(incomingMessage string, m *discordgo.MessageCreate) {
+// func APictureIsWorthAThousand(incomingMessage string, m *discordgo.MessageCreate) {
 
-	// Looking at messages in the channel and returning WORD_COUNT / 1000 number of tokens
-	// ie. A picture is worth 1000 words
-	wordCount := len(strings.Fields(incomingMessage))
-	tokenValue := fmt.Sprintf("%.2f", (float64(wordCount) / 1000.0))
-	tokenAddAmount, _ := strconv.ParseFloat(tokenValue, 64)
+// 	// Looking at messages in the channel and returning WORD_COUNT / 1000 number of tokens
+// 	// ie. A picture is worth 1000 words
+// 	wordCount := len(strings.Fields(incomingMessage))
+// 	tokenValue := fmt.Sprintf("%.2f", (float64(wordCount) / 1000.0))
+// 	tokenAddAmount, _ := strconv.ParseInt(tokenValue, 10, 64)
 
-	AddBotPersonTokens(tokenAddAmount, m.Author.ID)
-}
-
-// func AddStock(userId string, stockTicker string, quantity float64) error {
-
-// 	user, err := GetUser(userId)
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	userPortfolio := user.UserStats.Stocks
-
-// 	for index, element := range userPortfolio {
-// 		if element.StockTicker == stockTicker {
-// 			element.StockCount += quantity
-// 			userPortfolio[index] = element
-// 			UpdateUser(*user)
-// 			return nil
-// 		}
-// 	}
-
-// 	newStock := models.Stock{StockTicker: stockTicker, StockCount: quantity}
-// 	user.UserStats.Stocks = append(user.UserStats.Stocks, newStock)
-// 	UpdateUser(*user)
-
-// 	return nil
-// }
-
-// func RemoveStock(userId string, stockTicker string, quantity float64) error {
-
-// 	user, err := GetUser(userId)
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	userPortfolio := user.UserStats.Stocks
-
-// 	for index, element := range userPortfolio {
-// 		if element.StockTicker == stockTicker {
-// 			element.StockCount -= quantity
-// 			userPortfolio[index] = element
-// 			UpdateUser(*user)
-// 			return nil
-// 		}
-// 	}
-
-// 	return errors.New("stock not found")
-// }
-
-// func GetUserStock(userId string, stockTicker string) (models.Stock, error) {
-
-// 	user, err := GetUser(userId)
-
-// 	if err != nil {
-// 		return models.Stock{}, err
-// 	}
-
-// 	userPortfolio := user.UserStats.Stocks
-
-// 	for _, element := range userPortfolio {
-// 		if element.StockTicker == stockTicker {
-// 			return element, nil
-// 		}
-// 	}
-
-// 	return models.Stock{}, errors.New("stock not found")
-
+// 	AddBotPersonTokens(tokenAddAmount, m.Author.ID)
 // }
