@@ -164,7 +164,7 @@ func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo
 					Reader:      reader,
 				}
 
-				slopsReadyString := fmt.Sprintf("Slop is ready! %s", videoResponse.ID)
+				slopsReadyString := fmt.Sprintf("Here is your %s. Slop is ready! %s", prompt, videoResponse.ID)
 
 				_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: &slopsReadyString,
@@ -182,6 +182,11 @@ func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo
 				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 					Content: "Video Generation Failed: " + videoResponse.Error.Message,
 				})
+
+				user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
+				user.ImageTokens += 8
+				persistance.UpdateUser(*user)
+
 				return
 			} else {
 				currentStatusString := fmt.Sprintf("Video Status: %s. Progress: %d%%", videoResponse.Status, videoResponse.Progress)
