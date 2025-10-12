@@ -71,7 +71,7 @@ func (m *MyStats) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) 
 			},
 			{
 				Name:   "Token Balance",
-				Value:  fmt.Sprintf("%.2f Token(s)", user.ImageTokens),
+				Value:  fmt.Sprintf("%d Token(s)", user.ImageTokens),
 				Inline: true,
 			},
 			{},
