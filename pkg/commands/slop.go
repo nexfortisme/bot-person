@@ -164,7 +164,7 @@ func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo
 					Reader:      reader,
 				}
 
-				slopsReadyString := fmt.Sprintf("Here is your %s. Slop is ready! %s", prompt, videoResponse.ID)
+				slopsReadyString := fmt.Sprintf("The Slop Thickens. %s", videoResponse.ID)
 
 				_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: &slopsReadyString,
@@ -192,7 +192,7 @@ func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo
 
 				return
 			} else {
-				currentStatusString := fmt.Sprintf("Video Status: %s. Progress: %d%%", videoResponse.Status, videoResponse.Progress)
+				currentStatusString := fmt.Sprintf("Slop Status: %s. Slop Progress: %d%%", videoResponse.Status, videoResponse.Progress)
 				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: &currentStatusString,
 				})
