@@ -44,7 +44,7 @@ func ResetStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	_, modifier := util.GetStreakStringAndModifier(user.BonusStreak)
 
 	// Getting Final Bonus Reward
-	finalReward := util.GetUserBonus(5, 50, modifier)
+	finalReward := util.GetUserBonus(1, 4, modifier)
 
 	// Updating User Record
 	user.LastBonus = time.Now().String()
@@ -60,7 +60,7 @@ func ResetStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "Bonus Award",
-				Value: fmt.Sprintf("%.2f tokens", finalReward),
+				Value: fmt.Sprintf("%d tokens", finalReward),
 			},
 			{
 				Name:  "Current Streak",
@@ -68,7 +68,7 @@ func ResetStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 			{
 				Name:  "Current Balance",
-				Value: fmt.Sprintf("%.2f tokens", user.ImageTokens),
+				Value: fmt.Sprintf("%d tokens", user.ImageTokens),
 			},
 		},
 	}
