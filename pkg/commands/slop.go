@@ -26,6 +26,26 @@ func (b *Slop) ApplicationCommand() *discordgo.ApplicationCommand {
 				Description: "The script for the slop.",
 				Required:    true,
 			},
+			{
+				Name:        "length",
+				Description: "How long do you want the slop to be? Defaults to 4 seconds",
+				Type:        discordgo.ApplicationCommandOptionString,
+				Choices: []*discordgo.ApplicationCommandOptionChoice{
+					{
+						Name:  "4 Seconds",
+						Value: "4",
+					},
+					{
+						Name:  "8 Seconds",
+						Value: "8",
+					},
+					{
+						Name:  "12 Seconds",
+						Value: "12",
+					},
+				},
+				Required: false,
+			},
 		},
 	}
 }
@@ -41,13 +61,31 @@ func (b *Slop) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		optionMap[opt.Name] = opt
 	}
 
+	var duration string
+	var durationInt int
+	
+	if option, ok := optionMap["length"]; ok {
+		duration = option.StringValue()
+	}
+
+	if duration == "4" {
+		durationInt = 4
+	} else if duration == "8" {
+		durationInt = 8
+	} else if duration == "12" {
+		durationInt = 12
+	} else {
+		durationInt = 4
+	}
+
 	user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
-	if user.ImageTokens < b.CommandCost() {
+
+	if user.ImageTokens < (b.CommandCost() * durationInt) {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "You don't have enough tokens to generate a slop.",
+				Content: fmt.Sprintf("You don't have enough tokens to generate a slop. It costs %d tokens per 4 seconds.", b.CommandCost()),
 			},
 		})
 		return
@@ -74,7 +112,7 @@ func (b *Slop) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// botResponseString = ParseGPTSlashCommand(s, option.StringValue(
 		// Check if the response will be too long and truncate if necessary
 		prompt := option.StringValue()
-		go handleAsyncSlop(prompt, i, s)
+		go handleAsyncSlop(prompt, durationInt, i, s)
 	}
 }
 
@@ -86,8 +124,8 @@ func (b *Slop) CommandCost() int {
 	return 8 // 5 Cents a Token
 }
 
-func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo.Session) {
-	videoResponse, err := external.GetSoraRespone(prompt)
+func handleAsyncSlop(prompt string, duration int, i *discordgo.InteractionCreate, s *discordgo.Session) {
+	videoResponse, err := external.GetSoraRespone(prompt, duration)
 	if err != nil {
 		s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 			Content: "Error getting Sora response: " + err.Error(),

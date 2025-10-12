@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func GetSoraRespone(prompt string) (VideoJob, error) {
+func GetSoraRespone(prompt string, duration int) (VideoJob, error) {
 
 	httpClient := &http.Client{}
 
@@ -21,7 +21,7 @@ func GetSoraRespone(prompt string) (VideoJob, error) {
 		"prompt": "%s",
 		"seconds": "%d"
 	}`
-	requestData := fmt.Sprintf(requestDataTemplate, prompt, 4)
+	requestData := fmt.Sprintf(requestDataTemplate, prompt, duration)
 
 	postRequest, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/videos", strings.NewReader(requestData))
 	if err != nil {
