@@ -179,8 +179,11 @@ func handleAsyncSlop(prompt string, i *discordgo.InteractionCreate, s *discordgo
 				}
 				return
 			} else if videoResponse.Status == "failed" {
-				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-					Content: "Video Generation Failed: " + videoResponse.Error.Message,
+
+				failureString := fmt.Sprintf("Video Generation Failed: %s", videoResponse.Error.Message)
+
+				s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &failureString,
 				})
 
 				user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
