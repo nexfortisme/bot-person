@@ -33,6 +33,8 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	var isReply bool = false
 	var replyType string
+	var messageContent string
+
 
 	// This means the current message is a reply to another message
 	if m.Message.ReferencedMessage != nil {
@@ -46,24 +48,31 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		switch m.ReferencedMessage.Interaction.Name {
 		case "bot":
 			replyType = "bot"
+			return
 		case "bot_gpt":
 			replyType = "bot_gpt"
+			return
 		case "image":
 			replyType = "image"
+			return
 		default:
 			replyType = "message"
+			messageContent = m.Message.Content
+			messageContent = util.EscapeQuotes(messageContent)
+			messageContent = strings.ToLower(messageContent)
+			return
 		}
 	}
 
 	// persistance.APictureIsWorthAThousand(m.Message.Content, m)
 
 	// TODO - Handle this better. I don't like this and I feel bad about it
-	if strings.HasPrefix(m.Message.Content, "bad bot") {
+	if strings.HasPrefix(messageContent, "bad bot") {
 		logging.LogEvent(eventType.USER_BAD_BOT, m.Author.ID, "Bad bot command used", m.GuildID)
 		badBotRetort := util.GetBadBotResponse()
 		_, err := s.ChannelMessageSend(m.ChannelID, badBotRetort)
 		util.HandleErrors(err)
-	} else if strings.HasPrefix(m.Message.Content, "good bot") {
+	} else if strings.HasPrefix(messageContent, "good bot") {
 		logging.LogEvent(eventType.USER_GOOD_BOT, m.Author.ID, "Good bot command used", m.GuildID)
 		goodBotRetort := util.GetGoodBotResponse()
 		_, err := s.ChannelMessageSend(m.ChannelID, goodBotRetort)
@@ -88,7 +97,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
 			}
 		}
-	} else if strings.HasPrefix(m.Message.Content, ";;lenny") {
+	} else if strings.HasPrefix(messageContent, ";;lenny") {
 		logging.LogEvent(eventType.LENNY, m.Author.ID, "Lenny command used", m.GuildID)
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
 	}
