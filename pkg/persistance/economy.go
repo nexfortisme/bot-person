@@ -2,6 +2,7 @@ package persistance
 
 import (
 	"errors"
+	"fmt"
 	"main/pkg/util"
 	"math/rand"
 	"time"
@@ -67,32 +68,36 @@ func GetUserReward(userId string) (int, persistance.RewardStatus, error) {
 
 	modifier := 1
 
+	fmt.Printf("User: %+v\n", user)
+
 	// Checking to see if the user has a LastBonus time
-	if (user.LastBonus != time.Time{}.String()) {
+	if user.LastBonus != "" {
 
 		// Parse LastBonus string into time and check diff between now and lastBonus time
-		lastBonusTime, _ := time.Parse(time.RFC3339, user.LastBonus)
-		diff := time.Since(lastBonusTime)
+		lastBonusTime, parseErr := time.Parse(time.RFC3339, user.LastBonus)
+		if parseErr == nil {
+			diff := time.Since(lastBonusTime)
 
-		// if diff is less than 1 day (86400 seconds), then throws error
-		if diff.Seconds() <= 86400 {
-			// Doing math for countdown to next bonus
-			lastBonusTime, _ := time.Parse(time.RFC3339, user.LastBonus)
-			nextBonus := lastBonusTime.AddDate(0, 0, 1)
-			timeToNextBonus := time.Until(nextBonus)
-			formattedString := durafmt.Parse(timeToNextBonus).LimitFirstN(3)
+			fmt.Println("Time Diff: " + diff.String() + " Seconds: " + fmt.Sprintf("%.0f", diff.Seconds()))
 
-			errString := "Please try again in: " + formattedString.String()
+			// if diff is less than 1 day (86400 seconds), then throws error
+			if diff.Seconds() <= 86400 {
+				// Doing math for countdown to next bonus
+				nextBonus := lastBonusTime.AddDate(0, 0, 1)
+				timeToNextBonus := time.Until(nextBonus)
+				formattedString := durafmt.Parse(timeToNextBonus).LimitFirstN(3)
 
-			return -1.0, persistance.TOO_EARLY, errors.New(errString)
-		}
+				errString := "Please try again in: " + formattedString.String()
 
-		lastBonusTime, _ = time.Parse(time.RFC3339, user.LastBonus)
-		timeWindow := lastBonusTime.Add(time.Hour * 48)
-		timeWindowDiff := time.Since(timeWindow)
+				return -1.0, persistance.TOO_EARLY, errors.New(errString)
+			}
 
-		if timeWindowDiff > 0 {
-			return -1.0, persistance.MISSED, errors.New("Streak Missed")
+			timeWindow := lastBonusTime.Add(time.Hour * 48)
+			timeWindowDiff := time.Since(timeWindow)
+
+			if timeWindowDiff > 0 {
+				return -1.0, persistance.MISSED, errors.New("streak missed")
+			}
 		}
 
 	}
@@ -101,7 +106,7 @@ func GetUserReward(userId string) (int, persistance.RewardStatus, error) {
 	finalReward := util.GetUserBonus(1, 4, modifier)
 
 	// Updating User Record
-	user.LastBonus = time.Now().String()
+	user.LastBonus = time.Now().Format(time.RFC3339)
 	user.ImageTokens += finalReward
 	user.BonusStreak++
 
