@@ -104,7 +104,9 @@ func main() {
 	flag.Parse()
 
 	// Step 2: Read in environment variables
-	util.ReadEnv(useEnvFile)
+	util.ReadEnv(useEnvFile, devMode)
+
+	return;
 
 	// Step 3: Connect to the database
 	databseConnection := persistance.GetDB()
