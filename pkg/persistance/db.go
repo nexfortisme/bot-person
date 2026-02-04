@@ -1,6 +1,7 @@
 package persistance
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -12,8 +13,8 @@ import (
 )
 
 var (
-	db   *sqlite.Conn
-	once sync.Once
+	dbPool *sqlitex.Pool
+	once   sync.Once
 
 	err error
 )
@@ -26,23 +27,54 @@ func initDB() {
 	if dbPath == "" {
 		dbPath = "db.sqlite"
 	}
-	
-	db, err = sqlite.OpenConn(dbPath, 0)
+
+	dbPool, err = sqlitex.NewPool(dbPath, sqlitex.PoolOptions{
+		PoolSize: 10,
+		PrepareConn: func(conn *sqlite.Conn) error {
+			if err := sqlitex.Execute(conn, "PRAGMA busy_timeout = 5000;", nil); err != nil {
+				return err
+			}
+			if err := sqlitex.Execute(conn, "PRAGMA foreign_keys = ON;", nil); err != nil {
+				return err
+			}
+			return nil
+		},
+	})
 	if err != nil {
 		fmt.Printf("Error connecting to database at %s.\n", dbPath)
 		panic(err)
 	}
 
-	InitializeDatabase(db)
+	conn, err := dbPool.Take(context.Background())
+	if err != nil {
+		fmt.Printf("Error acquiring database connection at %s.\n", dbPath)
+		panic(err)
+	}
+	InitializeDatabase(conn)
+	dbPool.Put(conn)
 
 	fmt.Printf("Database Connected at %s.\n", dbPath)
 }
 
-func GetDB() *sqlite.Conn {
+func GetPool() *sqlitex.Pool {
 	once.Do(func() {
 		initDB()
 	})
-	return db
+	return dbPool
+}
+
+func WithConn(ctx context.Context, fn func(*sqlite.Conn) error) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	pool := GetPool()
+	conn, err := pool.Take(ctx)
+	if err != nil {
+		return err
+	}
+	defer pool.Put(conn)
+
+	return fn(conn)
 }
 
 // Initializing the DB with the necessary tables for the bot to function
@@ -131,105 +163,107 @@ func InitializeDatabase(db *sqlite.Conn) {
 
 // RunQuery executes a given SQL query with optional parameters and returns the results.
 func RunQuery(query string, output interface{}, params ...interface{}) error {
-	stmt, err := db.Prepare(query)
-	if err != nil {
-		return fmt.Errorf("error preparing query: %w", err)
-	}
-	defer stmt.Finalize()
-
-	for i, param := range params {
-		var paramIndex int = i + 1
-
-		switch v := param.(type) {
-		case string:
-			stmt.BindText(paramIndex, v)
-		case int64:
-			stmt.BindInt64(paramIndex, v)
-		case int:
-			stmt.BindInt64(paramIndex, int64(v))
-		case float64:
-			stmt.BindFloat(paramIndex, v)
-		case bool:
-			stmt.BindBool(paramIndex, v)
-		case []byte:
-			stmt.BindBytes(paramIndex, v)
-		case nil:
-			stmt.BindNull(paramIndex)
-		default:
-			return fmt.Errorf("unsupported parameter type %T for parameter %d", param, paramIndex)
-		}
-	}
-
-	for {
-		hasRow, err := stmt.Step()
+	return WithConn(context.Background(), func(conn *sqlite.Conn) error {
+		stmt, err := conn.Prepare(query)
 		if err != nil {
-			return fmt.Errorf("error executing query: %w", err)
+			return fmt.Errorf("error preparing query: %w", err)
 		}
-		if !hasRow {
-			break
-		}
+		defer stmt.Finalize()
 
-		// Skip result processing if output is nil
-		if output == nil {
-			continue
-		}
+		for i, param := range params {
+			var paramIndex int = i + 1
 
-		outputValue := reflect.ValueOf(output)
-		if outputValue.Kind() != reflect.Ptr {
-			return fmt.Errorf("output must be a pointer")
-		}
-
-		elemValue := outputValue.Elem()
-
-		// Handle basic types (int64, string, etc.)
-		if elemValue.Kind() == reflect.Int64 || elemValue.Kind() == reflect.Int {
-			elemValue.SetInt(stmt.ColumnInt64(0))
-			continue
-		}
-
-		if elemValue.Kind() == reflect.Struct {
-			// Populate a single struct
-			for i := 0; i < elemValue.NumField(); i++ {
-				field := elemValue.Field(i)
-				switch field.Kind() {
-				case reflect.Int64:
-					field.SetInt(stmt.ColumnInt64(i))
-				case reflect.Int:
-					field.SetInt(stmt.ColumnInt64(i))
-				case reflect.String:
-					field.SetString(stmt.ColumnText(i))
-				case reflect.Float64:
-					field.SetFloat(stmt.ColumnFloat(i))
-				default:
-					return fmt.Errorf("unsupported field type %v", field.Kind())
-				}
+			switch v := param.(type) {
+			case string:
+				stmt.BindText(paramIndex, v)
+			case int64:
+				stmt.BindInt64(paramIndex, v)
+			case int:
+				stmt.BindInt64(paramIndex, int64(v))
+			case float64:
+				stmt.BindFloat(paramIndex, v)
+			case bool:
+				stmt.BindBool(paramIndex, v)
+			case []byte:
+				stmt.BindBytes(paramIndex, v)
+			case nil:
+				stmt.BindNull(paramIndex)
+			default:
+				return fmt.Errorf("unsupported parameter type %T for parameter %d", param, paramIndex)
 			}
-		} else if elemValue.Kind() == reflect.Slice {
-			// Populate a slice
-			elementType := elemValue.Type().Elem()
-			newElement := reflect.New(elementType).Elem()
+		}
 
-			for i := 0; i < elementType.NumField(); i++ {
-				field := elementType.Field(i)
-				switch field.Type.Kind() {
-				case reflect.Int64:
-					newElement.Field(i).SetInt(stmt.ColumnInt64(i))
-				case reflect.Int:
-					newElement.Field(i).SetInt(stmt.ColumnInt64(i))
-				case reflect.String:
-					newElement.Field(i).SetString(stmt.ColumnText(i))
-				case reflect.Float64:
-					newElement.Field(i).SetFloat(stmt.ColumnFloat(i))
-				default:
-					return fmt.Errorf("unsupported field type %v for field %s", field.Type, field.Name)
-				}
+		for {
+			hasRow, err := stmt.Step()
+			if err != nil {
+				return fmt.Errorf("error executing query: %w", err)
+			}
+			if !hasRow {
+				break
 			}
 
-			elemValue.Set(reflect.Append(elemValue, newElement))
-		} else {
-			return fmt.Errorf("output must be a pointer to a struct, slice, or basic type")
-		}
-	}
+			// Skip result processing if output is nil
+			if output == nil {
+				continue
+			}
 
-	return nil
+			outputValue := reflect.ValueOf(output)
+			if outputValue.Kind() != reflect.Ptr {
+				return fmt.Errorf("output must be a pointer")
+			}
+
+			elemValue := outputValue.Elem()
+
+			// Handle basic types (int64, string, etc.)
+			if elemValue.Kind() == reflect.Int64 || elemValue.Kind() == reflect.Int {
+				elemValue.SetInt(stmt.ColumnInt64(0))
+				continue
+			}
+
+			if elemValue.Kind() == reflect.Struct {
+				// Populate a single struct
+				for i := 0; i < elemValue.NumField(); i++ {
+					field := elemValue.Field(i)
+					switch field.Kind() {
+					case reflect.Int64:
+						field.SetInt(stmt.ColumnInt64(i))
+					case reflect.Int:
+						field.SetInt(stmt.ColumnInt64(i))
+					case reflect.String:
+						field.SetString(stmt.ColumnText(i))
+					case reflect.Float64:
+						field.SetFloat(stmt.ColumnFloat(i))
+					default:
+						return fmt.Errorf("unsupported field type %v", field.Kind())
+					}
+				}
+			} else if elemValue.Kind() == reflect.Slice {
+				// Populate a slice
+				elementType := elemValue.Type().Elem()
+				newElement := reflect.New(elementType).Elem()
+
+				for i := 0; i < elementType.NumField(); i++ {
+					field := elementType.Field(i)
+					switch field.Type.Kind() {
+					case reflect.Int64:
+						newElement.Field(i).SetInt(stmt.ColumnInt64(i))
+					case reflect.Int:
+						newElement.Field(i).SetInt(stmt.ColumnInt64(i))
+					case reflect.String:
+						newElement.Field(i).SetString(stmt.ColumnText(i))
+					case reflect.Float64:
+						newElement.Field(i).SetFloat(stmt.ColumnFloat(i))
+					default:
+						return fmt.Errorf("unsupported field type %v for field %s", field.Type, field.Name)
+					}
+				}
+
+				elemValue.Set(reflect.Append(elemValue, newElement))
+			} else {
+				return fmt.Errorf("output must be a pointer to a struct, slice, or basic type")
+			}
+		}
+
+		return nil
+	})
 }
