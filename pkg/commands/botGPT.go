@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"main/pkg/external"
+	"main/pkg/persistance"
 	"main/pkg/util"
 
 	"main/pkg/logging"
@@ -40,6 +41,7 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	var botResponseString string
+	var assistantResponse string
 
 	// Pulling the propt out of the optionsMap
 	if option, ok := optionMap["prompt"]; ok {
@@ -61,7 +63,7 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// botResponseString = ParseGPTSlashCommand(s, option.StringValue(
 		// Check if the response will be too long and truncate if necessary
 		prompt := option.StringValue()
-		botResponseString = ParseGPTSlashCommand(s, prompt)
+		botResponseString, assistantResponse = ParseGPTSlashCommand(prompt)
 
 		if len(botResponseString) > 2000 {
 
@@ -105,7 +107,44 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// 	}
 		// }
 
-		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, botResponseString, i.Interaction.GuildID)
+		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, assistantResponse, i.Interaction.GuildID)
+
+		responseMessage, err := s.InteractionResponse(i.Interaction)
+		if err != nil {
+			fmt.Println("Error getting interaction response message:", err)
+		}
+
+		threadID := i.Interaction.ID
+		responseMessageID := ""
+		if responseMessage != nil && responseMessage.ID != "" {
+			threadID = responseMessage.ID
+			responseMessageID = responseMessage.ID
+		}
+
+		err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+			ThreadId:    threadID,
+			ChannelId:   i.Interaction.ChannelID,
+			GuildId:     i.Interaction.GuildID,
+			CommandName: "bot-gpt",
+			Role:        "user",
+			Content:     prompt,
+		})
+		if err != nil {
+			fmt.Println("Error saving conversation user message:", err)
+		}
+
+		err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+			ThreadId:    threadID,
+			MessageId:   responseMessageID,
+			ChannelId:   i.Interaction.ChannelID,
+			GuildId:     i.Interaction.GuildID,
+			CommandName: "bot-gpt",
+			Role:        "assistant",
+			Content:     assistantResponse,
+		})
+		if err != nil {
+			fmt.Println("Error saving conversation assistant message:", err)
+		}
 
 	}
 }
@@ -118,8 +157,8 @@ func (b *BotGPT) CommandCost() int {
 	return 0
 }
 
-func ParseGPTSlashCommand(s *discordgo.Session, prompt string) string {
+func ParseGPTSlashCommand(prompt string) (string, string) {
 	respTxt := external.GetOpenAIGPTResponse(prompt)
-	respTxt = "Request: " + prompt + " " + respTxt
-	return respTxt
+	displayText := "Request: " + prompt + " " + respTxt
+	return displayText, respTxt
 }

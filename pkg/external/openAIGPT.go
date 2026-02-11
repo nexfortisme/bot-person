@@ -1,38 +1,54 @@
 package external
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"main/pkg/logging"
 	"main/pkg/util"
 	"net/http"
-	"strings"
 )
 
+const defaultGPTSystemPrompt = "You are a single source of truth. Give responses that answer the question asked but don't ask follow up questions."
+
+type chatCompletionsRequest struct {
+	Model    string             `json:"model"`
+	Messages []OpenAIGPTMessage `json:"messages"`
+}
+
 func GetOpenAIGPTResponse(prompt string) string {
+	return GetOpenAIGPTResponseWithMessages([]OpenAIGPTMessage{
+		{
+			Role:    "user",
+			Content: prompt,
+		},
+	})
+}
+
+func GetOpenAIGPTResponseWithMessages(messages []OpenAIGPTMessage) string {
 	client := &http.Client{}
 
-	dataTemplate := `{
-		"model": "%s",
-		"messages": [
-			{"role": "system", "content": "You are a single source of truth. Give responses that answer the question asked but don't ask follow up questions."},
-			{
-				"role": "user", 
-				"content": "%s"
-			}
-		]
-	}`
+	requestMessages := make([]OpenAIGPTMessage, 0, len(messages)+1)
+	requestMessages = append(requestMessages, OpenAIGPTMessage{
+		Role:    "system",
+		Content: defaultGPTSystemPrompt,
+	})
+	requestMessages = append(requestMessages, messages...)
 
-	data := fmt.Sprintf(dataTemplate, util.EscapeQuotes(util.GetOpenAIModel()), util.EscapeQuotes(prompt))
+	payload := chatCompletionsRequest{
+		Model:    util.GetOpenAIModel(),
+		Messages: requestMessages,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		logging.LogError("Error creating request body for OpenAI chat completions")
+		return "Error Contacting OpenAI API. Please Try Again Later."
+	}
 
-	// Remove newline characters from the data string
-	// data = strings.ReplaceAll(data, "\n", "")
-	// data = strings.ReplaceAll(data, "\t", "")
-
-	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", strings.NewReader(data))
+	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", bytes.NewReader(body))
 	if err != nil {
 		logging.LogError("Error creating POST request")
+		return "Error Contacting OpenAI API. Please Try Again Later."
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -42,6 +58,7 @@ func GetOpenAIGPTResponse(prompt string) string {
 	if resp == nil {
 		return "Error Contacting OpenAI API. Please Try Again Later."
 	}
+	defer resp.Body.Close()
 
 	buf, _ := io.ReadAll(resp.Body)
 	rspOAI := OpenAIGPTResponse{}

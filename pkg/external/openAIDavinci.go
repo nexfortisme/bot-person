@@ -1,8 +1,8 @@
 package external
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 
 	"main/pkg/logging"
@@ -11,10 +11,18 @@ import (
 	"main/pkg/util"
 
 	"net/http"
-	"strings"
 )
 
 func GetOpenAIResponse(prompt string, userId string) string {
+	return GetOpenAIResponseWithMessages([]OpenAIGPTMessage{
+		{
+			Role:    "user",
+			Content: prompt,
+		},
+	}, userId)
+}
+
+func GetOpenAIResponseWithMessages(messages []OpenAIGPTMessage, userId string) string {
 	client := &http.Client{}
 
 	prePrompt, err := persistance.GetUserAttribute(userId, attribute.BOT_PREPROMPT)
@@ -22,16 +30,27 @@ func GetOpenAIResponse(prompt string, userId string) string {
 		prePrompt = "You are a whimsical and dear friend. You respond to any inquiries with a level of spontaneity and randomness. You don't take anything too seriously and are not afraid to 'shoot from the hip' so to speak when responding to people."
 	}
 
-	dataTemplate := `{
-		"model": "%s",
-		"messages": [{"role": "system", "content": "%s"}, {"role": "user", "content": "%s"}]
-	}`
+	requestMessages := make([]OpenAIGPTMessage, 0, len(messages)+1)
+	requestMessages = append(requestMessages, OpenAIGPTMessage{
+		Role:    "system",
+		Content: prePrompt,
+	})
+	requestMessages = append(requestMessages, messages...)
 
-	data := fmt.Sprintf(dataTemplate, util.GetBotOpenAIModel(), util.EscapeQuotes(prePrompt), util.EscapeQuotes(prompt))
+	payload := chatCompletionsRequest{
+		Model:    util.GetBotOpenAIModel(),
+		Messages: requestMessages,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		logging.LogError("Error creating request body for OpenAI chat completions")
+		return "Error Contacting OpenAI API. Please Try Again Later."
+	}
 
-	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", strings.NewReader(data))
+	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", bytes.NewReader(body))
 	if err != nil {
 		logging.LogError("Error creating POST request")
+		return "Error Contacting OpenAI API. Please Try Again Later."
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -41,6 +60,7 @@ func GetOpenAIResponse(prompt string, userId string) string {
 	if resp == nil {
 		return "Error Contacting OpenAI API. Please Try Again Later."
 	}
+	defer resp.Body.Close()
 
 	buf, _ := io.ReadAll(resp.Body)
 	rspOAI := OpenAIGPTResponse{}

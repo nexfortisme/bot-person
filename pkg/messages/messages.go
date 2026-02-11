@@ -1,14 +1,12 @@
 package messages
 
 import (
-	"encoding/json"
 	"fmt"
 	"main/pkg/external"
 	"main/pkg/persistance"
 	"main/pkg/util"
 	"strconv"
 	"strings"
-	"time"
 
 	"main/pkg/commands"
 	"main/pkg/logging"
@@ -31,38 +29,20 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	var isReply bool = false
-	var replyType string
-	var messageContent string
-
-
-	// This means the current message is a reply to another message
-	if m.Message.ReferencedMessage != nil {
-		isReply = true
-
-		if( m.ReferencedMessage.Interaction == nil ) {
-			replyType = "message"
-			return
-		}
-
-		switch m.ReferencedMessage.Interaction.Name {
-		case "bot":
-			replyType = "bot"
-			return
-		case "bot_gpt":
-			replyType = "bot_gpt"
-			return
-		case "image":
-			replyType = "image"
-			return
-		default:
-			replyType = "message"
-			messageContent = m.Message.Content
-			messageContent = util.EscapeQuotes(messageContent)
-			messageContent = strings.ToLower(messageContent)
-			return
+	isReply := m.Message.ReferencedMessage != nil
+	replyType := "message"
+	if isReply {
+		replyType = detectReplyType(m.Message.ReferencedMessage)
+		if replyType == "message" {
+			dbReplyType, err := detectReplyTypeFromThreadStore(m.Message.ReferencedMessage.ID)
+			if err != nil {
+				fmt.Println("Error detecting reply type from thread store:", err)
+			} else if dbReplyType != "" {
+				replyType = dbReplyType
+			}
 		}
 	}
+	messageContent := strings.ToLower(util.EscapeQuotes(m.Message.Content))
 
 	// persistance.APictureIsWorthAThousand(m.Message.Content, m)
 
@@ -109,38 +89,13 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if !mentionsBot(m.Mentions, s.State.User.ID) {
 			return
 		}
-
-		cleanedIncomingMessage := strings.ReplaceAll(m.Message.Content, "<@"+s.State.User.ID+"> ", "")
-		cleanedOriginalMessage := strings.ReplaceAll(m.ReferencedMessage.Content, "<@"+s.State.User.ID+">", "")
-
-		perplexityResponse := external.GetPerplexityResponse(cleanedOriginalMessage, cleanedIncomingMessage)
-
-		if len(perplexityResponse.Choices) == 0 {
-			s.ChannelMessageSendReply(m.ChannelID, "Error getting response from Perplexity.", m.Message.Reference())
-
-			currentTime := time.Now().Format("2006-01-02-15-04-05")
-
-			data, _ := json.MarshalIndent(perplexityResponse, "", "  ")
-			util.SaveResponseToFile(data, fmt.Sprintf("perplexity-error-response-%s.txt", currentTime))
-
-			return
-		}
-
-		response := perplexityResponse.Choices[0].Message.Content
-
-		if perplexityResponse.Citations != nil {
-			for index, citation := range perplexityResponse.Citations {
-				replaceString := fmt.Sprintf("[%d]", index)
-				replacementString := fmt.Sprintf("[[%d]](%s)", index, citation)
-				response = strings.Replace(response, replaceString, replacementString, 1)
-			}
-		}
-		s.ChannelMessageSendReply(m.ChannelID, response, m.Message.Reference())
-
 		return
-	} else if isReply && replyType == "bot" {
-		return
-	} else if isReply && replyType == "bot_gpt" {
+	} else if isReply && (replyType == "bot" || replyType == "bot_gpt") {
+		err := handleThreadedBotReply(s, m, replyType)
+		if err != nil {
+			fmt.Println("Error handling threaded bot reply:", err)
+			s.ChannelMessageSendReply(m.ChannelID, "Something went wrong while generating a threaded response.", m.Message.Reference())
+		}
 		return
 	} else if isReply && replyType == "image" {
 
@@ -198,6 +153,175 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		return
+	}
+}
+
+func detectReplyType(referencedMessage *discordgo.Message) string {
+	if referencedMessage == nil || referencedMessage.Interaction == nil {
+		return "message"
+	}
+
+	switch strings.ToLower(referencedMessage.Interaction.Name) {
+	case "bot":
+		return "bot"
+	case "bot-gpt", "bot_gpt":
+		return "bot_gpt"
+	case "image":
+		return "image"
+	default:
+		return "message"
+	}
+}
+
+func detectReplyTypeFromThreadStore(messageID string) (string, error) {
+	thread, err := persistance.GetConversationThreadByMessageID(messageID, 1)
+	if err != nil {
+		return "", err
+	}
+	if thread == nil {
+		return "", nil
+	}
+
+	switch normalizeCommandName(thread.CommandName) {
+	case "bot-gpt":
+		return "bot_gpt", nil
+	case "bot":
+		return "bot", nil
+	default:
+		return "", nil
+	}
+}
+
+func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, replyType string) error {
+	if m.Message.ReferencedMessage == nil {
+		return fmt.Errorf("referenced message is required for threaded replies")
+	}
+
+	thread, err := persistance.GetConversationThreadByMessageID(m.Message.ReferencedMessage.ID, 40)
+	if err != nil {
+		return err
+	}
+
+	commandName := normalizeCommandName(replyType)
+	threadID := m.Message.ReferencedMessage.ID
+
+	if thread != nil {
+		if thread.ThreadId != "" {
+			threadID = thread.ThreadId
+		}
+		if thread.CommandName != "" {
+			commandName = normalizeCommandName(thread.CommandName)
+		}
+	} else {
+		// Backfill older messages that predate conversation persistence.
+		seedMessage := persistance.ConversationMessage{
+			ThreadId:    threadID,
+			MessageId:   m.Message.ReferencedMessage.ID,
+			ChannelId:   m.ChannelID,
+			GuildId:     m.GuildID,
+			CommandName: commandName,
+			Role:        "assistant",
+			Content:     m.Message.ReferencedMessage.Content,
+		}
+		seedErr := persistance.SaveConversationMessage(seedMessage)
+		if seedErr != nil {
+			fmt.Println("Error seeding fallback conversation message:", seedErr)
+		}
+
+		thread = &persistance.ConversationThread{
+			ThreadId:    threadID,
+			CommandName: commandName,
+			Messages:    []persistance.ConversationMessage{seedMessage},
+		}
+	}
+
+	modelMessages := make([]external.OpenAIGPTMessage, 0, len(thread.Messages)+1)
+	for _, historicalMessage := range thread.Messages {
+		role := strings.ToLower(historicalMessage.Role)
+		if role != "user" && role != "assistant" {
+			continue
+		}
+		if strings.TrimSpace(historicalMessage.Content) == "" {
+			continue
+		}
+
+		modelMessages = append(modelMessages, external.OpenAIGPTMessage{
+			Role:    role,
+			Content: historicalMessage.Content,
+		})
+	}
+
+	userMessageContent := strings.TrimSpace(m.Message.Content)
+	if userMessageContent == "" {
+		return nil
+	}
+
+	modelMessages = append(modelMessages, external.OpenAIGPTMessage{
+		Role:    "user",
+		Content: userMessageContent,
+	})
+
+	var assistantResponse string
+	switch commandName {
+	case "bot-gpt":
+		assistantResponse = external.GetOpenAIGPTResponseWithMessages(modelMessages)
+	default:
+		assistantResponse = external.GetOpenAIResponseWithMessages(modelMessages, m.Author.ID)
+	}
+
+	if strings.TrimSpace(assistantResponse) == "" {
+		assistantResponse = "I'm sorry, I don't understand?"
+	}
+
+	responseContent := assistantResponse
+	if len(responseContent) > 2000 {
+		responseContent = responseContent[:1997] + "..."
+	}
+
+	responseMessage, err := s.ChannelMessageSendReply(m.ChannelID, responseContent, m.Message.Reference())
+	if err != nil {
+		return err
+	}
+
+	err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+		ThreadId:        threadID,
+		MessageId:       m.ID,
+		ParentMessageId: m.Message.ReferencedMessage.ID,
+		ChannelId:       m.ChannelID,
+		GuildId:         m.GuildID,
+		CommandName:     commandName,
+		Role:            "user",
+		Content:         userMessageContent,
+	})
+	if err != nil {
+		fmt.Println("Error saving threaded user message:", err)
+	}
+
+	err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+		ThreadId:        threadID,
+		MessageId:       responseMessage.ID,
+		ParentMessageId: m.ID,
+		ChannelId:       m.ChannelID,
+		GuildId:         m.GuildID,
+		CommandName:     commandName,
+		Role:            "assistant",
+		Content:         assistantResponse,
+	})
+	if err != nil {
+		fmt.Println("Error saving threaded assistant message:", err)
+	}
+
+	return nil
+}
+
+func normalizeCommandName(commandName string) string {
+	switch strings.ToLower(commandName) {
+	case "bot_gpt", "bot-gpt":
+		return "bot-gpt"
+	case "bot":
+		return "bot"
+	default:
+		return "bot"
 	}
 }
 

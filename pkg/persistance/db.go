@@ -20,13 +20,13 @@ var (
 
 func initDB() {
 	var err error
-	
+
 	// Get database path from environment variable, fallback to "db.sqlite"
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "db.sqlite"
 	}
-	
+
 	db, err = sqlite.OpenConn(dbPath, 0)
 	if err != nil {
 		fmt.Printf("Error connecting to database at %s.\n", dbPath)
@@ -116,8 +116,41 @@ func InitializeDatabase(db *sqlite.Conn) {
 		FOREIGN KEY (UserId) REFERENCES Users(ID)
 	);`
 
+	createConversationMessagesTable := `
+	CREATE TABLE IF NOT EXISTS ConversationMessages (
+		ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		ThreadId TEXT NOT NULL,
+		MessageId TEXT,
+		ParentMessageId TEXT,
+		ChannelId TEXT,
+		GuildId TEXT,
+		CommandName TEXT NOT NULL,
+		Role TEXT NOT NULL,
+		Content TEXT NOT NULL,
+		CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);`
+
+	createConversationMessagesThreadIndex := `
+	CREATE INDEX IF NOT EXISTS idx_conversation_messages_thread
+	ON ConversationMessages(ThreadId, ID);`
+
+	createConversationMessagesMessageIndex := `
+	CREATE INDEX IF NOT EXISTS idx_conversation_messages_message
+	ON ConversationMessages(MessageId);`
+
 	// Execute the table creation statements
-	tables := []string{createUsersTable, createUserStatsTable, createStocksTable, createLogsTable, createRewardStatusTable, createEventsTable, createUserAttributesTable}
+	tables := []string{
+		createUsersTable,
+		createUserStatsTable,
+		createStocksTable,
+		createLogsTable,
+		createRewardStatusTable,
+		createEventsTable,
+		createUserAttributesTable,
+		createConversationMessagesTable,
+		createConversationMessagesThreadIndex,
+		createConversationMessagesMessageIndex,
+	}
 
 	for _, table := range tables {
 		err := sqlitex.Execute(db, table, nil)

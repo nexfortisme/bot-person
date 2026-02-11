@@ -6,7 +6,7 @@ type MyStats struct {
 	InteractionCount int       `json:"interactionCount"`
 	GoodBotCount     int       `json:"goodBotCount"`
 	BadBotCount      int       `json:"badBotCount"`
-	ImageTokens      int   `json:"imageTokens"`
+	ImageTokens      int       `json:"imageTokens"`
 	BonusStreak      int       `json:"bonusStreak"`
 	LastBonus        time.Time `json:"lastBonus"`
 	LootBoxCount     int       `json:"lootBoxCount"`
@@ -44,12 +44,12 @@ type UserEventCount struct {
 }
 
 type User struct {
-	ID          string  `json:"id,omitempty"`
-	UserId      string  `json:"UserId"`
-	Username    string  `json:"Username"`
-	ImageTokens int `json:"ImageTokens"`
-	BonusStreak int     `json:"BonusStreak"`
-	LastBonus   string  `json:"LastBonus"`
+	ID          string `json:"id,omitempty"`
+	UserId      string `json:"UserId"`
+	Username    string `json:"Username"`
+	ImageTokens int    `json:"ImageTokens"`
+	BonusStreak int    `json:"BonusStreak"`
+	LastBonus   string `json:"LastBonus"`
 }
 
 type UserAttribute struct {
@@ -57,4 +57,22 @@ type UserAttribute struct {
 	UserId    string `json:"userId"`
 	Attribute string `json:"attribute"`
 	Value     string `json:"value"`
+}
+
+type ConversationMessage struct {
+	ID              int64  `json:"id"`
+	ThreadId        string `json:"threadId"`
+	MessageId       string `json:"messageId"`
+	ParentMessageId string `json:"parentMessageId"`
+	ChannelId       string `json:"channelId"`
+	GuildId         string `json:"guildId"`
+	CommandName     string `json:"commandName"`
+	Role            string `json:"role"`
+	Content         string `json:"content"`
+}
+
+type ConversationThread struct {
+	ThreadId    string                `json:"threadId"`
+	CommandName string                `json:"commandName"`
+	Messages    []ConversationMessage `json:"messages"`
 }

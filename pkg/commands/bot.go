@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"main/pkg/external"
+	"main/pkg/persistance"
 	"main/pkg/util"
 
 	"main/pkg/logging"
@@ -39,6 +40,7 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	var botResponseString string
+	var assistantResponse string
 
 	// Pulling the propt out of the optionsMap
 	if option, ok := optionMap["prompt"]; ok {
@@ -57,9 +59,10 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 
 		// Going out to make the OpenAI call to get the proper response
-		botResponseString = parseSlashCommand(option.StringValue(), i.Interaction.Member.User.ID)
+		prompt := option.StringValue()
+		botResponseString, assistantResponse = parseSlashCommand(prompt, i.Interaction.Member.User.ID)
 
-		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, botResponseString, i.Interaction.GuildID)
+		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, assistantResponse, i.Interaction.GuildID)
 
 		if len(botResponseString) > 2000 {
 			fileObj := util.HandleTooLongResponse(botResponseString)
@@ -89,6 +92,43 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				return
 			}
 		}
+
+		responseMessage, err := s.InteractionResponse(i.Interaction)
+		if err != nil {
+			fmt.Println("Error getting interaction response message:", err)
+		}
+
+		threadID := i.Interaction.ID
+		responseMessageID := ""
+		if responseMessage != nil && responseMessage.ID != "" {
+			threadID = responseMessage.ID
+			responseMessageID = responseMessage.ID
+		}
+
+		err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+			ThreadId:    threadID,
+			ChannelId:   i.Interaction.ChannelID,
+			GuildId:     i.Interaction.GuildID,
+			CommandName: "bot",
+			Role:        "user",
+			Content:     prompt,
+		})
+		if err != nil {
+			fmt.Println("Error saving conversation user message:", err)
+		}
+
+		err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+			ThreadId:    threadID,
+			MessageId:   responseMessageID,
+			ChannelId:   i.Interaction.ChannelID,
+			GuildId:     i.Interaction.GuildID,
+			CommandName: "bot",
+			Role:        "assistant",
+			Content:     assistantResponse,
+		})
+		if err != nil {
+			fmt.Println("Error saving conversation assistant message:", err)
+		}
 	}
 }
 
@@ -96,8 +136,8 @@ func (b *Bot) HelpString() string {
 	return "A command to ask the bot for a response from their infinite wisdom."
 }
 
-func parseSlashCommand(prompt string, userId string) string {
+func parseSlashCommand(prompt string, userId string) (string, string) {
 	respTxt := external.GetOpenAIResponse(prompt, userId)
-	respTxt = "Request: " + prompt + " " + respTxt
-	return respTxt
+	displayText := "Request: " + prompt + " " + respTxt
+	return displayText, respTxt
 }
