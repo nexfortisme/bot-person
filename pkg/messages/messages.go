@@ -266,7 +266,7 @@ func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, re
 	case "bot-gpt":
 		assistantResponse = external.GetOpenAIGPTResponseWithMessages(modelMessages)
 	default:
-		assistantResponse = external.GetOpenAIResponseWithMessages(modelMessages, m.Author.ID)
+		assistantResponse = external.GetLocalLLMResponseWithMessages(modelMessages, m.Author.ID)
 	}
 
 	if strings.TrimSpace(assistantResponse) == "" {

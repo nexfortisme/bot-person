@@ -1,50 +1,57 @@
 package external
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 
 	"main/pkg/logging"
-	"main/pkg/util"
 
 	"net/http"
-	"strings"
 )
 
 func GetLocalLLMResponse(prompt string, userId string) string {
+	return GetLocalLLMResponseWithMessages([]OpenAIGPTMessage{
+		{
+			Role:    "user",
+			Content: prompt,
+		},
+	}, userId)
+}
+
+func GetLocalLLMResponseWithMessages(messages []OpenAIGPTMessage, _ string) string {
 	client := &http.Client{}
 
-	// prePrompt, err := persistance.GetUserAttribute(userId, attribute.BOT_PREPROMPT)
-	// if err != nil {
-	// 	prePrompt = "You are a whimsical and dear friend. You respond to any inquiries with a level of spontaneity and randomness. You don't take anything too seriously and are not afraid to 'shoot from the hip' so to speak when responding to people."
-	// }
-
 	systemPrompt := "Have your response be funny, even if it is not relevant. Include a joke at the expense of the user."
+	requestMessages := make([]OpenAIGPTMessage, 0, len(messages)+1)
+	requestMessages = append(requestMessages, OpenAIGPTMessage{
+		Role:    "system",
+		Content: systemPrompt,
+	})
+	requestMessages = append(requestMessages, messages...)
 
-	dataTemplate := `{
-		"model": "gemma3-qat",
-		"messages": [{"role": "system", "content": "%s"}, {"role": "user", "content": "%s"}]
-	}`
+	payload := chatCompletionsRequest{
+		Model:    "gemma3-qat",
+		Messages: requestMessages,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		logging.LogError("Error creating request body for local LLM chat completions")
+		return "Error Contacting Local LLM API. Please Try Again Later."
+	}
 
-	data := fmt.Sprintf(dataTemplate, util.EscapeQuotes(systemPrompt), util.EscapeQuotes(prompt))
-
-	fmt.Println(data)
-
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:12434/engines/v1/chat/completions", strings.NewReader(data))
+	req, err := http.NewRequest(http.MethodPost, "http://localhost:12434/engines/v1/chat/completions", bytes.NewReader(body))
 	if err != nil {
 		logging.LogError("Error creating POST request")
+		return "Error Contacting Local LLM API. Please Try Again Later."
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	// req.Header.Add("Authorization", "Bearer "+util.GetOpenAIKey())
-
 	resp, _ := client.Do(req)
 	if resp == nil {
-		return "Error Contacting OpenAI API. Please Try Again Later."
+		return "Error Contacting Local LLM API. Please Try Again Later."
 	}
-
-	fmt.Println(resp)
+	defer resp.Body.Close()
 
 	buf, _ := io.ReadAll(resp.Body)
 	rspOAI := OpenAIGPTResponse{}
@@ -54,8 +61,6 @@ func GetLocalLLMResponse(prompt string, userId string) string {
 	if err != nil {
 		return ""
 	}
-
-	fmt.Println(rspOAI)
 
 	// It's possible that OpenAI returns no response, so
 	// fallback to a default one
