@@ -5,6 +5,7 @@ import (
 	"main/pkg/external"
 	"main/pkg/persistance"
 	"main/pkg/util"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 )
+
+var badBotRegex = regexp.MustCompile(`(?i)\bbad bot\b`)
 
 func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
@@ -42,14 +45,19 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 	}
-	messageContent := strings.ToLower(util.EscapeQuotes(m.Message.Content))
+	escapedMessageContent := util.EscapeQuotes(m.Message.Content)
+	messageContent := strings.ToLower(escapedMessageContent)
 
 	// persistance.APictureIsWorthAThousand(m.Message.Content, m)
 
 	// TODO - Handle this better. I don't like this and I feel bad about it
-	if strings.HasPrefix(messageContent, "bad bot") {
+	if badBotRegex.MatchString(m.Message.Content) {
 		logging.LogEvent(eventType.USER_BAD_BOT, m.Author.ID, "Bad bot command used", m.GuildID)
-		badBotRetort := util.GetBadBotResponse()
+		badBotPrompt := fmt.Sprintf("A Discord user named %s said %q. Reply with a short, funny, sarcastic retort about being called a bad bot. Keep it to one sentence.", m.Author.Username, m.Message.Content)
+		badBotRetort := external.GetRetortMachineResponse(badBotPrompt, m.Author.ID)
+		if strings.TrimSpace(badBotRetort) == "" {
+			badBotRetort = util.GetBadBotResponse()
+		}
 		_, err := s.ChannelMessageSend(m.ChannelID, badBotRetort)
 		util.HandleErrors(err)
 	} else if strings.HasPrefix(messageContent, "good bot") {

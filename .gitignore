@@ -14,5 +14,8 @@ db.sqlite*
 .DS_Store
 /gpt
 /videos
+.gocache/
+.codex
+.vscode/
 
 *.env
