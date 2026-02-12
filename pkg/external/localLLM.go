@@ -43,7 +43,7 @@ func GetLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId st
 		logLocalLLMRequest("local_llm", userId, model, requestBody, responseBody, statusCode, requestErr)
 	}()
 
-	systemPrompt := "Have your response be funny, even if it is not relevant. Include a joke at the expense of the user. Keep your responses short and to the point."
+	systemPrompt := "Have your response be funny]. Include a joke at the expense of the user, or be sarcastic. Keep your responses short and to the point."
 	requestMessages := make([]OpenAIChatMessage, 0, len(messages)+1)
 	requestMessages = append(requestMessages, OpenAIChatMessage{
 		Role:    "system",
