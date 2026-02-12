@@ -12,8 +12,8 @@ import (
 const defaultGPTSystemPrompt = "You are a single source of truth. Give responses that answer the question asked but don't ask follow up questions."
 
 type chatCompletionsRequest struct {
-	Model    string             `json:"model"`
-	Messages []OpenAIGPTMessage `json:"messages"`
+	Model    string `json:"model"`
+	Messages any    `json:"messages"`
 }
 
 func GetOpenAIGPTResponse(prompt string) string {
@@ -26,10 +26,21 @@ func GetOpenAIGPTResponse(prompt string) string {
 }
 
 func GetOpenAIGPTResponseWithMessages(messages []OpenAIGPTMessage) string {
-	client := &http.Client{}
+	requestMessages := make([]OpenAIChatMessage, 0, len(messages))
+	for _, message := range messages {
+		requestMessages = append(requestMessages, OpenAIChatMessage{
+			Role:    message.Role,
+			Content: message.Content,
+		})
+	}
 
-	requestMessages := make([]OpenAIGPTMessage, 0, len(messages)+1)
-	requestMessages = append(requestMessages, OpenAIGPTMessage{
+	return GetOpenAIGPTResponseWithChatMessages(requestMessages)
+}
+
+func GetOpenAIGPTResponseWithChatMessages(messages []OpenAIChatMessage) string {
+	client := &http.Client{}
+	requestMessages := make([]OpenAIChatMessage, 0, len(messages)+1)
+	requestMessages = append(requestMessages, OpenAIChatMessage{
 		Role:    "system",
 		Content: defaultGPTSystemPrompt,
 	})

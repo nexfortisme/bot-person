@@ -34,6 +34,21 @@ type OpenAIGPTMessage struct {
 	Content string `json:"content"`
 }
 
+type OpenAIChatMessage struct {
+	Role    string `json:"role"`
+	Content any    `json:"content"`
+}
+
+type OpenAIChatContentPart struct {
+	Type     string              `json:"type"`
+	Text     string              `json:"text,omitempty"`
+	ImageURL *OpenAIChatImageURL `json:"image_url,omitempty"`
+}
+
+type OpenAIChatImageURL struct {
+	URL string `json:"url"`
+}
+
 type OpenAIGPTResponse struct {
 	ID      string            `json:"id"`
 	Object  string            `json:"object"`
@@ -103,26 +118,26 @@ type PerplexitySearchResult struct {
 }
 
 type Response struct {
-	ID               string    `json:"id"`
-	Object           string    `json:"object"`
-	CreatedAt        int64     `json:"created_at"`
-	Status           string    `json:"status"`
-	Background       bool      `json:"background"`
-	Billing          Billing   `json:"billing"`
-	Error            *Error    `json:"error"`
-	Incomplete       any       `json:"incomplete_details"`
-	Instructions     any       `json:"instructions"`
-	MaxOutputTokens  *int      `json:"max_output_tokens"`
-	MaxToolCalls     *int      `json:"max_tool_calls"`
-	Model            string    `json:"model"`
-	Output           []Output  `json:"output"`
-	ParallelToolCall bool      `json:"parallel_tool_calls"`
-	Reasoning        Reasoning `json:"reasoning"`
-	Usage            Usage     `json:"usage"`
-	ServiceTier      string    `json:"service_tier"`
-	Text             Text      `json:"text"`
-	Tools            []Tool    `json:"tools"`
-	User             *string   `json:"user"`
+	ID               string         `json:"id"`
+	Object           string         `json:"object"`
+	CreatedAt        int64          `json:"created_at"`
+	Status           string         `json:"status"`
+	Background       bool           `json:"background"`
+	Billing          Billing        `json:"billing"`
+	Error            *Error         `json:"error"`
+	Incomplete       any            `json:"incomplete_details"`
+	Instructions     any            `json:"instructions"`
+	MaxOutputTokens  *int           `json:"max_output_tokens"`
+	MaxToolCalls     *int           `json:"max_tool_calls"`
+	Model            string         `json:"model"`
+	Output           []Output       `json:"output"`
+	ParallelToolCall bool           `json:"parallel_tool_calls"`
+	Reasoning        Reasoning      `json:"reasoning"`
+	Usage            Usage          `json:"usage"`
+	ServiceTier      string         `json:"service_tier"`
+	Text             Text           `json:"text"`
+	Tools            []Tool         `json:"tools"`
+	User             *string        `json:"user"`
 	Metadata         map[string]any `json:"metadata"`
 }
 
@@ -130,7 +145,7 @@ type Error struct {
 	Message string `json:"message"`
 	Type    string `json:"type"`
 	Param   string `json:"param"`
-	Code 	string `json:"code"`
+	Code    string `json:"code"`
 }
 
 type Billing struct {
@@ -138,24 +153,24 @@ type Billing struct {
 }
 
 type Output struct {
-	ID        string   `json:"id"`
-	Type      string   `json:"type"`
-	Status    string   `json:"status"`
-	Background string  `json:"background,omitempty"`
-	OutputFormat string `json:"output_format,omitempty"`
-	Quality   string   `json:"quality,omitempty"`
-	Result    string   `json:"result,omitempty"`
-	RevisedPrompt string `json:"revised_prompt,omitempty"`
-	Size      string   `json:"size,omitempty"`
-	Content   []OutputContent `json:"content,omitempty"`
-	Role      string   `json:"role,omitempty"`
+	ID            string          `json:"id"`
+	Type          string          `json:"type"`
+	Status        string          `json:"status"`
+	Background    string          `json:"background,omitempty"`
+	OutputFormat  string          `json:"output_format,omitempty"`
+	Quality       string          `json:"quality,omitempty"`
+	Result        string          `json:"result,omitempty"`
+	RevisedPrompt string          `json:"revised_prompt,omitempty"`
+	Size          string          `json:"size,omitempty"`
+	Content       []OutputContent `json:"content,omitempty"`
+	Role          string          `json:"role,omitempty"`
 }
 
 type OutputContent struct {
-	Type        string   `json:"type"`
-	Text        string   `json:"text"`
-	Logprobs    []any    `json:"logprobs"`
-	Annotations []any    `json:"annotations"`
+	Type        string `json:"type"`
+	Text        string `json:"text"`
+	Logprobs    []any  `json:"logprobs"`
+	Annotations []any  `json:"annotations"`
 }
 
 type Reasoning struct {
@@ -164,9 +179,9 @@ type Reasoning struct {
 }
 
 type Usage struct {
-	InputTokens int `json:"input_tokens"`
+	InputTokens  int `json:"input_tokens"`
 	OutputTokens int `json:"output_tokens"`
-	TotalTokens int `json:"total_tokens"`
+	TotalTokens  int `json:"total_tokens"`
 }
 
 type Text struct {
@@ -190,22 +205,22 @@ type Tool struct {
 }
 
 type VideoJob struct {
-    CompletedAt         int64       `json:"completed_at"`          // Unix timestamp for when the job completed
-    CreatedAt           int64       `json:"created_at"`            // Unix timestamp for when the job was created
-    Error               *JobError   `json:"error,omitempty"`       // Error details if generation failed
-    ExpiresAt           int64       `json:"expires_at"`            // Unix timestamp for when assets expire
-    ID                  string      `json:"id"`                    // Unique identifier for the video job
-    Model               string      `json:"model"`                 // Generation model used
-    Object              string      `json:"object"`                // Object type (always "video")
-    Progress            int         `json:"progress"`              // Completion percentage
-    RemixedFromVideoID  string      `json:"remixed_from_video_id"` // ID of source video if it's a remix
-    Seconds             string      `json:"seconds"`               // Duration of generated clip (in seconds)
-    Size                string      `json:"size"`                  // Video resolution
-    Status              string      `json:"status"`                // Current lifecycle status
+	CompletedAt        int64     `json:"completed_at"`          // Unix timestamp for when the job completed
+	CreatedAt          int64     `json:"created_at"`            // Unix timestamp for when the job was created
+	Error              *JobError `json:"error,omitempty"`       // Error details if generation failed
+	ExpiresAt          int64     `json:"expires_at"`            // Unix timestamp for when assets expire
+	ID                 string    `json:"id"`                    // Unique identifier for the video job
+	Model              string    `json:"model"`                 // Generation model used
+	Object             string    `json:"object"`                // Object type (always "video")
+	Progress           int       `json:"progress"`              // Completion percentage
+	RemixedFromVideoID string    `json:"remixed_from_video_id"` // ID of source video if it's a remix
+	Seconds            string    `json:"seconds"`               // Duration of generated clip (in seconds)
+	Size               string    `json:"size"`                  // Video resolution
+	Status             string    `json:"status"`                // Current lifecycle status
 }
 
 // If "error" is an object with details, define it:
 type JobError struct {
-    Message string `json:"message,omitempty"`
-    Code    string `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
+	Code    string `json:"code,omitempty"`
 }

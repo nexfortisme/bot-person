@@ -3,6 +3,7 @@ package external
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"main/pkg/logging"
@@ -19,46 +20,86 @@ func GetLocalLLMResponse(prompt string, userId string) string {
 	}, userId)
 }
 
-func GetLocalLLMResponseWithMessages(messages []OpenAIGPTMessage, _ string) string {
-	client := &http.Client{}
+func GetLocalLLMResponseWithMessages(messages []OpenAIGPTMessage, userId string) string {
+	requestMessages := make([]OpenAIChatMessage, 0, len(messages))
+	for _, message := range messages {
+		requestMessages = append(requestMessages, OpenAIChatMessage{
+			Role:    message.Role,
+			Content: message.Content,
+		})
+	}
 
-	systemPrompt := "Have your response be funny, even if it is not relevant. Include a joke at the expense of the user."
-	requestMessages := make([]OpenAIGPTMessage, 0, len(messages)+1)
-	requestMessages = append(requestMessages, OpenAIGPTMessage{
+	return GetLocalLLMResponseWithChatMessages(requestMessages, userId)
+}
+
+func GetLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId string) string {
+	client := &http.Client{}
+	model := "gemma3-qat"
+	requestBody := ""
+	responseBody := ""
+	statusCode := 0
+	var requestErr error
+	defer func() {
+		logLocalLLMRequest("local_llm", userId, model, requestBody, responseBody, statusCode, requestErr)
+	}()
+
+	systemPrompt := "Have your response be funny, even if it is not relevant. Include a joke at the expense of the user. Keep your responses short and to the point."
+	requestMessages := make([]OpenAIChatMessage, 0, len(messages)+1)
+	requestMessages = append(requestMessages, OpenAIChatMessage{
 		Role:    "system",
 		Content: systemPrompt,
 	})
 	requestMessages = append(requestMessages, messages...)
 
 	payload := chatCompletionsRequest{
-		Model:    "gemma3-qat",
+		Model:    model,
 		Messages: requestMessages,
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
+		requestErr = err
 		logging.LogError("Error creating request body for local LLM chat completions")
 		return "Error Contacting Local LLM API. Please Try Again Later."
 	}
+	requestBody = string(body)
 
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:12434/engines/v1/chat/completions", bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, localLLMChatCompletionsEndpoint, bytes.NewReader(body))
 	if err != nil {
+		requestErr = err
 		logging.LogError("Error creating POST request")
 		return "Error Contacting Local LLM API. Please Try Again Later."
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		requestErr = err
+		return "Error Contacting Local LLM API. Please Try Again Later."
+	}
 	if resp == nil {
+		requestErr = fmt.Errorf("local LLM response was nil")
 		return "Error Contacting Local LLM API. Please Try Again Later."
 	}
 	defer resp.Body.Close()
+	statusCode = resp.StatusCode
 
-	buf, _ := io.ReadAll(resp.Body)
+	buf, err := io.ReadAll(resp.Body)
+	responseBody = string(buf)
+	if err != nil {
+		requestErr = err
+		return "Error Contacting Local LLM API. Please Try Again Later."
+	}
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		requestErr = fmt.Errorf("local LLM returned status code %d", resp.StatusCode)
+		return "Error Contacting Local LLM API. Please Try Again Later."
+	}
+
 	rspOAI := OpenAIGPTResponse{}
 	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
 	// need to add proper error handling
 	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
 	if err != nil {
+		requestErr = err
 		return ""
 	}
 

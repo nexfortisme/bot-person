@@ -138,6 +138,28 @@ func InitializeDatabase(db *sqlite.Conn) {
 	CREATE INDEX IF NOT EXISTS idx_conversation_messages_message
 	ON ConversationMessages(MessageId);`
 
+	createLocalLLMLogsTable := `
+	CREATE TABLE IF NOT EXISTS LocalLLMLogs (
+		ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		RequestType TEXT NOT NULL,
+		UserId TEXT,
+		Model TEXT,
+		Endpoint TEXT NOT NULL,
+		RequestBody TEXT,
+		ResponseBody TEXT,
+		StatusCode INTEGER,
+		ErrorMessage TEXT,
+		CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);`
+
+	createLocalLLMLogsCreatedAtIndex := `
+	CREATE INDEX IF NOT EXISTS idx_local_llm_logs_created_at
+	ON LocalLLMLogs(CreatedAt DESC);`
+
+	createLocalLLMLogsUserIndex := `
+	CREATE INDEX IF NOT EXISTS idx_local_llm_logs_user_id
+	ON LocalLLMLogs(UserId, CreatedAt DESC);`
+
 	// Execute the table creation statements
 	tables := []string{
 		createUsersTable,
@@ -150,6 +172,9 @@ func InitializeDatabase(db *sqlite.Conn) {
 		createConversationMessagesTable,
 		createConversationMessagesThreadIndex,
 		createConversationMessagesMessageIndex,
+		createLocalLLMLogsTable,
+		createLocalLLMLogsCreatedAtIndex,
+		createLocalLLMLogsUserIndex,
 	}
 
 	for _, table := range tables {

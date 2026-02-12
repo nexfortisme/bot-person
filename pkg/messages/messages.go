@@ -1,13 +1,19 @@
 package messages
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io"
 	"main/pkg/external"
 	"main/pkg/persistance"
 	"main/pkg/util"
+	"net/http"
+	"net/url"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"main/pkg/commands"
 	"main/pkg/logging"
@@ -17,6 +23,11 @@ import (
 )
 
 var badBotRegex = regexp.MustCompile(`(?i)\bbad bot\b`)
+var imageFileExtensionRegex = regexp.MustCompile(`(?i)\.(png|jpe?g|gif|webp|bmp|tiff|heic|heif)$`)
+var attachmentDownloadClient = &http.Client{Timeout: 20 * time.Second}
+
+const defaultImageOnlyPrompt = "Please describe the attached image(s)."
+const maxImageAttachmentBytes = 20 * 1024 * 1024
 
 func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
@@ -60,11 +71,13 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		_, err := s.ChannelMessageSend(m.ChannelID, badBotRetort)
 		util.HandleErrors(err)
+		return
 	} else if strings.HasPrefix(messageContent, "good bot") {
 		logging.LogEvent(eventType.USER_GOOD_BOT, m.Author.ID, "Good bot command used", m.GuildID)
 		goodBotRetort := util.GetGoodBotResponse()
 		_, err := s.ChannelMessageSend(m.ChannelID, goodBotRetort)
 		util.HandleErrors(err)
+		return
 	} else if strings.HasPrefix(m.Message.Content, "!addTokens") {
 		if !util.UserIsAdmin(m.Author.ID) {
 			logging.LogEvent(eventType.ECONOMY_CREATE_TOKENS, m.Author.ID, "NOT ENOUGH PERMISSIONS", m.GuildID)
@@ -85,20 +98,15 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
 			}
 		}
+		return
 	} else if strings.HasPrefix(messageContent, ";;lenny") {
 		logging.LogEvent(eventType.LENNY, m.Author.ID, "Lenny command used", m.GuildID)
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
+		return
 	}
 
 	// Reply Handling
-	if isReply && replyType == "message" {
-
-		// If it is a message response and doesn't mention the bot, we out
-		if !mentionsBot(m.Mentions, s.State.User.ID) {
-			return
-		}
-		return
-	} else if isReply && (replyType == "bot" || replyType == "bot_gpt") {
+	if isReply && (replyType == "bot" || replyType == "bot_gpt") {
 		err := handleThreadedBotReply(s, m, replyType)
 		if err != nil {
 			fmt.Println("Error handling threaded bot reply:", err)
@@ -162,6 +170,16 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		return
 	}
+
+	if !mentionsBot(m.Mentions, s.State.User.ID) {
+		return
+	}
+
+	err := handleMentionedBotMessage(s, m)
+	if err != nil {
+		fmt.Println("Error handling @BotPerson message:", err)
+		s.ChannelMessageSendReply(m.ChannelID, "Something went wrong while generating a response.", m.Message.Reference())
+	}
 }
 
 func detectReplyType(referencedMessage *discordgo.Message) string {
@@ -198,6 +216,81 @@ func detectReplyTypeFromThreadStore(messageID string) (string, error) {
 	default:
 		return "", nil
 	}
+}
+
+func handleMentionedBotMessage(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	userMessageContent := extractMentionPrompt(m.Message.Content, s.State.User.ID, m.Mentions)
+	imageDataURLs, imageDescriptions, err := encodeImageAttachmentsToDataURLs(m.Message.Attachments)
+	if err != nil {
+		return err
+	}
+
+	if userMessageContent == "" && len(imageDataURLs) == 0 {
+		return nil
+	}
+
+	modelMessages := []external.OpenAIChatMessage{
+		buildUserChatMessage(userMessageContent, imageDataURLs),
+	}
+
+	assistantResponse := external.GetLocalLLMResponseWithChatMessages(modelMessages, m.Author.ID)
+	if strings.TrimSpace(assistantResponse) == "" {
+		assistantResponse = "I'm sorry, I don't understand?"
+	}
+
+	responseContent := assistantResponse
+	if len(responseContent) > 2000 {
+		responseContent = responseContent[:1997] + "..."
+	}
+
+	responseMessage, err := s.ChannelMessageSendReply(m.ChannelID, responseContent, m.Message.Reference())
+	if err != nil {
+		return err
+	}
+
+	parentMessageID := ""
+	if m.Message.ReferencedMessage != nil {
+		parentMessageID = m.Message.ReferencedMessage.ID
+	}
+
+	persistedUserContent := buildPersistenceContent(userMessageContent, imageDescriptions)
+	logging.LogEvent(eventType.COMMAND_BOT, m.Author.ID, persistedUserContent, m.GuildID)
+	logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, m.Author.ID, assistantResponse, m.GuildID)
+
+	threadID := responseMessage.ID
+	if threadID == "" {
+		threadID = m.ID
+	}
+
+	err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+		ThreadId:        threadID,
+		MessageId:       m.ID,
+		ParentMessageId: parentMessageID,
+		ChannelId:       m.ChannelID,
+		GuildId:         m.GuildID,
+		CommandName:     "bot",
+		Role:            "user",
+		Content:         persistedUserContent,
+	})
+	if err != nil {
+		fmt.Println("Error saving mention user message:", err)
+	}
+
+	err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+		ThreadId:        threadID,
+		MessageId:       responseMessage.ID,
+		ParentMessageId: m.ID,
+		ChannelId:       m.ChannelID,
+		GuildId:         m.GuildID,
+		CommandName:     "bot",
+		Role:            "assistant",
+		Content:         assistantResponse,
+	})
+	if err != nil {
+		fmt.Println("Error saving mention assistant message:", err)
+	}
+
+	return nil
 }
 
 func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, replyType string) error {
@@ -243,7 +336,7 @@ func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, re
 		}
 	}
 
-	modelMessages := make([]external.OpenAIGPTMessage, 0, len(thread.Messages)+1)
+	modelMessages := make([]external.OpenAIChatMessage, 0, len(thread.Messages)+1)
 	for _, historicalMessage := range thread.Messages {
 		role := strings.ToLower(historicalMessage.Role)
 		if role != "user" && role != "assistant" {
@@ -253,28 +346,30 @@ func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, re
 			continue
 		}
 
-		modelMessages = append(modelMessages, external.OpenAIGPTMessage{
+		modelMessages = append(modelMessages, external.OpenAIChatMessage{
 			Role:    role,
 			Content: historicalMessage.Content,
 		})
 	}
 
 	userMessageContent := strings.TrimSpace(m.Message.Content)
-	if userMessageContent == "" {
+	imageDataURLs, imageDescriptions, err := encodeImageAttachmentsToDataURLs(m.Message.Attachments)
+	if err != nil {
+		return err
+	}
+
+	if userMessageContent == "" && len(imageDataURLs) == 0 {
 		return nil
 	}
 
-	modelMessages = append(modelMessages, external.OpenAIGPTMessage{
-		Role:    "user",
-		Content: userMessageContent,
-	})
+	modelMessages = append(modelMessages, buildUserChatMessage(userMessageContent, imageDataURLs))
 
 	var assistantResponse string
 	switch commandName {
 	case "bot-gpt":
-		assistantResponse = external.GetOpenAIGPTResponseWithMessages(modelMessages)
+		assistantResponse = external.GetOpenAIGPTResponseWithChatMessages(modelMessages)
 	default:
-		assistantResponse = external.GetLocalLLMResponseWithMessages(modelMessages, m.Author.ID)
+		assistantResponse = external.GetLocalLLMResponseWithChatMessages(modelMessages, m.Author.ID)
 	}
 
 	if strings.TrimSpace(assistantResponse) == "" {
@@ -299,7 +394,7 @@ func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, re
 		GuildId:         m.GuildID,
 		CommandName:     commandName,
 		Role:            "user",
-		Content:         userMessageContent,
+		Content:         buildPersistenceContent(userMessageContent, imageDescriptions),
 	})
 	if err != nil {
 		fmt.Println("Error saving threaded user message:", err)
@@ -320,6 +415,196 @@ func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, re
 	}
 
 	return nil
+}
+
+func buildUserChatMessage(text string, imageDataURLs []string) external.OpenAIChatMessage {
+	trimmedText := strings.TrimSpace(text)
+	if len(imageDataURLs) == 0 {
+		return external.OpenAIChatMessage{
+			Role:    "user",
+			Content: trimmedText,
+		}
+	}
+
+	parts := make([]external.OpenAIChatContentPart, 0, len(imageDataURLs)+1)
+	if trimmedText != "" {
+		parts = append(parts, external.OpenAIChatContentPart{
+			Type: "text",
+			Text: trimmedText,
+		})
+	} else {
+		parts = append(parts, external.OpenAIChatContentPart{
+			Type: "text",
+			Text: defaultImageOnlyPrompt,
+		})
+	}
+
+	for _, imageDataURL := range imageDataURLs {
+		parts = append(parts, external.OpenAIChatContentPart{
+			Type: "image_url",
+			ImageURL: &external.OpenAIChatImageURL{
+				URL: imageDataURL,
+			},
+		})
+	}
+
+	return external.OpenAIChatMessage{
+		Role:    "user",
+		Content: parts,
+	}
+}
+
+func buildPersistenceContent(text string, imageDescriptions []string) string {
+	trimmedText := strings.TrimSpace(text)
+	if len(imageDescriptions) == 0 {
+		if trimmedText != "" {
+			return trimmedText
+		}
+		return defaultImageOnlyPrompt
+	}
+
+	imageDetails := fmt.Sprintf("[image attachments: %s]", strings.Join(imageDescriptions, ", "))
+	if trimmedText == "" {
+		return imageDetails
+	}
+	return trimmedText + "\n" + imageDetails
+}
+
+func extractMentionPrompt(content string, botID string, mentions []*discordgo.User) string {
+	cleaned := content
+	for _, mention := range mentions {
+		mentionToken := fmt.Sprintf("<@%s>", mention.ID)
+		nicknameMentionToken := fmt.Sprintf("<@!%s>", mention.ID)
+		replacement := mention.Username
+
+		if mention.ID == botID {
+			replacement = ""
+		}
+
+		cleaned = strings.ReplaceAll(cleaned, mentionToken, replacement)
+		cleaned = strings.ReplaceAll(cleaned, nicknameMentionToken, replacement)
+	}
+
+	return strings.TrimSpace(cleaned)
+}
+
+func encodeImageAttachmentsToDataURLs(attachments []*discordgo.MessageAttachment) ([]string, []string, error) {
+	imageDataURLs := make([]string, 0, len(attachments))
+	imageDescriptions := make([]string, 0, len(attachments))
+
+	for _, attachment := range attachments {
+		if !isImageAttachment(attachment) {
+			continue
+		}
+
+		dataURL, err := attachmentToDataURL(attachment)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		imageDataURLs = append(imageDataURLs, dataURL)
+		imageDescriptions = append(imageDescriptions, attachmentDescription(attachment))
+	}
+
+	return imageDataURLs, imageDescriptions, nil
+}
+
+func isImageAttachment(attachment *discordgo.MessageAttachment) bool {
+	if attachment == nil {
+		return false
+	}
+
+	contentType := normalizeContentType(attachment.ContentType)
+	if strings.HasPrefix(contentType, "image/") {
+		return true
+	}
+
+	fileName := strings.TrimSpace(attachment.Filename)
+	if fileName != "" && imageFileExtensionRegex.MatchString(fileName) {
+		return true
+	}
+
+	if attachment.URL != "" {
+		imagePath := attachment.URL
+		parsedURL, err := url.Parse(attachment.URL)
+		if err == nil {
+			imagePath = parsedURL.Path
+		}
+		if imagePath != "" && imageFileExtensionRegex.MatchString(strings.ToLower(filepath.Ext(imagePath))) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func attachmentToDataURL(attachment *discordgo.MessageAttachment) (string, error) {
+	if attachment == nil || strings.TrimSpace(attachment.URL) == "" {
+		return "", fmt.Errorf("image attachment URL is missing")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, attachment.URL, nil)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := attachmentDownloadClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return "", fmt.Errorf("failed to download image attachment: %s", resp.Status)
+	}
+
+	limitedReader := io.LimitReader(resp.Body, maxImageAttachmentBytes+1)
+	data, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return "", err
+	}
+
+	if len(data) == 0 {
+		return "", fmt.Errorf("image attachment is empty")
+	}
+	if len(data) > maxImageAttachmentBytes {
+		return "", fmt.Errorf("image attachment exceeds %d bytes", maxImageAttachmentBytes)
+	}
+
+	contentType := normalizeContentType(attachment.ContentType)
+	if contentType == "" {
+		contentType = normalizeContentType(resp.Header.Get("Content-Type"))
+	}
+	if contentType == "" || !strings.HasPrefix(contentType, "image/") {
+		contentType = normalizeContentType(http.DetectContentType(data))
+	}
+	if !strings.HasPrefix(contentType, "image/") {
+		return "", fmt.Errorf("attachment %q is not an image", attachmentDescription(attachment))
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(data)
+	return fmt.Sprintf("data:%s;base64,%s", contentType, encoded), nil
+}
+
+func normalizeContentType(contentType string) string {
+	normalized := strings.TrimSpace(strings.ToLower(contentType))
+	if index := strings.Index(normalized, ";"); index >= 0 {
+		normalized = strings.TrimSpace(normalized[:index])
+	}
+	return normalized
+}
+
+func attachmentDescription(attachment *discordgo.MessageAttachment) string {
+	if attachment == nil {
+		return "image"
+	}
+	if strings.TrimSpace(attachment.Filename) != "" {
+		return attachment.Filename
+	}
+	if strings.TrimSpace(attachment.URL) != "" {
+		return attachment.URL
+	}
+	return "image"
 }
 
 func normalizeCommandName(commandName string) string {

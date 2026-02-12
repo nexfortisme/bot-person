@@ -76,3 +76,16 @@ type ConversationThread struct {
 	CommandName string                `json:"commandName"`
 	Messages    []ConversationMessage `json:"messages"`
 }
+
+type LocalLLMLog struct {
+	ID           int64  `json:"id"`
+	RequestType  string `json:"requestType"`
+	UserId       string `json:"userId"`
+	Model        string `json:"model"`
+	Endpoint     string `json:"endpoint"`
+	RequestBody  string `json:"requestBody"`
+	ResponseBody string `json:"responseBody"`
+	StatusCode   int    `json:"statusCode"`
+	ErrorMessage string `json:"errorMessage"`
+	CreatedAt    string `json:"createdAt"`
+}
