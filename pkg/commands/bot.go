@@ -137,7 +137,7 @@ func (b *Bot) HelpString() string {
 }
 
 func parseSlashCommand(prompt string, userId string) (string, string) {
-	respTxt := external.GetOpenAIResponse(prompt, userId)
+	respTxt := external.GetLocalLLMResponse(prompt, userId)
 	displayText := "Request: " + prompt + " " + respTxt
 	return displayText, respTxt
 }
