@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"main/pkg/persistance"
@@ -13,22 +14,27 @@ import (
 
 func LogEvent(eventType logging.EventType, userId string, message string, serverId string) {
 
-	db := persistance.GetDB()
+	db, err := persistance.GetConn(context.Background())
+	if err != nil {
+		log.Printf("Error getting db connection for logging event: %v", err)
+		return
+	}
+	defer persistance.PutConn(db)
 
-	err := sqlitex.Execute(
+	err = sqlitex.Execute(
 		db,
 		"INSERT INTO Events (EventType, EventUser, EventData, EventServer) VALUES (?, ?, ?, ?)",
 		&sqlitex.ExecOptions{
 			Args: []any{
 				eventType,
 				userId,
-				message,   // no escaping needed
+				message, // no escaping needed
 				serverId,
 			},
 		},
 	)
 	if err != nil {
-		log.Fatalf("Error logging event: %v", err)
+		log.Printf("Error logging event: %v", err)
 	}
 }
 
@@ -36,7 +42,11 @@ func GetLatestEvent(userId string, eventType logging.EventType) (Event, error) {
 
 	queryString := fmt.Sprintf("SELECT * FROM Events WHERE EventUser = '%s' AND EventType = %d ORDER BY EventTime DESC LIMIT 1", userId, eventType)
 
-	db := persistance.GetDB()
+	db, err := persistance.GetConn(context.Background())
+	if err != nil {
+		return Event{}, err
+	}
+	defer persistance.PutConn(db)
 	event := Event{}
 
 	stmt, err := db.Prepare(queryString)
@@ -72,7 +82,12 @@ func GetLatestEvent(userId string, eventType logging.EventType) (Event, error) {
 
 func LogError(err string) {
 
-	db := persistance.GetDB()
+	db, connErr := persistance.GetConn(context.Background())
+	if connErr != nil {
+		log.Printf("Error getting db connection for logging error: %v", connErr)
+		return
+	}
+	defer persistance.PutConn(db)
 
 	insertErr := sqlitex.Execute(
 		db,
@@ -81,12 +96,12 @@ func LogError(err string) {
 			Args: []any{
 				logging.ERROR,
 				"SYSTEM",
-				err,   // no escaping needed
+				err, // no escaping needed
 				"SYSTEM",
 			},
 		},
 	)
 	if insertErr != nil {
-		log.Fatalf("Error logging Error: %v", insertErr)
+		log.Printf("Error logging Error: %v", insertErr)
 	}
 }

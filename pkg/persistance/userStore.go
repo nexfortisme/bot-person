@@ -1,5 +1,6 @@
 package persistance
 
+import "fmt"
 
 func GetUser(userId string) (*User, error) {
 
@@ -7,7 +8,7 @@ func GetUser(userId string) (*User, error) {
 
 	err := RunQuery("SELECT * FROM users WHERE UserId = ?", &user, userId)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("get user query failed: %w", err)
 	}
 
 	// If the user is not found, create a new user
@@ -34,7 +35,7 @@ func GetUser(userId string) (*User, error) {
 
 		err = RunQuery("INSERT INTO users (UserId, ImageTokens, BonusStreak, LastBonus) VALUES (?, ?, ?, ?)", nil, userId, newUser.ImageTokens, newUser.BonusStreak, newUser.LastBonus)
 		if err != nil {
-			panic(err)
+			return nil, fmt.Errorf("insert user failed: %w", err)
 		}
 
 		return &newUser, nil
@@ -47,7 +48,7 @@ func UpdateUser(updateUser User) bool {
 
 	err := RunQuery("UPDATE users SET Username = ?, ImageTokens = ?, BonusStreak = ?, LastBonus = ? WHERE UserId = ?", nil, updateUser.Username, updateUser.ImageTokens, updateUser.BonusStreak, updateUser.LastBonus, updateUser.UserId)
 	if err != nil {
-		panic(err)
+		return false
 	}
 
 	return true
@@ -56,9 +57,9 @@ func UpdateUser(updateUser User) bool {
 func GetUserStatsObj(userId string) (*UserStats, error) {
 	userStats := UserStats{}
 
-	err := RunQuery("SELECT * FROM userStats WHERE UserId = ?", userStats, userId)
+	err := RunQuery("SELECT * FROM userStats WHERE UserId = ?", &userStats, userId)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("get user stats failed: %w", err)
 	}
 
 	return &userStats, nil
@@ -67,7 +68,7 @@ func GetUserStatsObj(userId string) (*UserStats, error) {
 func UpdateUserStats(userStats UserStats) bool {
 	err := RunQuery("UPDATE userStats SET InteractionCount = InteractionCount + 1, ChatCount = ?, GoodBotCount = ?, BadBotCount = ?, ImageCount = ?, LootBoxCount = ? WHERE UserId = ?", nil, userStats.ChatCount, userStats.GoodBotCount, userStats.BadBotCount, userStats.ImageCount, userStats.LootBoxCount, userStats.UserId)
 	if err != nil {
-		panic(err)
+		return false
 	}
 
 	return true

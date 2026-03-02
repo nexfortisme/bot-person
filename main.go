@@ -79,14 +79,14 @@ var (
 		"send":      (&commands.Send{}).Execute,
 		"bonus":     (&commands.Bonus{}).Execute,
 		// "loot-box":  (&commands.Lootbox{}).Execute,
-		"broken":    (&commands.Broken{}).Execute,
-		"burn":      (&commands.Burn{}).Execute,
-		"invite":    (&commands.Invite{}).Execute,
+		"broken": (&commands.Broken{}).Execute,
+		"burn":   (&commands.Burn{}).Execute,
+		"invite": (&commands.Invite{}).Execute,
 		// "hsr-code":  (&commands.HSRCode{}).Execute,
-		"search":    (&commands.Search{}).Execute,
-		"set":       (&commands.Set{}).Execute,
+		"search": (&commands.Search{}).Execute,
+		"set":    (&commands.Set{}).Execute,
 		// "testing":   (&commands.Testing{}).Execute,
-		"slop":      (&commands.Slop{}).Execute,
+		"slop": (&commands.Slop{}).Execute,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -107,7 +107,7 @@ func main() {
 	util.ReadEnv(useEnvFile)
 
 	// Step 3: Connect to the database
-	databseConnection := persistance.GetDB()
+	dbPool := persistance.GetDB()
 
 	// Step 4: Declare and create the Discord Session
 	var discordSession *discordgo.Session
@@ -164,7 +164,7 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 
-	defer databseConnection.Close()
+	defer dbPool.Close()
 
 	// This is a simple 5 minute loop originally used to save the bot statistics
 	for {
