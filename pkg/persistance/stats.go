@@ -1,7 +1,6 @@
 package persistance
 
 import (
-	"strings"
 	"time"
 )
 
@@ -82,10 +81,12 @@ func GetUserStats(userId string) MyStats {
 
 
 	// Convert the string timestamp to a time.Time object
-	lastBonus, err := time.Parse("2006-01-02 15:04:05.999999 -0700 MST", strings.Split(user.LastBonus, " m=")[0])
-	if err != nil {
-		// Set a default time if parsing fails
-		lastBonus = time.Now()
+	var lastBonus time.Time
+	if user.LastBonus != "" {
+		lastBonus, err = time.Parse(time.RFC3339, user.LastBonus)
+		if err != nil {
+			lastBonus = time.Time{}
+		}
 	}
 
 	// Set the LastBonus field to the parsed time
