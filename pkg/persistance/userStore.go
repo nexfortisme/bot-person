@@ -1,8 +1,5 @@
 package persistance
 
-import (
-	"time"
-)
 
 func GetUser(userId string) (*User, error) {
 
@@ -33,9 +30,9 @@ func GetUser(userId string) (*User, error) {
 		newUser.UserId = userId
 		newUser.ImageTokens = 10 // Starting token amount
 		newUser.BonusStreak = 0
-		newUser.LastBonus = time.Now().String()
+		newUser.LastBonus = ""
 
-		err = RunQuery("INSERT INTO users (UserId, ImageTokens, BonusStreak, LastBonus) VALUES (?, ?, ?, ?)", nil, userId, newUser.ImageTokens, newUser.BonusStreak, time.Now().String())
+		err = RunQuery("INSERT INTO users (UserId, ImageTokens, BonusStreak, LastBonus) VALUES (?, ?, ?, ?)", nil, userId, newUser.ImageTokens, newUser.BonusStreak, newUser.LastBonus)
 		if err != nil {
 			panic(err)
 		}

@@ -60,7 +60,7 @@ func SaveStreakButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	finalReward := util.GetUserBonus(1, 4, modifier)
 
 	// Updating User Record
-	user.LastBonus = time.Now().String()
+	user.LastBonus = time.Now().Format(time.RFC3339)
 	user.ImageTokens += finalReward
 
 	// Updating User Stats
