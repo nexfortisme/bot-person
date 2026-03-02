@@ -9,8 +9,6 @@ import (
 	"io"
 	"main/pkg/util"
 	"net/http"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -72,25 +70,15 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 		return discordgo.File{}, errors.New("Error Response from OpenAI: " + err.Error())
 	}
 
-	err = saveImageResponseToFile(imageResult.Result, openAIResponse.ID)
+	imageData, err := decodeBase64Image(imageResult.Result)
 	if err != nil {
-		return discordgo.File{}, errors.New("Error saving image response to file: " + err.Error())
-	}
-
-	reader, err := os.Open(filepath.Join("img", fmt.Sprintf("%s.jpg", openAIResponse.ID)))
-	if err != nil {
-		return discordgo.File{}, errors.New("error opening file: " + err.Error())
-	}
-
-	fileInfo, err := reader.Stat()
-	if err != nil {
-		return discordgo.File{}, errors.New("error getting file info: " + err.Error())
+		return discordgo.File{}, errors.New("Error decoding image: " + err.Error())
 	}
 
 	fileObj := &discordgo.File{
-		Name:        fileInfo.Name(),
+		Name:        fmt.Sprintf("%s.jpg", openAIResponse.ID),
 		ContentType: "image/jpg",
-		Reader:      reader,
+		Reader:      bytes.NewReader(imageData),
 	}
 
 	return *fileObj, nil
@@ -152,35 +140,22 @@ func GetDalleFollowupResponse(prompt string, previous_response_id string) (disco
 		return discordgo.File{}, errors.New("Error Response from OpenAI: " + err.Error())
 	}
 
-	err = saveImageResponseToFile(imageResult2.Result, openAIResponse2.ID)
+	imageData, err := decodeBase64Image(imageResult2.Result)
 	if err != nil {
-		return discordgo.File{}, errors.New("Error saving image response to file: " + err.Error())
-	}
-
-	reader, err := os.Open(filepath.Join("img", fmt.Sprintf("%s.jpg", openAIResponse2.ID)))
-	if err != nil {
-		return discordgo.File{}, errors.New("error opening file: " + err.Error())
-	}
-
-	fileInfo, err := reader.Stat()
-	if err != nil {
-		return discordgo.File{}, errors.New("error getting file info: " + err.Error())
+		return discordgo.File{}, errors.New("Error decoding image: " + err.Error())
 	}
 
 	fileObj := &discordgo.File{
-		Name:        fileInfo.Name(),
+		Name:        fmt.Sprintf("%s.jpg", openAIResponse2.ID),
 		ContentType: "image/jpg",
-		Reader:      reader,
+		Reader:      bytes.NewReader(imageData),
 	}
 
 	return *fileObj, nil
 }
 
-func saveImageResponseToFile(responseB64String string, fileName string) error {
-
-	path := filepath.Join("img", fmt.Sprintf("%s.jpg", removePunctuation(fileName)))
-
-	b64 := responseB64String
+func decodeBase64Image(b64String string) ([]byte, error) {
+	b64 := b64String
 	if i := strings.Index(b64, ","); i != -1 && strings.Contains(b64[:i], ";base64") {
 		b64 = b64[i+1:]
 	}
@@ -196,27 +171,10 @@ func saveImageResponseToFile(responseB64String string, fileName string) error {
 		}
 	}
 	if err != nil {
-		fmt.Println("invalid base64: " + err.Error())
-		return err
-		// return discordgo.File{}, errors.New("invalid base64: " + err.Error())
+		return nil, errors.New("invalid base64: " + err.Error())
 	}
 
-	// Create a new file to save the image to
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Copy the image data to the file
-	_, err = io.Copy(file, bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Image saved to: " + path)
-
-	return nil
+	return data, nil
 }
 
 func checkResponseForErrors(openAIResponse Response) (*Output, error) {
@@ -297,19 +255,3 @@ func SimplifyOpenAIError(errMsg string) string {
 	return "An error occurred: " + errMsg
 }
 
-func removePunctuation(s string) string {
-	var result strings.Builder
-	for _, c := range s {
-		if !strings.ContainsAny(string(c), ",.?!;:-") {
-			result.WriteRune(c)
-		}
-	}
-	return result.String()
-}
-
-func truncateString(input string) string {
-	if len(input) > 50 {
-		return input[:50]
-	}
-	return input
-}
