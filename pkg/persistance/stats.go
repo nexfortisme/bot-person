@@ -21,7 +21,7 @@ func GetUserStats(userId string) MyStats {
 
 	user, err := GetUser(userId)
 	if err != nil {
-		panic(err)
+		return MyStats{}
 	}
 
 	var interactionCountData int64
@@ -34,37 +34,37 @@ func GetUserStats(userId string) MyStats {
 	// Interaction Count
 	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType NOT IN (12, 13)", &interactionCountData, userId)
 	if err != nil {
-		panic(err)
+		return MyStats{}
 	}
 
 	// Good Bot Count
 	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType IN (34)", &goodBotCountData, userId)
 	if err != nil {
-		panic(err)
+		return MyStats{}
 	}
 
 	// Bad Bot Count
 	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType IN (33)", &badBotCountData, userId)
 	if err != nil {
-		panic(err)
+		return MyStats{}
 	}
 
 	// Loot Box Count
 	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType IN (9)", &lootBoxCountData, userId)
 	if err != nil {
-		panic(err)
+		return MyStats{}
 	}
 
 	// Image Count
 	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType IN (16)", &imageCountData, userId)
 	if err != nil {
-		panic(err)
+		return MyStats{}
 	}
 
 	// Chat Count
 	err = RunQuery("SELECT count(*) AS count FROM events WHERE EventUser = ? AND EventType IN (12, 13)", &chatCountData, userId)
 	if err != nil {
-		panic(err)
+		return MyStats{}
 	}
 
 	var myStats MyStats
@@ -78,7 +78,6 @@ func GetUserStats(userId string) MyStats {
 
 	myStats.ImageTokens = user.ImageTokens
 	myStats.BonusStreak = user.BonusStreak
-
 
 	// Convert the string timestamp to a time.Time object
 	var lastBonus time.Time

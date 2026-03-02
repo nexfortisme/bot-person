@@ -63,7 +63,7 @@ func GetUserReward(userId string) (int, persistance.RewardStatus, error) {
 	// Getting user and setting necessary variables
 	user, err := GetUser(userId)
 	if err != nil {
-		panic(err)
+		return -1, persistance.AVAILABLE, err
 	}
 
 	modifier := 1

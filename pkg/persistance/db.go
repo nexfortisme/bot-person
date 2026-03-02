@@ -1,6 +1,7 @@
 package persistance
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -12,10 +13,8 @@ import (
 )
 
 var (
-	db   *sqlite.Conn
-	once sync.Once
-
-	err error
+	dbPool *sqlitex.Pool
+	once   sync.Once
 )
 
 func initDB() {
@@ -27,22 +26,42 @@ func initDB() {
 		dbPath = "db.sqlite"
 	}
 
-	db, err = sqlite.OpenConn(dbPath, 0)
+	dbPool, err = sqlitex.NewPool(dbPath, sqlitex.PoolOptions{
+		PoolSize: 12,
+	})
 	if err != nil {
 		fmt.Printf("Error connecting to database at %s.\n", dbPath)
 		panic(err)
 	}
 
-	InitializeDatabase(db)
+	conn, err := dbPool.Take(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	defer dbPool.Put(conn)
+
+	InitializeDatabase(conn)
 
 	fmt.Printf("Database Connected at %s.\n", dbPath)
 }
 
-func GetDB() *sqlite.Conn {
+func GetDB() *sqlitex.Pool {
 	once.Do(func() {
 		initDB()
 	})
-	return db
+	return dbPool
+}
+
+func GetConn(ctx context.Context) (*sqlite.Conn, error) {
+	conn, err := GetDB().Take(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting database connection: %w", err)
+	}
+	return conn, nil
+}
+
+func PutConn(conn *sqlite.Conn) {
+	GetDB().Put(conn)
 }
 
 // Initializing the DB with the necessary tables for the bot to function
@@ -189,7 +208,13 @@ func InitializeDatabase(db *sqlite.Conn) {
 
 // RunQuery executes a given SQL query with optional parameters and returns the results.
 func RunQuery(query string, output interface{}, params ...interface{}) error {
-	stmt, err := db.Prepare(query)
+	conn, err := GetConn(context.Background())
+	if err != nil {
+		return err
+	}
+	defer PutConn(conn)
+
+	stmt, err := conn.Prepare(query)
 	if err != nil {
 		return fmt.Errorf("error preparing query: %w", err)
 	}

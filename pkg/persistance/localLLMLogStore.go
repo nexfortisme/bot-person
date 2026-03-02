@@ -1,9 +1,17 @@
 package persistance
 
-import "zombiezen.com/go/sqlite/sqlitex"
+import (
+	"context"
+
+	"zombiezen.com/go/sqlite/sqlitex"
+)
 
 func SaveLocalLLMLog(entry LocalLLMLog) error {
-	db := GetDB()
+	db, err := GetConn(context.Background())
+	if err != nil {
+		return err
+	}
+	defer PutConn(db)
 
 	return sqlitex.Execute(
 		db,

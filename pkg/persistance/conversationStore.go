@@ -1,6 +1,7 @@
 package persistance
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -21,8 +22,11 @@ func SaveConversationMessage(message ConversationMessage) error {
 		return fmt.Errorf("content is required")
 	}
 
-	db := GetDB()
-
+	db, err := GetConn(context.Background())
+	if err != nil {
+		return err
+	}
+	defer PutConn(db)
 	return sqlitex.Execute(
 		db,
 		`INSERT INTO ConversationMessages
@@ -48,7 +52,12 @@ func GetConversationThreadByMessageID(messageID string, maxMessages int) (*Conve
 		return nil, nil
 	}
 
-	db := GetDB()
+	db, err := GetConn(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	defer PutConn(db)
+
 	stmt, err := db.Prepare(`
 		SELECT ThreadId, CommandName
 		FROM ConversationMessages
@@ -90,7 +99,12 @@ func GetConversationThreadByMessageID(messageID string, maxMessages int) (*Conve
 }
 
 func getConversationMessagesByThreadID(threadID string, maxMessages int) ([]ConversationMessage, error) {
-	db := GetDB()
+	db, err := GetConn(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	defer PutConn(db)
+
 	stmt, err := db.Prepare(`
 		SELECT ID, ThreadId, MessageId, ParentMessageId, ChannelId, GuildId, CommandName, Role, Content
 		FROM (
