@@ -154,14 +154,22 @@ func CreateDirectoryIfNotExists(dirPath string) error {
 }
 
 func HandleTooLongResponse(response string) *discordgo.File {
-	buf := bytes.NewReader([]byte(response))
-    timestamp := time.Now().Format("2006-01-02-15-04-05")
+	return HandleTooLongResponseWithFileName(response, "")
+}
 
-    return &discordgo.File{
-        Name:        fmt.Sprintf("too-long-%s.txt", timestamp),
-        ContentType: "text/plain",
-        Reader:      buf,
-    }
+func HandleTooLongResponseWithFileName(response string, fileName string) *discordgo.File {
+	buf := bytes.NewReader([]byte(response))
+	name := fileName
+	if strings.TrimSpace(name) == "" {
+		timestamp := time.Now().Format("2006-01-02-15-04-05")
+		name = fmt.Sprintf("too-long-%s.txt", timestamp)
+	}
+
+	return &discordgo.File{
+		Name:        name,
+		ContentType: "text/plain",
+		Reader:      buf,
+	}
 }
 
 func SaveResponseToFile(response []byte, fileName string) error {

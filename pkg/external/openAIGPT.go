@@ -16,6 +16,47 @@ type chatCompletionsRequest struct {
 	Messages any    `json:"messages"`
 }
 
+func StreamOpenAIGPTResponse(prompt string, onDelta func(string)) (string, error) {
+	return StreamOpenAIGPTResponseWithChatMessages([]OpenAIChatMessage{
+		{
+			Role:    "user",
+			Content: prompt,
+		},
+	}, onDelta)
+}
+
+func StreamOpenAIGPTResponseWithChatMessages(messages []OpenAIChatMessage, onDelta func(string)) (string, error) {
+	requestMessages := make([]OpenAIChatMessage, 0, len(messages)+1)
+	requestMessages = append(requestMessages, OpenAIChatMessage{
+		Role:    "system",
+		Content: defaultGPTSystemPrompt,
+	})
+	requestMessages = append(requestMessages, messages...)
+
+	payload := streamChatCompletionsRequest{
+		Model:    util.GetOpenAIModel(),
+		Messages: requestMessages,
+		Stream:   true,
+	}
+
+	requestBody, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+
+	response, _, err := streamChatCompletions(
+		"https://api.openai.com/v1/chat/completions",
+		requestBody,
+		"Bearer "+util.GetOpenAIKey(),
+		onDelta,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	return response, nil
+}
+
 func GetOpenAIGPTResponse(prompt string) string {
 	return GetOpenAIGPTResponseWithMessages([]OpenAIGPTMessage{
 		{
