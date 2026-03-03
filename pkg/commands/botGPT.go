@@ -5,6 +5,7 @@ import (
 	"main/pkg/external"
 	"main/pkg/persistance"
 	"main/pkg/util"
+	"strings"
 
 	"main/pkg/logging"
 	eventType "main/pkg/logging/enums"
@@ -40,57 +41,69 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		optionMap[opt.Name] = opt
 	}
 
-	var botResponseString string
-	var assistantResponse string
-
 	// Pulling the propt out of the optionsMap
 	if option, ok := optionMap["prompt"]; ok {
 
-		logging.LogEvent(eventType.COMMAND_BOT_GPT, i.Interaction.Member.User.ID, option.StringValue(), i.Interaction.GuildID)
+		prompt := option.StringValue()
+		logging.LogEvent(eventType.COMMAND_BOT_GPT, i.Interaction.Member.User.ID, prompt, i.Interaction.GuildID)
 
-		// Generating the response
-		placeholderBotResponse := "Thinking about: " + option.StringValue()
-
-		// Immediately responding in the 3 second window before the interaciton times out
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		initialResponse := formatPromptResponseInProgress(prompt, "")
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: placeholderBotResponse,
+				Content: initialResponse,
 			},
 		})
+		if err != nil {
+			fmt.Println("Error creating interaction response:", err)
+			return
+		}
 
-		// Going out to make the OpenAI call to get the proper response
-		// botResponseString = ParseGPTSlashCommand(s, option.StringValue(
-		// Check if the response will be too long and truncate if necessary
-		prompt := option.StringValue()
-		botResponseString, assistantResponse = ParseGPTSlashCommand(prompt)
+		responseMessage := getInteractionResponseMessageWithRetry(s, i)
+		threadID := i.Interaction.ID
+		responseMessageID := ""
+		if responseMessage != nil && responseMessage.ID != "" {
+			threadID = responseMessage.ID
+			responseMessageID = responseMessage.ID
+		}
 
-		if len(botResponseString) > 2000 {
-
-			fileObj := util.HandleTooLongResponse(botResponseString)
-
-			// Updating the initial message with the response from the OpenAI API
-			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-				Files: []*discordgo.File{fileObj},
+		if !util.TryStartThreadResponse(threadID) {
+			busyResponse := "Please wait for the current response in this thread to finish before sending another reply."
+			_, _ = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &busyResponse,
 			})
+			return
+		}
+		defer util.FinishThreadResponse(threadID)
 
-			if err != nil {
-				// Not 100% sure this is the approach I want to take with handling errors from the API
-				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-					Content: "Something went oopsie with sending the file.",
-				})
-				return
+		assistantResponse, streamErr := streamInteractionResponse(
+			s,
+			i,
+			initialResponse,
+			func(assistant string) string {
+				return formatPromptResponseInProgress(prompt, assistant)
+			},
+			func(onDelta func(string)) (string, error) {
+				return external.StreamOpenAIGPTResponse(prompt, onDelta)
+			},
+		)
+
+		if streamErr != nil || strings.TrimSpace(assistantResponse) == "" {
+			if streamErr != nil {
+				fmt.Println("Error streaming /bot-gpt response:", streamErr)
 			}
-		} else {
-			// Updating the initial message with the response from the OpenAI API
+
+			assistantResponse = external.GetOpenAIGPTResponse(prompt)
+			if strings.TrimSpace(assistantResponse) == "" {
+				assistantResponse = "I'm sorry, I don't understand?"
+			}
+
+			fallbackContent := util.TruncateForDiscord(formatPromptResponse(prompt, assistantResponse))
 			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-				Content: &botResponseString,
+				Content: &fallbackContent,
 			})
 			if err != nil {
-
 				fmt.Println("Error editing interaction response:", err)
-
-				// Not 100% sure this is the approach I want to take with handling errors from the API
 				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 					Content: "Something went wrong.",
 				})
@@ -98,27 +111,43 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 		}
 
-		// if len("Request: "+prompt+" ")+len(botResponseString) > 2000 {
-		// 	truncatedLength := 2000 - len("Request: "+prompt+" ") - len("...") // account for ellipsis
-		// 	if truncatedLength > 0 {
-		// 		botResponseString = botResponseString[:truncatedLength] + "..."
-		// 	} else {
-		// 		botResponseString = "Response too long to display."
-		// 	}
-		// }
-
+		displayResponse := formatPromptResponse(prompt, assistantResponse)
 		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, assistantResponse, i.Interaction.GuildID)
 
-		responseMessage, err := s.InteractionResponse(i.Interaction)
-		if err != nil {
-			fmt.Println("Error getting interaction response message:", err)
+		if len(displayResponse) > 2000 {
+			fileObj := util.HandleTooLongResponseWithFileName(displayResponse, "too-long.txt")
+			fileMessage := formatLongResponsePreview(displayResponse)
+
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &fileMessage,
+				Files:   []*discordgo.File{fileObj},
+			})
+
+			if err != nil {
+				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					Content: "Something went wrong while sending the full response as a file.",
+				})
+				return
+			}
+		} else {
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &displayResponse,
+			})
+			if err != nil {
+				fmt.Println("Error editing interaction response:", err)
+				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					Content: "Something went wrong.",
+				})
+				return
+			}
 		}
 
-		threadID := i.Interaction.ID
-		responseMessageID := ""
-		if responseMessage != nil && responseMessage.ID != "" {
-			threadID = responseMessage.ID
-			responseMessageID = responseMessage.ID
+		if responseMessageID == "" {
+			responseMessage = getInteractionResponseMessageWithRetry(s, i)
+			if responseMessage != nil && responseMessage.ID != "" {
+				threadID = responseMessage.ID
+				responseMessageID = responseMessage.ID
+			}
 		}
 
 		err = persistance.SaveConversationMessage(persistance.ConversationMessage{
@@ -150,15 +179,9 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func (b *BotGPT) HelpString() string {
-	return "The `/bot-gpt` command allows you to prompt OpenAI's GPT-3 or GPT-4 chat model. You can ask it whatever as part of the `prompt` and once it generates a response, it will update the message with what came back. This is slower than the `/bot` command due to the chat model being more complex."
+	return "The `/bot-gpt` command streams GPT output as it is generated. Reply to a `/bot-gpt` message to continue the same conversation thread. While one response is in progress, additional thread replies are temporarily blocked."
 }
 
 func (b *BotGPT) CommandCost() int {
 	return 0
-}
-
-func ParseGPTSlashCommand(prompt string) (string, string) {
-	respTxt := external.GetOpenAIGPTResponse(prompt)
-	displayText := "Request: " + prompt + " " + respTxt
-	return displayText, respTxt
 }

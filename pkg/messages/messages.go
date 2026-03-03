@@ -28,6 +28,8 @@ var attachmentDownloadClient = &http.Client{Timeout: 20 * time.Second}
 
 const defaultImageOnlyPrompt = "Please describe the attached image(s)."
 const maxImageAttachmentBytes = 20 * 1024 * 1024
+const streamInProgressSuffix = "\n\n[Response still generating...]"
+const longResponseFileSuffix = "\n\n[Full response attached in too-long.txt]"
 
 func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
@@ -40,6 +42,9 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Ignoring messages from self
 	if m.Author.ID == s.State.User.ID {
+		return
+	}
+	if m.Author.Bot {
 		return
 	}
 
@@ -107,6 +112,31 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Reply Handling
 	if isReply && (replyType == "bot" || replyType == "bot_gpt") {
+		validReplyTarget, validationErr := validateBotConversationReplyTarget(s, m)
+		if validationErr != nil {
+			fmt.Println("Error validating threaded bot reply target:", validationErr)
+			return
+		}
+		if !validReplyTarget {
+			return
+		}
+
+		threadID, threadIDErr := resolveThreadIDForLock(m.Message.ReferencedMessage.ID)
+		if threadIDErr != nil {
+			fmt.Println("Error resolving thread ID for lock:", threadIDErr)
+			threadID = m.Message.ReferencedMessage.ID
+		}
+
+		if !util.TryStartThreadResponse(threadID) {
+			_, _ = s.ChannelMessageSendReply(
+				m.ChannelID,
+				"Please wait for the current response in this thread to finish before replying again.",
+				m.Message.Reference(),
+			)
+			return
+		}
+		defer util.FinishThreadResponse(threadID)
+
 		err := handleThreadedBotReply(s, m, replyType)
 		if err != nil {
 			fmt.Println("Error handling threaded bot reply:", err)
@@ -200,21 +230,71 @@ func detectReplyType(referencedMessage *discordgo.Message) string {
 }
 
 func detectReplyTypeFromThreadStore(messageID string) (string, error) {
-	thread, err := persistance.GetConversationThreadByMessageID(messageID, 1)
+	message, err := persistance.GetConversationMessageByMessageID(messageID)
 	if err != nil {
 		return "", err
 	}
-	if thread == nil {
+	if message == nil {
 		return "", nil
 	}
 
-	switch normalizeCommandName(thread.CommandName) {
+	if strings.ToLower(strings.TrimSpace(message.Role)) != "assistant" {
+		return "", nil
+	}
+
+	switch normalizeCommandName(message.CommandName) {
 	case "bot-gpt":
 		return "bot_gpt", nil
 	case "bot":
 		return "bot", nil
 	default:
 		return "", nil
+	}
+}
+
+func resolveThreadIDForLock(messageID string) (string, error) {
+	message, err := persistance.GetConversationMessageByMessageID(messageID)
+	if err != nil {
+		return "", err
+	}
+
+	if message != nil && strings.TrimSpace(message.ThreadId) != "" {
+		return message.ThreadId, nil
+	}
+
+	return messageID, nil
+}
+
+func validateBotConversationReplyTarget(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
+	if m == nil || m.Message == nil || m.Message.ReferencedMessage == nil {
+		return false, nil
+	}
+
+	referencedMessage := m.Message.ReferencedMessage
+	if referencedMessage.Author == nil || referencedMessage.Author.ID != s.State.User.ID {
+		return false, nil
+	}
+
+	storedMessage, err := persistance.GetConversationMessageByMessageID(referencedMessage.ID)
+	if err != nil {
+		return false, err
+	}
+
+	if storedMessage == nil {
+		// Slash-command and reply metadata can still identify a valid target even before persistence completes.
+		replyType := detectReplyType(referencedMessage)
+		return replyType == "bot" || replyType == "bot_gpt", nil
+	}
+
+	if strings.ToLower(strings.TrimSpace(storedMessage.Role)) != "assistant" {
+		return false, nil
+	}
+
+	switch normalizeCommandName(storedMessage.CommandName) {
+	case "bot", "bot-gpt":
+		return true, nil
+	default:
+		return false, nil
 	}
 }
 
@@ -364,26 +444,93 @@ func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, re
 
 	modelMessages = append(modelMessages, buildUserChatMessage(userMessageContent, imageDataURLs))
 
-	var assistantResponse string
+	placeholderContent := appendSuffixWithinDiscordLimit("Thinking...", streamInProgressSuffix)
+	responseMessage, err := s.ChannelMessageSendReply(m.ChannelID, placeholderContent, m.Message.Reference())
+	if err != nil {
+		return err
+	}
+
+	var streamFn func(onDelta func(string)) (string, error)
+	var fallbackFn func() string
 	switch commandName {
 	case "bot-gpt":
-		assistantResponse = external.GetOpenAIGPTResponseWithChatMessages(modelMessages)
+		streamFn = func(onDelta func(string)) (string, error) {
+			return external.StreamOpenAIGPTResponseWithChatMessages(modelMessages, onDelta)
+		}
+		fallbackFn = func() string {
+			return external.GetOpenAIGPTResponseWithChatMessages(modelMessages)
+		}
 	default:
-		assistantResponse = external.GetLocalLLMResponseWithChatMessages(modelMessages, m.Author.ID)
+		streamFn = func(onDelta func(string)) (string, error) {
+			return external.StreamLocalLLMResponseWithChatMessages(modelMessages, m.Author.ID, onDelta)
+		}
+		fallbackFn = func() string {
+			return external.GetLocalLLMResponseWithChatMessages(modelMessages, m.Author.ID)
+		}
+	}
+
+	assistantResponse, streamErr := util.StreamResponseWithThrottledEdits(
+		placeholderContent,
+		func(assistant string) string {
+			trimmedAssistant := strings.TrimSpace(assistant)
+			if trimmedAssistant == "" {
+				return placeholderContent
+			}
+			return appendSuffixWithinDiscordLimit(trimmedAssistant, streamInProgressSuffix)
+		},
+		streamFn,
+		func(content string) error {
+			_, editErr := s.ChannelMessageEdit(m.ChannelID, responseMessage.ID, content)
+			if editErr != nil {
+				fmt.Println("Error editing threaded response while streaming:", editErr)
+			}
+			return editErr
+		},
+	)
+
+	if streamErr != nil || strings.TrimSpace(assistantResponse) == "" {
+		if streamErr != nil {
+			fmt.Println("Error streaming threaded response:", streamErr)
+		}
+		assistantResponse = fallbackFn()
 	}
 
 	if strings.TrimSpace(assistantResponse) == "" {
 		assistantResponse = "I'm sorry, I don't understand?"
 	}
 
-	responseContent := assistantResponse
-	if len(responseContent) > 2000 {
-		responseContent = responseContent[:1997] + "..."
-	}
+	trimmedAssistantResponse := strings.TrimSpace(assistantResponse)
+	if len(trimmedAssistantResponse) > 2000 {
+		filePreview := appendSuffixWithinDiscordLimit(trimmedAssistantResponse, longResponseFileSuffix)
+		fileObj := util.HandleTooLongResponseWithFileName(trimmedAssistantResponse, "too-long.txt")
 
-	responseMessage, err := s.ChannelMessageSendReply(m.ChannelID, responseContent, m.Message.Reference())
-	if err != nil {
-		return err
+		messageEdit := discordgo.NewMessageEdit(m.ChannelID, responseMessage.ID)
+		messageEdit.Content = &filePreview
+		messageEdit.Files = []*discordgo.File{fileObj}
+
+		_, err = s.ChannelMessageEditComplex(messageEdit)
+		if err != nil {
+			fmt.Println("Error attaching threaded too-long file:", err)
+
+			_, _ = s.ChannelMessageEdit(m.ChannelID, responseMessage.ID, filePreview)
+			_, sendErr := s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+				Content: "Full response attached in too-long.txt",
+				Files:   []*discordgo.File{util.HandleTooLongResponseWithFileName(trimmedAssistantResponse, "too-long.txt")},
+				Reference: &discordgo.MessageReference{
+					MessageID: responseMessage.ID,
+					ChannelID: responseMessage.ChannelID,
+					GuildID:   responseMessage.GuildID,
+				},
+			})
+			if sendErr != nil {
+				fmt.Println("Error sending threaded too-long file fallback:", sendErr)
+			}
+		}
+	} else {
+		_, err = s.ChannelMessageEdit(m.ChannelID, responseMessage.ID, trimmedAssistantResponse)
+		if err != nil {
+			fmt.Println("Error editing final threaded response:", err)
+		}
 	}
 
 	err = persistance.SaveConversationMessage(persistance.ConversationMessage{
@@ -616,6 +763,24 @@ func normalizeCommandName(commandName string) string {
 	default:
 		return "bot"
 	}
+}
+
+func appendSuffixWithinDiscordLimit(content string, suffix string) string {
+	if len(suffix) >= 2000 {
+		return util.TruncateForDiscord(suffix)
+	}
+
+	baseBudget := 2000 - len(suffix)
+	baseContent := content
+	if len(baseContent) > baseBudget {
+		if baseBudget > 3 {
+			baseContent = baseContent[:baseBudget-3] + "..."
+		} else {
+			baseContent = baseContent[:baseBudget]
+		}
+	}
+
+	return baseContent + suffix
 }
 
 // @Deprecated

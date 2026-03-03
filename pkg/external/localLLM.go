@@ -11,6 +11,62 @@ import (
 	"net/http"
 )
 
+func StreamLocalLLMResponse(prompt string, userId string, onDelta func(string)) (string, error) {
+	return StreamLocalLLMResponseWithChatMessages([]OpenAIChatMessage{
+		{
+			Role:    "user",
+			Content: prompt,
+		},
+	}, userId, onDelta)
+}
+
+func StreamLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId string, onDelta func(string)) (string, error) {
+	model := "gemma3-qat"
+	requestBody := ""
+	responseBody := ""
+	statusCode := 0
+	var requestErr error
+	defer func() {
+		logLocalLLMRequest("local_llm_stream", userId, model, requestBody, responseBody, statusCode, requestErr)
+	}()
+
+	systemPrompt := "Have your response be funny]. Include a joke at the expense of the user, or be sarcastic. Keep your responses short and to the point."
+	requestMessages := make([]OpenAIChatMessage, 0, len(messages)+1)
+	requestMessages = append(requestMessages, OpenAIChatMessage{
+		Role:    "system",
+		Content: systemPrompt,
+	})
+	requestMessages = append(requestMessages, messages...)
+
+	payload := streamChatCompletionsRequest{
+		Model:    model,
+		Messages: requestMessages,
+		Stream:   true,
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		requestErr = err
+		return "", err
+	}
+	requestBody = string(body)
+
+	assistantResponse, streamStatusCode, err := streamChatCompletions(
+		localLLMChatCompletionsEndpoint,
+		body,
+		"",
+		onDelta,
+	)
+	statusCode = streamStatusCode
+	responseBody = assistantResponse
+	if err != nil {
+		requestErr = err
+		return "", err
+	}
+
+	return assistantResponse, nil
+}
+
 func GetLocalLLMResponse(prompt string, userId string) string {
 	return GetLocalLLMResponseWithMessages([]OpenAIGPTMessage{
 		{

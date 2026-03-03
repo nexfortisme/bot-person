@@ -5,6 +5,7 @@ import (
 	"main/pkg/external"
 	"main/pkg/persistance"
 	"main/pkg/util"
+	"strings"
 
 	"main/pkg/logging"
 	eventType "main/pkg/logging/enums"
@@ -39,35 +40,86 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		optionMap[opt.Name] = opt
 	}
 
-	var botResponseString string
-	var assistantResponse string
-
 	// Pulling the propt out of the optionsMap
 	if option, ok := optionMap["prompt"]; ok {
 
-		logging.LogEvent(eventType.COMMAND_BOT, i.Interaction.Member.User.ID, option.StringValue(), i.Interaction.GuildID)
+		prompt := option.StringValue()
+		logging.LogEvent(eventType.COMMAND_BOT, i.Interaction.Member.User.ID, prompt, i.Interaction.GuildID)
 
-		// Generating the response
-		placeholderBotResponse := "Thinking about: " + option.StringValue()
-
-		// Immediately responding in the 3 second window before the interaciton times out
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		initialResponse := formatPromptResponseInProgress(prompt, "")
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: placeholderBotResponse,
+				Content: initialResponse,
 			},
 		})
+		if err != nil {
+			fmt.Println("Error creating interaction response:", err)
+			return
+		}
 
-		// Going out to make the OpenAI call to get the proper response
-		prompt := option.StringValue()
-		botResponseString, assistantResponse = parseSlashCommand(prompt, i.Interaction.Member.User.ID)
+		responseMessage := getInteractionResponseMessageWithRetry(s, i)
+		threadID := i.Interaction.ID
+		responseMessageID := ""
+		if responseMessage != nil && responseMessage.ID != "" {
+			threadID = responseMessage.ID
+			responseMessageID = responseMessage.ID
+		}
 
+		if !util.TryStartThreadResponse(threadID) {
+			busyResponse := "Please wait for the current response in this thread to finish before sending another reply."
+			_, _ = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &busyResponse,
+			})
+			return
+		}
+		defer util.FinishThreadResponse(threadID)
+
+		assistantResponse, streamErr := streamInteractionResponse(
+			s,
+			i,
+			initialResponse,
+			func(assistant string) string {
+				return formatPromptResponseInProgress(prompt, assistant)
+			},
+			func(onDelta func(string)) (string, error) {
+				return external.StreamLocalLLMResponse(prompt, i.Interaction.Member.User.ID, onDelta)
+			},
+		)
+
+		if streamErr != nil || strings.TrimSpace(assistantResponse) == "" {
+			if streamErr != nil {
+				fmt.Println("Error streaming /bot response:", streamErr)
+			}
+
+			assistantResponse = external.GetLocalLLMResponse(prompt, i.Interaction.Member.User.ID)
+			if strings.TrimSpace(assistantResponse) == "" {
+				assistantResponse = "I'm sorry, I don't understand?"
+			}
+
+			fallbackContent := util.TruncateForDiscord(formatPromptResponse(prompt, assistantResponse))
+			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &fallbackContent,
+			})
+			if err != nil {
+				fmt.Println("Error editing interaction response:", err)
+				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					Content: "Something went wrong.",
+				})
+				return
+			}
+		}
+
+		displayResponse := formatPromptResponse(prompt, assistantResponse)
 		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, assistantResponse, i.Interaction.GuildID)
 
-		if len(botResponseString) > 2000 {
-			fileObj := util.HandleTooLongResponse(botResponseString)
+		if len(displayResponse) > 2000 {
+			fileObj := util.HandleTooLongResponseWithFileName(displayResponse, "too-long.txt")
+			fileMessage := formatLongResponsePreview(displayResponse)
+
 			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-				Files: []*discordgo.File{fileObj},
+				Content: &fileMessage,
+				Files:   []*discordgo.File{fileObj},
 			})
 			if err != nil {
 				fmt.Println("Error editing interaction response:", err)
@@ -76,33 +128,23 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				})
 			}
 		} else {
-
-			// Updating the initial message with the response from the OpenAI API
 			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-				Content: &botResponseString,
+				Content: &displayResponse,
 			})
 			if err != nil {
-
 				fmt.Println("Error editing interaction response:", err)
-
-				// Not 100% sure this is the approach I want to take with handling errors from the API
 				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 					Content: "Something went wrong.",
 				})
-				return
 			}
 		}
 
-		responseMessage, err := s.InteractionResponse(i.Interaction)
-		if err != nil {
-			fmt.Println("Error getting interaction response message:", err)
-		}
-
-		threadID := i.Interaction.ID
-		responseMessageID := ""
-		if responseMessage != nil && responseMessage.ID != "" {
-			threadID = responseMessage.ID
-			responseMessageID = responseMessage.ID
+		if responseMessageID == "" {
+			responseMessage = getInteractionResponseMessageWithRetry(s, i)
+			if responseMessage != nil && responseMessage.ID != "" {
+				threadID = responseMessage.ID
+				responseMessageID = responseMessage.ID
+			}
 		}
 
 		err = persistance.SaveConversationMessage(persistance.ConversationMessage{
@@ -133,11 +175,5 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func (b *Bot) HelpString() string {
-	return "A command to ask the bot for a response from their infinite wisdom."
-}
-
-func parseSlashCommand(prompt string, userId string) (string, string) {
-	respTxt := external.GetLocalLLMResponse(prompt, userId)
-	displayText := "Request: " + prompt + " " + respTxt
-	return displayText, respTxt
+	return "The `/bot` command streams the response as it is generated. Reply to a `/bot` message to continue the same conversation thread. While one response is in progress, additional thread replies are temporarily blocked."
 }
