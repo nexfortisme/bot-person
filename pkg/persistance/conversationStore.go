@@ -94,39 +94,34 @@ func GetConversationMessageByMessageID(messageID string) (*ConversationMessage, 
 		return nil, nil
 	}
 
-	db := GetDB()
-	stmt, err := db.Prepare(`
+	var matchCount int64
+	countQuery := `
+		SELECT COUNT(*)
+		FROM ConversationMessages
+		WHERE MessageId = ?
+	`
+	err := RunQuery(countQuery, &matchCount, messageID)
+	if err != nil {
+		return nil, err
+	}
+	if matchCount == 0 {
+		return nil, nil
+	}
+
+	message := &ConversationMessage{}
+	selectQuery := `
 		SELECT ID, ThreadId, MessageId, ParentMessageId, ChannelId, GuildId, CommandName, Role, Content
 		FROM ConversationMessages
 		WHERE MessageId = ?
 		ORDER BY ID DESC
 		LIMIT 1
-	`)
+	`
+	err = RunQuery(selectQuery, message, messageID)
 	if err != nil {
 		return nil, err
 	}
-	defer stmt.Finalize()
 
-	stmt.BindText(1, messageID)
-	hasRow, err := stmt.Step()
-	if err != nil {
-		return nil, err
-	}
-	if !hasRow {
-		return nil, nil
-	}
-
-	return &ConversationMessage{
-		ID:              stmt.ColumnInt64(0),
-		ThreadId:        stmt.ColumnText(1),
-		MessageId:       stmt.ColumnText(2),
-		ParentMessageId: stmt.ColumnText(3),
-		ChannelId:       stmt.ColumnText(4),
-		GuildId:         stmt.ColumnText(5),
-		CommandName:     stmt.ColumnText(6),
-		Role:            stmt.ColumnText(7),
-		Content:         stmt.ColumnText(8),
-	}, nil
+	return message, nil
 }
 
 func getConversationMessagesByThreadID(threadID string, maxMessages int) ([]ConversationMessage, error) {
