@@ -170,6 +170,7 @@ func main() {
 	for {
 		select {
 		case <-fiveMinuteTicker.C:
+			util.ReloadModelConfig(useEnvFile)
 		case <-interrupt:
 			fmt.Println("Interrupt received, stopping...")
 			fiveMinuteTicker.Stop()

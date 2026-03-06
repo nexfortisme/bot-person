@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/joho/godotenv"
 )
@@ -19,6 +20,8 @@ var (
 	open_ai_model          string
 	image_generation_model string
 	admins                 []string
+
+	modelMu sync.RWMutex
 )
 
 func ReadEnv(useEnvFile bool) {
@@ -71,10 +74,14 @@ func GetOpenAIKey() string {
 }
 
 func GetOpenAIModel() string {
+	modelMu.RLock()
+	defer modelMu.RUnlock()
 	return open_ai_model
 }
 
 func GetImageGenerationModel() string {
+	modelMu.RLock()
+	defer modelMu.RUnlock()
 	return image_generation_model
 }
 
@@ -91,7 +98,38 @@ func GetDevDiscordKey() string {
 }
 
 func GetBotOpenAIModel() string {
+	modelMu.RLock()
+	defer modelMu.RUnlock()
 	return bot_open_ai_model
+}
+
+// ReloadModelConfig re-reads model variables from the .env file (or environment).
+// Safe to call from any goroutine. Does not affect API keys or Discord tokens.
+func ReloadModelConfig(useEnvFile bool) {
+	if useEnvFile {
+		cwd, err := os.Getwd()
+		if err != nil {
+			log.Printf("ReloadModelConfig: error getting working directory: %v", err)
+			return
+		}
+		envFilePath := filepath.Join(cwd, ".env")
+		if err := godotenv.Overload(envFilePath); err != nil {
+			log.Printf("ReloadModelConfig: error loading .env file: %v", err)
+			return
+		}
+	}
+
+	newBot := os.Getenv("BOT_OPEN_AI_MODEL")
+	newModel := os.Getenv("OPEN_AI_MODEL")
+	newImage := os.Getenv("IMAGE_GENERATION_MODEL")
+
+	modelMu.Lock()
+	bot_open_ai_model = newBot
+	open_ai_model = newModel
+	image_generation_model = newImage
+	modelMu.Unlock()
+
+	log.Printf("ReloadModelConfig: models updated — bot=%s, chat=%s, image=%s", newBot, newModel, newImage)
 }
 
 func GetElevenLabsKey() string {
