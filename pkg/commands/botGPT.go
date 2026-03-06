@@ -26,6 +26,12 @@ func (b *BotGPT) ApplicationCommand() *discordgo.ApplicationCommand {
 				Description: "The actual prompt that the bot will ponder on.",
 				Required:    true,
 			},
+			{
+				Type:        discordgo.ApplicationCommandOptionBoolean,
+				Name:        "web-search",
+				Description: "Enable web search to get up-to-date information.",
+				Required:    false,
+			},
 		},
 	}
 }
@@ -46,6 +52,11 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		prompt := option.StringValue()
 		logging.LogEvent(eventType.COMMAND_BOT_GPT, i.Interaction.Member.User.ID, prompt, i.Interaction.GuildID)
+
+		useWebSearch := false
+		if webSearchOption, ok := optionMap["web-search"]; ok {
+			useWebSearch = webSearchOption.BoolValue()
+		}
 
 		initialResponse := formatPromptResponseInProgress(prompt, "")
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -76,34 +87,50 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		defer util.FinishThreadResponse(threadID)
 
-		assistantResponse, streamErr := streamInteractionResponse(
-			s,
-			i,
-			initialResponse,
-			func(assistant string) string {
-				return formatPromptResponseInProgress(prompt, assistant)
-			},
-			func(onDelta func(string)) (string, error) {
-				return external.StreamOpenAIGPTResponse(prompt, onDelta)
-			},
-		)
+		formatFn := func(assistant string) string {
+			return formatPromptResponseInProgress(prompt, assistant)
+		}
+		streamFn := func(onDelta func(string)) (string, error) {
+			if useWebSearch {
+				return external.StreamOpenAIGPTResponseWithWebSearch(prompt, onDelta)
+			}
+			return external.StreamOpenAIGPTResponse(prompt, onDelta)
+		}
+
+		var assistantResponse string
+		var streamErr error
+		if useWebSearch {
+			assistantResponse, streamErr = streamInteractionResponseSuppressEmbeds(s, i, initialResponse, formatFn, streamFn)
+		} else {
+			assistantResponse, streamErr = streamInteractionResponse(s, i, initialResponse, formatFn, streamFn)
+		}
 
 		if streamErr != nil || strings.TrimSpace(assistantResponse) == "" {
 			if streamErr != nil {
 				fmt.Println("Error streaming /bot-gpt response:", streamErr)
 			}
 
-			assistantResponse = external.GetOpenAIGPTResponse(prompt)
+			if useWebSearch {
+				assistantResponse = external.GetOpenAIGPTResponseWithWebSearch(prompt)
+			} else {
+				assistantResponse = external.GetOpenAIGPTResponse(prompt)
+			}
 			if strings.TrimSpace(assistantResponse) == "" {
 				assistantResponse = "I'm sorry, I don't understand?"
 			}
 
 			fallbackContent := util.TruncateForDiscord(formatPromptResponse(prompt, assistantResponse))
-			_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-				Content: &fallbackContent,
-			})
-			if err != nil {
-				fmt.Println("Error editing interaction response:", err)
+			var fallbackErr error
+			if useWebSearch {
+				// Clear SUPPRESS_EMBEDS flag (flags: 0) so sources render on the final message.
+				fallbackErr = interactionResponseEditWithFlags(s, i, fallbackContent, 0)
+			} else {
+				_, fallbackErr = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+					Content: &fallbackContent,
+				})
+			}
+			if fallbackErr != nil {
+				fmt.Println("Error editing interaction response:", fallbackErr)
 				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 					Content: "Something went wrong.",
 				})
@@ -126,6 +153,16 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			if err != nil {
 				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 					Content: "Something went wrong while sending the full response as a file.",
+				})
+				return
+			}
+		} else if useWebSearch {
+			// Clear SUPPRESS_EMBEDS flag (flags: 0) so sources render on the final message.
+			err := interactionResponseEditWithFlags(s, i, displayResponse, 0)
+			if err != nil {
+				fmt.Println("Error editing interaction response:", err)
+				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					Content: "Something went wrong.",
 				})
 				return
 			}
@@ -179,7 +216,7 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func (b *BotGPT) HelpString() string {
-	return "The `/bot-gpt` command streams GPT output as it is generated. Reply to a `/bot-gpt` message to continue the same conversation thread. While one response is in progress, additional thread replies are temporarily blocked."
+	return "The `/bot-gpt` command streams GPT output as it is generated. Use the `web-search` option to enable real-time web search for up-to-date information. Reply to a `/bot-gpt` message to continue the same conversation thread. While one response is in progress, additional thread replies are temporarily blocked."
 }
 
 func (b *BotGPT) CommandCost() int {
