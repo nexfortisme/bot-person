@@ -63,7 +63,7 @@ var (
 		(&commands.Search{}).ApplicationCommand(),
 		(&commands.Set{}).ApplicationCommand(),
 		// (&commands.Testing{}).ApplicationCommand(),
-		(&commands.Slop{}).ApplicationCommand(),
+		// (&commands.Slop{}).ApplicationCommand(),
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -86,7 +86,7 @@ var (
 		"search": (&commands.Search{}).Execute,
 		"set":    (&commands.Set{}).Execute,
 		// "testing":   (&commands.Testing{}).Execute,
-		"slop": (&commands.Slop{}).Execute,
+		// "slop": (&commands.Slop{}).Execute,
 	}
 
 	applicationCommandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
