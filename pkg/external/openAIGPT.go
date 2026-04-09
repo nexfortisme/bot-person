@@ -15,8 +15,9 @@ import (
 const defaultGPTSystemPrompt = "You are a single source of truth. Give responses that answer the question asked but don't ask follow up questions."
 
 type chatCompletionsRequest struct {
-	Model    string `json:"model"`
-	Messages any    `json:"messages"`
+	Model            string `json:"model"`
+	Messages         any    `json:"messages"`
+	Reasoning_Effort string `json:"reasoning_effort"`
 }
 
 type openAIWebSearchTool struct {

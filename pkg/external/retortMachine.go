@@ -42,6 +42,7 @@ func GetRetortMachineResponseWithMessages(messages []OpenAIGPTMessage, userId st
 	payload := chatCompletionsRequest{
 		Model:    model,
 		Messages: requestMessages,
+		Reasoning_Effort: "none",
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {

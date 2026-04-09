@@ -42,6 +42,7 @@ func StreamLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId
 		Model:    model,
 		Messages: requestMessages,
 		Stream:   true,
+		Reasoning_Effort: "none",
 	}
 
 	body, err := json.Marshal(payload)

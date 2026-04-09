@@ -12,9 +12,10 @@ import (
 )
 
 type streamChatCompletionsRequest struct {
-	Model    string `json:"model"`
-	Messages any    `json:"messages"`
-	Stream   bool   `json:"stream"`
+	Model            string `json:"model"`
+	Messages         any    `json:"messages"`
+	Stream           bool   `json:"stream"`
+	Reasoning_Effort string `json:"reasoning_effort"`
 }
 
 type streamChatCompletionsChunk struct {
