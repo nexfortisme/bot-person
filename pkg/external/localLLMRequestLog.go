@@ -6,7 +6,7 @@ import (
 	"main/pkg/persistance"
 )
 
-const localLLMChatCompletionsEndpoint = "http://localhost:12434/engines/v1/chat/completions"
+
 
 func logLocalLLMRequest(
 	requestType string,
@@ -26,7 +26,7 @@ func logLocalLLMRequest(
 		RequestType:  requestType,
 		UserId:       userID,
 		Model:        model,
-		Endpoint:     localLLMChatCompletionsEndpoint,
+		Endpoint:     LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT,
 		RequestBody:  requestBody,
 		ResponseBody: responseBody,
 		StatusCode:   statusCode,

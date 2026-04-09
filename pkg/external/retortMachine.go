@@ -22,7 +22,7 @@ func GetRetortMachineResponse(prompt string, userId string) string {
 
 func GetRetortMachineResponseWithMessages(messages []OpenAIGPTMessage, userId string) string {
 	client := &http.Client{}
-	model := "smollm2"
+	model := RETORT_MACHINE_MODEL
 	requestBody := ""
 	responseBody := ""
 	statusCode := 0
@@ -51,7 +51,7 @@ func GetRetortMachineResponseWithMessages(messages []OpenAIGPTMessage, userId st
 	}
 	requestBody = string(body)
 
-	req, err := http.NewRequest(http.MethodPost, localLLMChatCompletionsEndpoint, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT, bytes.NewReader(body))
 	if err != nil {
 		requestErr = err
 		logging.LogError("Error creating POST request")

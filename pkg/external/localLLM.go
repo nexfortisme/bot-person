@@ -21,7 +21,7 @@ func StreamLocalLLMResponse(prompt string, userId string, onDelta func(string)) 
 }
 
 func StreamLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId string, onDelta func(string)) (string, error) {
-	model := "gemma3-qat"
+	model := LOCAL_LLM_MODEL
 	requestBody := ""
 	responseBody := ""
 	statusCode := 0
@@ -30,7 +30,7 @@ func StreamLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId
 		logLocalLLMRequest("local_llm_stream", userId, model, requestBody, responseBody, statusCode, requestErr)
 	}()
 
-	systemPrompt := "Have your response be funny]. Include a joke at the expense of the user, or be sarcastic. Keep your responses short and to the point."
+	systemPrompt := "Have your response be funny. Include a joke at the expense of the user, or be sarcastic. Keep your responses short and to the point."
 	requestMessages := make([]OpenAIChatMessage, 0, len(messages)+1)
 	requestMessages = append(requestMessages, OpenAIChatMessage{
 		Role:    "system",
@@ -52,7 +52,7 @@ func StreamLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId
 	requestBody = string(body)
 
 	assistantResponse, streamStatusCode, err := streamChatCompletions(
-		localLLMChatCompletionsEndpoint,
+		LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT,
 		body,
 		"",
 		onDelta,
@@ -90,7 +90,7 @@ func GetLocalLLMResponseWithMessages(messages []OpenAIGPTMessage, userId string)
 
 func GetLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId string) string {
 	client := &http.Client{}
-	model := "gemma3-qat"
+	model := LOCAL_LLM_MODEL
 	requestBody := ""
 	responseBody := ""
 	statusCode := 0
@@ -99,7 +99,7 @@ func GetLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId st
 		logLocalLLMRequest("local_llm", userId, model, requestBody, responseBody, statusCode, requestErr)
 	}()
 
-	systemPrompt := "Have your response be funny]. Include a joke at the expense of the user, or be sarcastic. Keep your responses short and to the point."
+	systemPrompt := "Have your response be funny. Include a joke at the expense of the user, or be sarcastic. Keep your responses short and to the point."
 	requestMessages := make([]OpenAIChatMessage, 0, len(messages)+1)
 	requestMessages = append(requestMessages, OpenAIChatMessage{
 		Role:    "system",
@@ -119,7 +119,7 @@ func GetLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId st
 	}
 	requestBody = string(body)
 
-	req, err := http.NewRequest(http.MethodPost, localLLMChatCompletionsEndpoint, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT, bytes.NewReader(body))
 	if err != nil {
 		requestErr = err
 		logging.LogError("Error creating POST request")
