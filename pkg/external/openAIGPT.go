@@ -17,7 +17,7 @@ const defaultGPTSystemPrompt = "You are a single source of truth. Give responses
 type chatCompletionsRequest struct {
 	Model            string `json:"model"`
 	Messages         any    `json:"messages"`
-	Reasoning_Effort string `json:"reasoning_effort"`
+	Reasoning_Effort string `json:"reasoning_effort,omitempty"`
 }
 
 type openAIWebSearchTool struct {

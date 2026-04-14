@@ -15,7 +15,7 @@ type streamChatCompletionsRequest struct {
 	Model            string `json:"model"`
 	Messages         any    `json:"messages"`
 	Stream           bool   `json:"stream"`
-	Reasoning_Effort string `json:"reasoning_effort"`
+	Reasoning_Effort string `json:"reasoning_effort,omitempty"`
 }
 
 type streamChatCompletionsChunk struct {
