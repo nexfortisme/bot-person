@@ -17,7 +17,7 @@ const defaultGPTSystemPrompt = "You are a single source of truth. Give responses
 type chatCompletionsRequest struct {
 	Model            string `json:"model"`
 	Messages         any    `json:"messages"`
-	Reasoning_Effort string `json:"reasoning_effort"`
+	Reasoning_Effort string `json:"reasoning_effort,omitempty"`
 }
 
 type openAIWebSearchTool struct {
@@ -66,7 +66,7 @@ func StreamOpenAIGPTResponseWithChatMessages(messages []OpenAIChatMessage, onDel
 	requestMessages = append(requestMessages, messages...)
 
 	payload := streamChatCompletionsRequest{
-		Model:    util.GetOpenAIModel(),
+		Model:    util.GetBotOpenAIModel(),
 		Messages: requestMessages,
 		Stream:   true,
 	}
@@ -120,7 +120,7 @@ func GetOpenAIGPTResponseWithChatMessages(messages []OpenAIChatMessage) string {
 	requestMessages = append(requestMessages, messages...)
 
 	payload := chatCompletionsRequest{
-		Model:    util.GetOpenAIModel(),
+		Model:    util.GetBotOpenAIModel(),
 		Messages: requestMessages,
 	}
 	body, err := json.Marshal(payload)
@@ -170,7 +170,7 @@ func StreamOpenAIGPTResponseWithWebSearch(prompt string, onDelta func(string)) (
 
 func StreamOpenAIGPTResponseWithChatMessagesAndWebSearch(messages []OpenAIChatMessage, onDelta func(string)) (string, error) {
 	payload := responsesAPIStreamRequest{
-		Model:        util.GetOpenAIModel(),
+		Model:        util.GetBotOpenAIModel(),
 		Input:        messages,
 		Instructions: defaultGPTSystemPrompt,
 		Tools:        openAIWebSearchTools(),
@@ -245,7 +245,7 @@ func GetOpenAIGPTResponseWithWebSearch(prompt string) string {
 
 func GetOpenAIGPTResponseWithChatMessagesAndWebSearch(messages []OpenAIChatMessage) string {
 	payload := responsesAPIRequest{
-		Model:        util.GetOpenAIModel(),
+		Model:        util.GetBotOpenAIModel(),
 		Input:        messages,
 		Instructions: defaultGPTSystemPrompt,
 		Tools:        openAIWebSearchTools(),
