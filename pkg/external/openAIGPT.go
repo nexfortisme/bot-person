@@ -3,6 +3,7 @@ package external
 import (
 	"bufio"
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,7 +13,8 @@ import (
 	"strings"
 )
 
-const defaultGPTSystemPrompt = "You are a single source of truth. Give responses that answer the question asked but don't ask follow up questions."
+//go:embed rocky_system_prompt.md
+var defaultGPTSystemPrompt string
 
 type chatCompletionsRequest struct {
 	Model            string `json:"model"`
