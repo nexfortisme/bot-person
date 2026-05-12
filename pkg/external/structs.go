@@ -1,19 +1,27 @@
 package external
 
 const (
-	LOCAL_LLM_MODEL = "qwen/qwen3.5-9b"
-	RETORT_MACHINE_MODEL = "qwen/qwen3.5-9b"
+	LOCAL_LLM_MODEL      = "qwen3.6-35b-a3b-uncensored-hauhaucs-aggressive"
+	RETORT_MACHINE_MODEL = "qwen3.6-35b-a3b-uncensored-hauhaucs-aggressive"
 
 	LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT = "http://localhost:1234/v1/chat/completions"
 )
 
 type DalleImages struct {
-	B64_JSON string `json:"b64_json"`
+	B64JSON       string `json:"b64_json"`
+	RevisedPrompt string `json:"revised_prompt"`
+	URL           string `json:"url"`
 }
 
 type DalleResponse struct {
-	Created int           `json:"created"`
-	Data    []DalleImages `json:"data"`
+	Created      int64         `json:"created"`
+	Background   string        `json:"background"`
+	Data         []DalleImages `json:"data"`
+	OutputFormat string        `json:"output_format"`
+	Quality      string        `json:"quality"`
+	Size         string        `json:"size"`
+	Usage        Usage         `json:"usage"`
+	Error        *Error        `json:"error"`
 }
 
 type OpenAIDivinciChoice struct {

@@ -145,10 +145,9 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	} else if isReply && replyType == "image" {
 
-		originalImageId := m.ReferencedMessage.Attachments[0].Filename
-		originalImageId = strings.Split(originalImageId, ".")[0] // Removes extension. File name is <openai_message_id>.jpg
+		originalImageURL := m.ReferencedMessage.Attachments[0].URL
 
-		followUpImagePrompt := util.EscapeQuotes(m.Message.Content)
+		followUpImagePrompt := m.Message.Content
 
 		user, err := persistance.GetUser(m.Author.ID)
 		if err != nil {
@@ -172,7 +171,7 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		// Going out to make the OpenAI call to get the proper response
-		returnFile, err := external.GetDalleFollowupResponse(followUpImagePrompt, originalImageId)
+		returnFile, err := external.GetDalleFollowupResponse(followUpImagePrompt, originalImageURL)
 
 		if err != nil {
 			errString := fmt.Sprintf("%s", err.Error())
