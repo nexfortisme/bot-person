@@ -1,8 +1,8 @@
 package external
 
 const (
-	LOCAL_LLM_MODEL      = "qwen3.6-35b-a3b-uncensored-hauhaucs-aggressive"
-	RETORT_MACHINE_MODEL = "qwen3.6-35b-a3b-uncensored-hauhaucs-aggressive"
+	LOCAL_LLM_MODEL      = "lfm2.5-8b-a1b"
+	RETORT_MACHINE_MODEL = "lfm2.5-8b-a1b"
 
 	LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT = "http://localhost:1234/v1/chat/completions"
 )
