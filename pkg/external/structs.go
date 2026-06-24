@@ -1,10 +1,10 @@
 package external
 
 const (
-	LOCAL_LLM_MODEL      = "lfm2.5-8b-a1b"
-	RETORT_MACHINE_MODEL = "lfm2.5-8b-a1b"
+	LOCAL_LLM_MODEL      = "gemma4:12b"
+	RETORT_MACHINE_MODEL = "gemma4:12b"
 
-	LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT = "http://localhost:1234/v1/chat/completions"
+	LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT = "http://localhost:11434/v1/chat/completions"
 )
 
 type DalleImages struct {
