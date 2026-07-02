@@ -44,7 +44,6 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if option, ok := optionMap["prompt"]; ok {
 
 		prompt := option.StringValue()
-		logging.LogEvent(eventType.COMMAND_BOT, i.Interaction.Member.User.ID, prompt, i.Interaction.GuildID)
 
 		initialResponse := formatPromptResponseInProgress(prompt, "")
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -57,6 +56,8 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			fmt.Println("Error creating interaction response:", err)
 			return
 		}
+
+		logging.LogEvent(eventType.COMMAND_BOT, i.Interaction.Member.User.ID, prompt, i.Interaction.GuildID)
 
 		responseMessage := getInteractionResponseMessageWithRetry(s, i)
 		threadID := i.Interaction.ID
