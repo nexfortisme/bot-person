@@ -22,7 +22,7 @@ func GetRetortMachineResponse(prompt string, userId string) string {
 }
 
 func GetRetortMachineResponseWithMessages(messages []OpenAIGPTMessage, userId string) string {
-	client := &http.Client{}
+	client := llmHTTPClient
 	model := util.GetRetortMachineModel()
 	requestBody := ""
 	responseBody := ""

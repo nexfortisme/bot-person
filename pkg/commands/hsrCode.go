@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -25,7 +23,6 @@ func (h *HSRCode) ApplicationCommand() *discordgo.ApplicationCommand {
 }
 
 func (h *HSRCode) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	logging.LogEvent(eventType.HSR_CODE, i.Interaction.Member.User.ID, "HSR Code Command Use", i.Interaction.GuildID)
 
 	// Access options in the order provided by the user.
 	options := i.ApplicationCommandData().Options

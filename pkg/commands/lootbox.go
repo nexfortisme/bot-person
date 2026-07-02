@@ -61,8 +61,6 @@ func (l *Lootbox) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) 
 
 	}
 
-	logging.LogEvent(eventType.COMMAND_LOOTBOX, i.Interaction.Member.User.ID, fmt.Sprintf("User has purchased a lootbox with seed: %d and reward %d", lootboxSeed, lootboxReward), i.Interaction.GuildID)
-
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{

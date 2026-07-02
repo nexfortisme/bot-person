@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"main/pkg/persistance"
 
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -20,8 +17,6 @@ func (m *MyStats) ApplicationCommand() *discordgo.ApplicationCommand {
 }
 
 func (m *MyStats) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
-
-	logging.LogEvent(eventType.COMMAND_MY_STATS, i.Interaction.Member.User.ID, "My Stats command used", i.Interaction.GuildID)
 
 	user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 	userStats := persistance.GetUserStats(i.Interaction.Member.User.ID)

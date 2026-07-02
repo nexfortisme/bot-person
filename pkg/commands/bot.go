@@ -7,9 +7,6 @@ import (
 	"main/pkg/util"
 	"strings"
 
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -56,8 +53,6 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			fmt.Println("Error creating interaction response:", err)
 			return
 		}
-
-		logging.LogEvent(eventType.COMMAND_BOT, i.Interaction.Member.User.ID, prompt, i.Interaction.GuildID)
 
 		responseMessage := getInteractionResponseMessageWithRetry(s, i)
 		threadID := i.Interaction.ID
@@ -112,7 +107,6 @@ func (b *Bot) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 
 		displayResponse := formatPromptResponse(prompt, assistantResponse)
-		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, assistantResponse, i.Interaction.GuildID)
 
 		if len(displayResponse) > 2000 {
 			fileObj := util.HandleTooLongResponseWithFileName(displayResponse, "too-long.txt")

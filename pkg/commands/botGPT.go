@@ -7,9 +7,6 @@ import (
 	"main/pkg/util"
 	"strings"
 
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -51,7 +48,6 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if option, ok := optionMap["prompt"]; ok {
 
 		prompt := option.StringValue()
-		logging.LogEvent(eventType.COMMAND_BOT_GPT, i.Interaction.Member.User.ID, prompt, i.Interaction.GuildID)
 
 		useWebSearch := false
 		if webSearchOption, ok := optionMap["web-search"]; ok {
@@ -139,7 +135,6 @@ func (b *BotGPT) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 
 		displayResponse := formatPromptResponse(prompt, assistantResponse)
-		logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, i.Interaction.Member.User.ID, assistantResponse, i.Interaction.GuildID)
 
 		if len(displayResponse) > 2000 {
 			fileObj := util.HandleTooLongResponseWithFileName(displayResponse, "too-long.txt")

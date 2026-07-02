@@ -8,35 +8,7 @@ import (
 	"time"
 
 	logging "main/pkg/logging/enums"
-
-	"zombiezen.com/go/sqlite/sqlitex"
 )
-
-func LogEvent(eventType logging.EventType, userId string, message string, serverId string) {
-
-	db, err := persistance.GetConn(context.Background())
-	if err != nil {
-		log.Printf("Error getting db connection for logging event: %v", err)
-		return
-	}
-	defer persistance.PutConn(db)
-
-	err = sqlitex.Execute(
-		db,
-		"INSERT INTO Events (EventType, EventUser, EventData, EventServer) VALUES (?, ?, ?, ?)",
-		&sqlitex.ExecOptions{
-			Args: []any{
-				eventType,
-				userId,
-				message, // no escaping needed
-				serverId,
-			},
-		},
-	)
-	if err != nil {
-		log.Printf("Error logging event: %v", err)
-	}
-}
 
 func GetLatestEvent(userId string, eventType logging.EventType) (Event, error) {
 
@@ -80,28 +52,9 @@ func GetLatestEvent(userId string, eventType logging.EventType) (Event, error) {
 	return event, nil
 }
 
+// LogError writes to stdout only. Event logging to the database was removed
+// because the synchronous SQLite writes (on a bind mount under Docker) could
+// block command handlers past Discord's 3-second interaction window.
 func LogError(err string) {
-
-	db, connErr := persistance.GetConn(context.Background())
-	if connErr != nil {
-		log.Printf("Error getting db connection for logging error: %v", connErr)
-		return
-	}
-	defer persistance.PutConn(db)
-
-	insertErr := sqlitex.Execute(
-		db,
-		"INSERT INTO Events (EventType, EventUser, EventData, EventServer) VALUES (?, ?, ?, ?)",
-		&sqlitex.ExecOptions{
-			Args: []any{
-				logging.ERROR,
-				"SYSTEM",
-				err, // no escaping needed
-				"SYSTEM",
-			},
-		},
-	)
-	if insertErr != nil {
-		log.Printf("Error logging Error: %v", insertErr)
-	}
+	log.Printf("ERROR: %s", err)
 }

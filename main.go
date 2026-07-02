@@ -8,12 +8,10 @@ import (
 
 	"main/pkg/commands"
 	"main/pkg/handlers"
-	"main/pkg/logging"
 	"main/pkg/messages"
 	"main/pkg/persistance"
 	"main/pkg/util"
 
-	eventType "main/pkg/logging/enums"
 	state "main/pkg/state/services"
 
 	"os"
@@ -132,8 +130,6 @@ func main() {
 		}
 	}
 
-	logging.LogEvent(eventType.BOT_START, "SYSTEM", "Bot Person is starting up.", "SYSTEM")
-
 	// Step 5: Add the messageReceive handler to the discord session
 	discordSession.AddHandler(messageReceive)
 
@@ -199,6 +195,17 @@ func registerSlashCommands(s *discordgo.Session) {
 		registeredCommands[i] = cmd
 	}
 	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		// Discord invalidates an interaction 3 seconds after it is created. If the
+		// event is already older than that (e.g. delivered in a backlog after the
+		// container was paused), responding would only produce a 10062 "Unknown
+		// interaction" error, so drop it instead.
+		if created, err := discordgo.SnowflakeTimestamp(i.ID); err == nil {
+			if age := time.Since(created); age > 3*time.Second {
+				log.Printf("Dropping stale interaction (age %s)", age.Round(time.Millisecond))
+				return
+			}
+		}
+
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
 			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
@@ -237,7 +244,6 @@ func removeRegisteredSlashCommands(s *discordgo.Session) {
 // I guess this is redundant since we no longer have to worry about
 // persisting bot data to a file
 func shutDown(discord *discordgo.Session) {
-	logging.LogEvent(eventType.BOT_STOP, "SYSTEM", "Bot Person is shutting down.", "SYSTEM")
 	log.Println("Shutting Down...")
 	_ = discord.Close()
 }
