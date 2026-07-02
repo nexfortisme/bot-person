@@ -16,8 +16,6 @@ import (
 	"time"
 
 	"main/pkg/commands"
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -68,7 +66,6 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if badBotRegex.MatchString(m.Message.Content) {
-		logging.LogEvent(eventType.USER_BAD_BOT, m.Author.ID, "Bad bot command used", m.GuildID)
 		badBotPrompt := fmt.Sprintf("A Discord user named %s said %q. Reply with a short, funny, sarcastic retort about being called a bad bot. Keep it to one sentence.", m.Author.Username, m.Message.Content)
 		badBotRetort := external.GetRetortMachineResponse(badBotPrompt, m.Author.ID)
 		if strings.TrimSpace(badBotRetort) == "" {
@@ -78,18 +75,15 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		util.HandleErrors(err)
 		return
 	} else if strings.HasPrefix(messageContent, "good bot") {
-		logging.LogEvent(eventType.USER_GOOD_BOT, m.Author.ID, "Good bot command used", m.GuildID)
 		goodBotRetort := util.GetGoodBotResponse()
 		_, err := s.ChannelMessageSend(m.ChannelID, goodBotRetort)
 		util.HandleErrors(err)
 		return
 	} else if strings.HasPrefix(m.Message.Content, "!addTokens") {
 		if !util.UserIsAdmin(m.Author.ID) {
-			logging.LogEvent(eventType.ECONOMY_CREATE_TOKENS, m.Author.ID, "NOT ENOUGH PERMISSIONS", m.GuildID)
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
 			return
 		} else {
-			logging.LogEvent(eventType.ECONOMY_CREATE_TOKENS, m.Author.ID, "Add tokens command used", m.GuildID)
 			req := strings.Split(m.Message.Content, " ")
 			if len(req) != 3 {
 				return
@@ -105,7 +99,6 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		return
 	} else if strings.HasPrefix(messageContent, ";;lenny") {
-		logging.LogEvent(eventType.LENNY, m.Author.ID, "Lenny command used", m.GuildID)
 		s.ChannelMessageSend(m.ChannelID, "( ͡° ͜ʖ ͡°)")
 		return
 	}
@@ -187,8 +180,6 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		user.ImageTokens -= (&commands.Image{}).CommandCost()
 		persistance.UpdateUser(*user)
-
-		logging.LogEvent(eventType.COMMAND_IMAGE, m.Author.ID, followUpImagePrompt, m.GuildID)
 
 		messageEdit := discordgo.NewMessageEdit(msg.ChannelID, msg.ID)
 		messageEdit.Files = []*discordgo.File{&returnFile}
@@ -333,8 +324,6 @@ func handleMentionedBotMessage(s *discordgo.Session, m *discordgo.MessageCreate)
 	}
 
 	persistedUserContent := buildPersistenceContent(userMessageContent, imageDescriptions)
-	logging.LogEvent(eventType.COMMAND_BOT, m.Author.ID, persistedUserContent, m.GuildID)
-	logging.LogEvent(eventType.EXTERNAL_GPT_RESPONSE, m.Author.ID, assistantResponse, m.GuildID)
 
 	threadID := responseMessage.ID
 	if threadID == "" {

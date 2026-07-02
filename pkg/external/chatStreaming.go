@@ -35,7 +35,7 @@ func streamChatCompletions(
 	authorizationHeader string,
 	onDelta func(string),
 ) (string, int, error) {
-	client := &http.Client{}
+	client := llmHTTPClient
 
 	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(requestBody))
 	if err != nil {

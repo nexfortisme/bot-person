@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"main/pkg/persistance"
 
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -47,13 +44,11 @@ func (b *Balance) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) 
 		checkUser, _ := persistance.GetUser(user.ID)
 		balanceResponse = user.Username + " has " + fmt.Sprintf("%d", checkUser.ImageTokens) + " tokens."
 
-		logging.LogEvent(eventType.COMMAND_BALANCE, i.Interaction.Member.User.ID, fmt.Sprintf("User has checked the balance of %s", user.ID), i.Interaction.GuildID)
 	} else {
 
 		user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 		balanceResponse = "You have " + fmt.Sprintf("%d", user.ImageTokens) + " tokens."
 
-		logging.LogEvent(eventType.COMMAND_BALANCE, i.Interaction.Member.User.ID, "User has checked their balance", i.Interaction.GuildID)
 	}
 
 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

@@ -3,9 +3,6 @@ package commands
 import (
 	// "main/pkg/persistance"
 
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -20,7 +17,6 @@ func (b *BotStats) ApplicationCommand() *discordgo.ApplicationCommand {
 
 func (b *BotStats) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	
-	logging.LogEvent(eventType.COMMAND_BOT_STATS, i.Interaction.Member.User.ID, "Bot Stats command used", i.Interaction.GuildID)
 
 	// Getting user stat data
 	botStatisticsString := "Refactor in progress..."

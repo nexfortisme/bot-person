@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -83,8 +81,6 @@ func (h *Help) ApplicationCommand() *discordgo.ApplicationCommand {
 }
 
 func (h *Help) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
-
-	logging.LogEvent(eventType.COMMAND_HELP, i.Interaction.Member.User.ID, "Help command used", i.Interaction.GuildID)
 
 	var helpOption string
 	var helpString string

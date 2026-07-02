@@ -91,7 +91,7 @@ func GetLocalLLMResponseWithMessages(messages []OpenAIGPTMessage, userId string)
 }
 
 func GetLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId string) string {
-	client := &http.Client{}
+	client := llmHTTPClient
 	model := util.GetLocalLLMModel()
 	requestBody := ""
 	responseBody := ""

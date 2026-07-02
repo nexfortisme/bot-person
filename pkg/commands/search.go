@@ -3,8 +3,6 @@ package commands
 import (
 	"fmt"
 	"main/pkg/external"
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
 	"main/pkg/util"
 	"strings"
 
@@ -41,8 +39,6 @@ func (se *Search) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) 
 
 	if option, ok := optionMap["prompt"]; ok {
 		searchQuery = option.StringValue()
-
-		logging.LogEvent(eventType.COMMAND_SEARCH, i.Interaction.Member.User.ID, searchQuery, i.Interaction.GuildID)
 
 		placeholderBotResponse := "Searching for: " + searchQuery
 

@@ -5,9 +5,6 @@ import (
 	"main/pkg/external"
 	"main/pkg/persistance"
 
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -41,8 +38,6 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	user, _ := persistance.GetUser(i.Interaction.Member.User.ID)
 
 	if user.ImageTokens < im.CommandCost() {
-
-		logging.LogEvent(eventType.COMMAND_IMAGE, i.Interaction.Member.User.ID, "NOT ENOUGH TOKENS", i.Interaction.GuildID)
 
 		imageReturnString := fmt.Sprintf("You don't have enough tokens (%d) to generate an image.", im.CommandCost())
 
@@ -91,8 +86,6 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		user.ImageTokens -= im.CommandCost()
 		persistance.UpdateUser(*user)
-
-		logging.LogEvent(eventType.COMMAND_IMAGE, i.Interaction.Member.User.ID, option.StringValue(), i.Interaction.GuildID)
 
 		// Updating the initial message with the response from the OpenAI API
 		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{

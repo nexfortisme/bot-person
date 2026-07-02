@@ -7,9 +7,6 @@ import (
 	"main/pkg/util"
 	"time"
 
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -23,8 +20,6 @@ func (b *Bonus) ApplicationCommand() *discordgo.ApplicationCommand {
 }
 
 func (b *Bonus) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
-
-	logging.LogEvent(eventType.COMMAND_BONUS, i.Interaction.Member.User.ID, "User has checked their bonus", i.Interaction.GuildID)
 
 	// Bonus Reward: -1 or actual reward. -1 is just placeholder.
 	// Return Message: "" or specialBonusRewardString. "" is default value and only returned if there is no modifier.
