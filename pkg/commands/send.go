@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"main/pkg/persistance"
 
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -57,8 +54,6 @@ func (sn *Send) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		if sender.ImageTokens < transferrAmount {
 
-			logging.LogEvent(eventType.COMMAND_SEND, i.Interaction.Member.User.ID, "User does not have enough tokens to send", i.Interaction.GuildID)
-
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -88,8 +83,6 @@ func (sn *Send) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		if sendResponse {
 
-			logging.LogEvent(eventType.COMMAND_SEND, i.Interaction.Member.User.ID, fmt.Sprintf("User Sent %f tokens to %s", transferrAmount, recepient.ID), i.Interaction.GuildID)
-
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -98,8 +91,6 @@ func (sn *Send) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			})
 			return
 		} else {
-
-			logging.LogEvent(eventType.COMMAND_SEND, i.Interaction.Member.User.ID, "Something Went Wrong.", i.Interaction.GuildID)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,

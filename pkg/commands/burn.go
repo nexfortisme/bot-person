@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"main/pkg/persistance"
 
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -48,8 +45,6 @@ func (b *Burn) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		if user.ImageTokens < burnAmount {
 
-			logging.LogEvent(eventType.COMMAND_BURN, i.Interaction.Member.User.ID, "User does not have enough tokens to burn", i.Interaction.GuildID)
-
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -61,8 +56,6 @@ func (b *Burn) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			
 			user.ImageTokens -= burnAmount
 			persistance.UpdateUser(*user);
-
-			logging.LogEvent(eventType.COMMAND_BURN, i.Interaction.Member.User.ID, fmt.Sprintf("User has burnt %d tokens", burnAmount), i.Interaction.GuildID)
 
 			removeTokenResponse := fmt.Sprintf("%d tokens removed. New Balance: %d", burnAmount, user.ImageTokens)
 

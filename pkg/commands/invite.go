@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"main/pkg/logging"
-	eventType "main/pkg/logging/enums"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -25,8 +23,6 @@ func (in *Invite) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) 
 	if err != nil {
 		retString = "Error getting application info"
 	}
-
-	logging.LogEvent(eventType.COMMAND_INVITE, i.Interaction.Member.User.ID, "User has requested an invite link", i.Interaction.GuildID)
 
 	// TODO - Is there a way to calculate the permissions on the fly?
 	url = discordgo.EndpointOAuth2 + "authorize?client_id=" + app.ID + "&permissions=517547084864&scope=bot"
