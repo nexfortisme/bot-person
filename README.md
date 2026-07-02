@@ -72,7 +72,16 @@ go run main.go -dev
 go run main.go -removeCommands
 ```
 
-Or use the provided `Dockerfile` to run the bot in a container.
+Or use the provided `Dockerfile` to run the bot in a container:
+
+```bash
+# macOS / Windows (Docker Desktop) — reaches Ollama via host.docker.internal
+docker compose up -d --build
+
+# Native Linux — uses host networking so the bot reaches Ollama on localhost,
+# without opening the firewall for the Docker bridge or rebinding Ollama
+docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d --build
+```
 
 ## Support & Development
 

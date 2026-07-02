@@ -1,0 +1,16 @@
+# Override for native Linux hosts (Arch/CachyOS, Debian, etc.).
+#
+# On Linux, `host.docker.internal:host-gateway` maps to the docker0 bridge
+# (172.17.0.1), which only works if Ollama listens beyond loopback AND the
+# host firewall accepts traffic from the Docker bridge — otherwise requests
+# fail with "dial tcp 172.17.0.1:11434: i/o timeout". Host networking avoids
+# both: the bot reaches Ollama on localhost, exactly like running outside
+# Docker. The bot makes only outbound connections, so no ports are exposed.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d --build
+services:
+  bot-person:
+    network_mode: host
+    environment:
+      LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT: http://localhost:11434/v1/chat/completions
