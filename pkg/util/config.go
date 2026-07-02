@@ -25,6 +25,11 @@ var (
 	admins                            []string
 
 	modelMu sync.RWMutex
+
+	// Set at startup from process environment before .env is loaded.
+	// ReloadModelConfig restores these so Docker/compose overrides are not
+	// overwritten by localhost values in the mounted .env file.
+	preservedFromRuntimeEnv map[string]string
 )
 
 const (
@@ -44,8 +49,9 @@ func ReadEnv(useEnvFile bool) {
 			log.Fatalf("Error getting current working directory: %v", err)
 		}
 
+		preservedFromRuntimeEnv = capturePreservedEnv()
 		envFilePath := filepath.Join(cwd, ".env")
-		err = godotenv.Overload(envFilePath)
+		err = loadEnvFile(envFilePath)
 		if err != nil {
 			log.Fatalf("Error loading .env file: %v", err)
 		}
@@ -143,7 +149,7 @@ func ReloadModelConfig(useEnvFile bool) {
 			return
 		}
 		envFilePath := filepath.Join(cwd, ".env")
-		if err := godotenv.Overload(envFilePath); err != nil {
+		if err := loadEnvFile(envFilePath); err != nil {
 			log.Printf("ReloadModelConfig: error loading .env file: %v", err)
 			return
 		}
@@ -176,6 +182,36 @@ func envOrDefault(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+// Keys listed here may be set by Docker Compose (or the shell) before startup.
+// Values present in the process environment are preserved across .env reloads.
+var preservedEnvKeys = []string{
+	"LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT",
+}
+
+func capturePreservedEnv() map[string]string {
+	preserved := make(map[string]string, len(preservedEnvKeys))
+	for _, key := range preservedEnvKeys {
+		if value := os.Getenv(key); value != "" {
+			preserved[key] = value
+		}
+	}
+	return preserved
+}
+
+func loadEnvFile(path string) error {
+	if err := godotenv.Overload(path); err != nil {
+		return err
+	}
+	restorePreservedEnv(preservedFromRuntimeEnv)
+	return nil
+}
+
+func restorePreservedEnv(preserved map[string]string) {
+	for key, value := range preserved {
+		os.Setenv(key, value)
+	}
 }
 
 func GetElevenLabsKey() string {

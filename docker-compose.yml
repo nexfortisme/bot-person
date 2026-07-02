@@ -13,6 +13,8 @@ services:
     environment:
       DB_PATH: /app/data/db.sqlite
       DEV_MODE: "false"
+      # Overrides localhost in the mounted .env; preserved across 5-minute model reloads
+      LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT: http://host.docker.internal:11434/v1/chat/completions
     extra_hosts:
       # Lets the container reach a local LLM (Ollama, etc.) on the host machine
       - "host.docker.internal:host-gateway"
