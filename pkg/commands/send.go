@@ -86,7 +86,7 @@ func (sn *Send) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprintf("%.2f", sender.ImageTokens),
+					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprintf("%d", sender.ImageTokens),
 				},
 			})
 			return

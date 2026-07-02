@@ -56,7 +56,7 @@ func (l *Lootbox) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) 
 		} else if lootboxReward == 25 {
 			lootboxReturnMessage = fmt.Sprintf("Woah! You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
 		} else if lootboxReward == 50 {
-			lootboxReturnMessage = fmt.Sprintf("Stop Hacking. You purchased a lootbox with the seed: %d and it contained %f tokens", lootboxSeed, lootboxReward)
+			lootboxReturnMessage = fmt.Sprintf("Stop Hacking. You purchased a lootbox with the seed: %d and it contained %d tokens", lootboxSeed, lootboxReward)
 		}
 
 	}
