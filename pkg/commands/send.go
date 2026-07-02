@@ -88,12 +88,12 @@ func (sn *Send) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		if sendResponse {
 
-			logging.LogEvent(eventType.COMMAND_SEND, i.Interaction.Member.User.ID, fmt.Sprintf("User Sent %f tokens to %s", transferrAmount, recepient.ID), i.Interaction.GuildID)
+			logging.LogEvent(eventType.COMMAND_SEND, i.Interaction.Member.User.ID, fmt.Sprintf("User Sent %d tokens to %s", transferrAmount, recepient.ID), i.Interaction.GuildID)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprintf("%.2f", sender.ImageTokens),
+					Content: "Tokens were successfully sent. Your new balance is: " + fmt.Sprintf("%d", sender.ImageTokens),
 				},
 			})
 			return

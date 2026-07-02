@@ -22,7 +22,7 @@ func HandleErrors(err error) {
 
 func HandleFatalErrors(err error, message string) {
 	if err != nil {
-		log.Fatalf(message)
+		log.Fatal(message)
 	}
 }
 
