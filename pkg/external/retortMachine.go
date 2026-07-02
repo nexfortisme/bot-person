@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"main/pkg/logging"
+	"main/pkg/util"
 
 	"net/http"
 )
@@ -22,7 +23,7 @@ func GetRetortMachineResponse(prompt string, userId string) string {
 
 func GetRetortMachineResponseWithMessages(messages []OpenAIGPTMessage, userId string) string {
 	client := &http.Client{}
-	model := RETORT_MACHINE_MODEL
+	model := util.GetRetortMachineModel()
 	requestBody := ""
 	responseBody := ""
 	statusCode := 0
@@ -52,7 +53,7 @@ func GetRetortMachineResponseWithMessages(messages []OpenAIGPTMessage, userId st
 	}
 	requestBody = string(body)
 
-	req, err := http.NewRequest(http.MethodPost, LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, util.GetLocalLLMChatCompletionsEndpoint(), bytes.NewReader(body))
 	if err != nil {
 		requestErr = err
 		logging.LogError("Error creating POST request")

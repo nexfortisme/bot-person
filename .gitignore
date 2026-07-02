@@ -18,6 +18,8 @@ db.sqlite*
 .codex
 .vscode/
 
+data/
+
 .claude/worktrees
 
 *.env

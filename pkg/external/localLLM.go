@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"main/pkg/logging"
+	"main/pkg/util"
 
 	"net/http"
 )
@@ -21,7 +22,7 @@ func StreamLocalLLMResponse(prompt string, userId string, onDelta func(string)) 
 }
 
 func StreamLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId string, onDelta func(string)) (string, error) {
-	model := LOCAL_LLM_MODEL
+	model := util.GetLocalLLMModel()
 	requestBody := ""
 	responseBody := ""
 	statusCode := 0
@@ -53,7 +54,7 @@ func StreamLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId
 	requestBody = string(body)
 
 	assistantResponse, streamStatusCode, err := streamChatCompletions(
-		LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT,
+		util.GetLocalLLMChatCompletionsEndpoint(),
 		body,
 		"",
 		onDelta,
@@ -91,7 +92,7 @@ func GetLocalLLMResponseWithMessages(messages []OpenAIGPTMessage, userId string)
 
 func GetLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId string) string {
 	client := &http.Client{}
-	model := LOCAL_LLM_MODEL
+	model := util.GetLocalLLMModel()
 	requestBody := ""
 	responseBody := ""
 	statusCode := 0
@@ -120,7 +121,7 @@ func GetLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId st
 	}
 	requestBody = string(body)
 
-	req, err := http.NewRequest(http.MethodPost, LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, util.GetLocalLLMChatCompletionsEndpoint(), bytes.NewReader(body))
 	if err != nil {
 		requestErr = err
 		logging.LogError("Error creating POST request")

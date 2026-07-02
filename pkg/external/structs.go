@@ -1,12 +1,5 @@
 package external
 
-const (
-	LOCAL_LLM_MODEL      = "gemma4:12b"
-	RETORT_MACHINE_MODEL = "gemma4:12b"
-
-	LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT = "http://localhost:11434/v1/chat/completions"
-)
-
 type DalleImages struct {
 	B64JSON       string `json:"b64_json"`
 	RevisedPrompt string `json:"revised_prompt"`

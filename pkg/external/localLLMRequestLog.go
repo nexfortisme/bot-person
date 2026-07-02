@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"main/pkg/logging"
 	"main/pkg/persistance"
+	"main/pkg/util"
 )
 
 
@@ -26,7 +27,7 @@ func logLocalLLMRequest(
 		RequestType:  requestType,
 		UserId:       userID,
 		Model:        model,
-		Endpoint:     LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT,
+		Endpoint:     util.GetLocalLLMChatCompletionsEndpoint(),
 		RequestBody:  requestBody,
 		ResponseBody: responseBody,
 		StatusCode:   statusCode,

@@ -1,0 +1,18 @@
+services:
+  bot-person:
+    build: .
+    container_name: bot-person
+    restart: unless-stopped
+    volumes:
+      # Host .env is read at startup and reloaded every 5 minutes
+      - ./.env:/app/.env:ro
+      # Persist SQLite database outside the container
+      - ./data:/app/data
+      # Generated images
+      - ./img:/app/img
+    environment:
+      DB_PATH: /app/data/db.sqlite
+      DEV_MODE: "false"
+    extra_hosts:
+      # Lets the container reach a local LLM (Ollama, etc.) on the host machine
+      - "host.docker.internal:host-gateway"
