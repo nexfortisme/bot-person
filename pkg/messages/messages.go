@@ -31,13 +31,6 @@ const longResponseFileSuffix = "\n\n[Full response attached in too-long.txt]"
 
 func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
-	// -------------------- DEBUGGING --------------------
-	// currentTime := time.Now().Format("2006-01-02-15-04-05")
-
-	// data, _ := json.MarshalIndent(m, "", "  ")
-	// util.SaveResponseToFile(data, fmt.Sprintf("message-%s.txt", currentTime))
-	// -------------------- DEBUGGING --------------------
-
 	// Ignoring messages from self
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -61,8 +54,6 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	escapedMessageContent := util.EscapeQuotes(m.Message.Content)
 	messageContent := strings.ToLower(escapedMessageContent)
-
-	// persistance.APictureIsWorthAThousand(m.Message.Content, m)
 
 	// TODO - Handle this better. I don't like this and I feel bad about it
 	if badBotRegex.MatchString(m.Message.Content) {
@@ -137,57 +128,13 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		return
 	} else if isReply && replyType == "image" {
-
-		originalImageURL := m.ReferencedMessage.Attachments[0].URL
-
-		followUpImagePrompt := m.Message.Content
-
-		user, err := persistance.GetUser(m.Author.ID)
+		// Replies to a generated image go through the same automatic
+		// edit-or-chat handling as bot mentions, no slash command needed.
+		err := handleMentionedBotMessage(s, m)
 		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Something went wrong. Follow up image was not generated.")
-			return
+			fmt.Println("Error handling image reply:", err)
+			s.ChannelMessageSendReply(m.ChannelID, "Something went wrong while handling the image reply.", m.Message.Reference())
 		}
-
-		if user.ImageTokens < (&commands.Image{}).CommandCost() {
-			s.ChannelMessageSend(m.ChannelID, "You don't have enough tokens to generate a follow up image.")
-			return
-		}
-
-		// Generating the response
-		placeholder := "Prompt: " + followUpImagePrompt
-
-		// Immediately responding in the 3 second window before the interaciton times out
-		msg, err := s.ChannelMessageSendReply(m.ChannelID, placeholder, m.Message.Reference())
-		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Something went wrong. Follow up image was not generated.")
-			return
-		}
-
-		// Going out to make the OpenAI call to get the proper response
-		returnFile, err := external.GetDalleFollowupResponse(followUpImagePrompt, originalImageURL)
-
-		if err != nil {
-			errString := fmt.Sprintf("%s", err.Error())
-
-			// Not 100% sure this is the approach I want to take with handling errors from the API
-			_, err := s.ChannelMessageEdit(m.ChannelID, msg.ID, errString)
-			if err != nil {
-				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Send help.")
-			}
-
-			return
-		}
-
-		user.ImageTokens -= (&commands.Image{}).CommandCost()
-		persistance.UpdateUser(*user)
-
-		messageEdit := discordgo.NewMessageEdit(msg.ChannelID, msg.ID)
-		messageEdit.Files = []*discordgo.File{&returnFile}
-		_, err = s.ChannelMessageEditComplex(messageEdit)
-		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Something went wrong. Send help.")
-		}
-
 		return
 	}
 
@@ -232,11 +179,13 @@ func detectReplyTypeFromThreadStore(messageID string) (string, error) {
 		return "", nil
 	}
 
-	switch normalizeCommandName(message.CommandName) {
-	case "bot-gpt":
+	switch strings.ToLower(strings.TrimSpace(message.CommandName)) {
+	case "bot-gpt", "bot_gpt":
 		return "bot_gpt", nil
 	case "bot":
 		return "bot", nil
+	case "image":
+		return "image", nil
 	default:
 		return "", nil
 	}
@@ -290,7 +239,16 @@ func validateBotConversationReplyTarget(s *discordgo.Session, m *discordgo.Messa
 
 func handleMentionedBotMessage(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	userMessageContent := extractMentionPrompt(m.Message.Content, s.State.User.ID, m.Mentions)
-	imageDataURLs, imageDescriptions, err := encodeImageAttachmentsToDataURLs(m.Message.Attachments)
+
+	// If the message points at an image (attached or replied to) and reads
+	// like an edit request, generate an edited image instead of chatting.
+	if userMessageContent != "" && external.ImageEditsSupported() {
+		if editImageURLs := collectEditableImageURLs(m); len(editImageURLs) > 0 && external.DetectImageEditIntent(userMessageContent) {
+			return handleImageEdit(s, m, userMessageContent, editImageURLs)
+		}
+	}
+
+	imageDataURLs, imageDescriptions, err := encodeImageAttachmentsToDataURLs(collectMessageAndReferencedAttachments(m))
 	if err != nil {
 		return err
 	}
@@ -421,7 +379,7 @@ func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, re
 	}
 
 	userMessageContent := strings.TrimSpace(m.Message.Content)
-	imageDataURLs, imageDescriptions, err := encodeImageAttachmentsToDataURLs(m.Message.Attachments)
+	imageDataURLs, imageDescriptions, err := encodeImageAttachmentsToDataURLs(collectMessageAndReferencedAttachments(m))
 	if err != nil {
 		return err
 	}
@@ -621,6 +579,85 @@ func extractMentionPrompt(content string, botID string, mentions []*discordgo.Us
 	}
 
 	return strings.TrimSpace(cleaned)
+}
+
+// collectMessageAndReferencedAttachments returns the attachments on the
+// user's message followed by those on the message it replies to, so images in
+// a replied-to message become model context as well.
+func collectMessageAndReferencedAttachments(m *discordgo.MessageCreate) []*discordgo.MessageAttachment {
+	attachments := make([]*discordgo.MessageAttachment, 0, len(m.Message.Attachments))
+	attachments = append(attachments, m.Message.Attachments...)
+	if m.Message.ReferencedMessage != nil {
+		attachments = append(attachments, m.Message.ReferencedMessage.Attachments...)
+	}
+	return attachments
+}
+
+func collectEditableImageURLs(m *discordgo.MessageCreate) []string {
+	var imageURLs []string
+	for _, attachment := range collectMessageAndReferencedAttachments(m) {
+		if isImageAttachment(attachment) && strings.TrimSpace(attachment.URL) != "" {
+			imageURLs = append(imageURLs, attachment.URL)
+		}
+	}
+	return imageURLs
+}
+
+func handleImageEdit(s *discordgo.Session, m *discordgo.MessageCreate, prompt string, imageURLs []string) error {
+	user, err := persistance.GetUser(m.Author.ID)
+	if err != nil {
+		s.ChannelMessageSendReply(m.ChannelID, "Something went wrong. The image was not edited.", m.Message.Reference())
+		return err
+	}
+
+	editCost := (&commands.Image{}).CommandCost()
+	if user.ImageTokens < editCost {
+		s.ChannelMessageSendReply(m.ChannelID, "You don't have enough tokens to edit an image.", m.Message.Reference())
+		return nil
+	}
+
+	placeholder := "Prompt: " + prompt
+	responseMessage, err := s.ChannelMessageSendReply(m.ChannelID, placeholder, m.Message.Reference())
+	if err != nil {
+		return err
+	}
+
+	returnFile, err := external.GetImageEditResponse(prompt, imageURLs)
+	if err != nil {
+		_, editErr := s.ChannelMessageEdit(m.ChannelID, responseMessage.ID, err.Error())
+		if editErr != nil {
+			s.ChannelMessageSend(m.ChannelID, "Something went wrong. Send help.")
+		}
+		return nil
+	}
+
+	user.ImageTokens -= editCost
+	persistance.UpdateUser(*user)
+
+	messageEdit := discordgo.NewMessageEdit(m.ChannelID, responseMessage.ID)
+	messageEdit.Files = []*discordgo.File{&returnFile}
+	_, err = s.ChannelMessageEditComplex(messageEdit)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "Something went wrong. Send help.")
+	}
+
+	// Persist the edited image response so replying to it (with or without a
+	// mention) routes back through the automatic edit-or-chat handling.
+	err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+		ThreadId:        responseMessage.ID,
+		MessageId:       responseMessage.ID,
+		ParentMessageId: m.ID,
+		ChannelId:       m.ChannelID,
+		GuildId:         m.GuildID,
+		CommandName:     "image",
+		Role:            "assistant",
+		Content:         "[edited image] " + prompt,
+	})
+	if err != nil {
+		fmt.Println("Error saving edited image message:", err)
+	}
+
+	return nil
 }
 
 func encodeImageAttachmentsToDataURLs(attachments []*discordgo.MessageAttachment) ([]string, []string, error) {

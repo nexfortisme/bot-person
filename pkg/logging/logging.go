@@ -33,7 +33,6 @@ func GetLatestEvent(userId string, eventType logging.EventType) (Event, error) {
 	}
 
 	if !hasRow {
-		fmt.Println("No row found")
 		return Event{}, fmt.Errorf("no row found")
 	} else {
 		parsedTime, err := time.Parse("2006-01-02 15:04:05", stmt.GetText("EventTime"))

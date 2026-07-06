@@ -2,7 +2,6 @@ package persistance
 
 import (
 	"errors"
-	"fmt"
 	"main/pkg/util"
 	"math/rand"
 	"time"
@@ -68,8 +67,6 @@ func GetUserReward(userId string) (int, persistance.RewardStatus, error) {
 
 	modifier := 1
 
-	fmt.Printf("User: %+v\n", user)
-
 	// Checking to see if the user has a LastBonus time
 	if user.LastBonus != "" {
 
@@ -77,8 +74,6 @@ func GetUserReward(userId string) (int, persistance.RewardStatus, error) {
 		lastBonusTime, parseErr := time.Parse(time.RFC3339, user.LastBonus)
 		if parseErr == nil {
 			diff := time.Since(lastBonusTime)
-
-			fmt.Println("Time Diff: " + diff.String() + " Seconds: " + fmt.Sprintf("%.0f", diff.Seconds()))
 
 			// if diff is less than 1 day (86400 seconds), then throws error
 			if diff.Seconds() <= 86400 {
