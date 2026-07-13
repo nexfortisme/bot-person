@@ -74,19 +74,18 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if !util.UserIsAdmin(m.Author.ID) {
 			s.ChannelMessageSend(m.ChannelID, "You do not have permissions to run this command")
 			return
-		} else {
-			req := strings.Split(m.Message.Content, " ")
-			if len(req) != 3 {
-				return
-			}
+		}
 
-			tokenCount, _ := strconv.ParseInt(req[2], 10, 64)
-			success := persistance.AddBotPersonTokens(int(tokenCount), req[1][2:len(req[1])-1])
-			if success {
-				s.ChannelMessageSend(m.ChannelID, "Tokens were successfully added.")
-			} else {
-				s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
-			}
+		targetUserID, tokenCount, err := parseAddTokensCommand(m.Message.Content)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Usage: `!addTokens @user <positive amount>`")
+			return
+		}
+
+		if persistance.AddBotPersonTokens(tokenCount, targetUserID) {
+			s.ChannelMessageSend(m.ChannelID, "Tokens were successfully added.")
+		} else {
+			s.ChannelMessageSend(m.ChannelID, "Something went wrong. Tokens were not added.")
 		}
 		return
 	} else if strings.HasPrefix(messageContent, ";;lenny") {
@@ -147,6 +146,34 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		fmt.Println("Error handling @BotPerson message:", err)
 		s.ChannelMessageSendReply(m.ChannelID, "Something went wrong while generating a response.", m.Message.Reference())
 	}
+}
+
+func parseAddTokensCommand(content string) (string, int, error) {
+	parts := strings.Fields(content)
+	if len(parts) != 3 || parts[0] != "!addTokens" {
+		return "", 0, fmt.Errorf("invalid addTokens command")
+	}
+
+	mention := parts[1]
+	if !strings.HasPrefix(mention, "<@") || !strings.HasSuffix(mention, ">") {
+		return "", 0, fmt.Errorf("target must be a user mention")
+	}
+	userID := strings.TrimSuffix(strings.TrimPrefix(mention, "<@"), ">")
+	userID = strings.TrimPrefix(userID, "!")
+	if userID == "" {
+		return "", 0, fmt.Errorf("empty user id")
+	}
+	for _, character := range userID {
+		if character < '0' || character > '9' {
+			return "", 0, fmt.Errorf("invalid user id")
+		}
+	}
+
+	amount, err := strconv.Atoi(parts[2])
+	if err != nil || amount <= 0 {
+		return "", 0, fmt.Errorf("amount must be a positive integer")
+	}
+	return userID, amount, nil
 }
 
 func detectReplyType(referencedMessage *discordgo.Message) string {

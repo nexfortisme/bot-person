@@ -62,8 +62,9 @@ func (se *Search) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) 
 
 		if perplexityResponse.Citations != nil {
 			for index, citation := range perplexityResponse.Citations {
-				replaceString := fmt.Sprintf("[%d]", index)
-				replacementString := fmt.Sprintf("[[%d]](%s)", index, citation)
+				citationNumber := index + 1
+				replaceString := fmt.Sprintf("[%d]", citationNumber)
+				replacementString := fmt.Sprintf("[[%d]](%s)", citationNumber, citation)
 				response = strings.Replace(response, replaceString, replacementString, -1)
 			}
 		}

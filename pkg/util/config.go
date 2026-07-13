@@ -70,7 +70,6 @@ func ReadEnv(useEnvFile bool) {
 	// Validate required environment variables
 	requiredVars := map[string]string{
 		"OPEN_AI_API_KEY":        open_ai_api_key,
-		"DISCORD_API_KEY":        discord_api_key,
 		"BOT_OPEN_AI_MODEL":      bot_open_ai_model,
 		"OPEN_AI_MODEL":          open_ai_model,
 		"PERPLEXITY_API_KEY":     perplexity_api_key,

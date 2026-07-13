@@ -15,7 +15,7 @@ func (b *Burn) ApplicationCommand() *discordgo.ApplicationCommand {
 			Description: "A way, for whatever reason, you can burn tokens.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionNumber,
+					Type:        discordgo.ApplicationCommandOptionInteger,
 					Name:        "amount",
 					Description: "The amount of tokens you want to send.",
 					MinValue:    &integerOptionMinValue,

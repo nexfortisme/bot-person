@@ -19,26 +19,28 @@ func AddBotPersonTokens(tokenAmount int, userId string) bool {
 	}
 
 	user.ImageTokens += tokenAmount
-	UpdateUser(*user)
-
-	return true
+	return UpdateUser(*user)
 }
 
 func RemoveBotPersonTokens(tokenAmount int, userId string) bool {
 
-	user, _ := GetUser(userId)
+	user, err := GetUser(userId)
+	if err != nil {
+		return false
+	}
 	user.ImageTokens -= tokenAmount
 
 	if user.ImageTokens < 0 {
 		user.ImageTokens = 0
 	}
 
-	UpdateUser(*user)
-
-	return true
+	return UpdateUser(*user)
 }
 
 func TransferBotPersonTokens(tokenAmount int, fromUserId string, toUserId string) bool {
+	if tokenAmount <= 0 || fromUserId == toUserId {
+		return false
+	}
 
 	fromUser, fromErr := GetUser(fromUserId)
 	toUser, toErr := GetUser(toUserId)

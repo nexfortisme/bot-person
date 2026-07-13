@@ -1,49 +1,62 @@
 package external
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"main/pkg/logging"
 	"main/pkg/util"
 	"net/http"
-	"strings"
+	"time"
 )
 
 func GetPerplexityResponse(originalPrompt string, userPrompt string) PerplexityResponse {
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
+	payload := struct {
+		Model    string             `json:"model"`
+		Messages []OpenAIGPTMessage `json:"messages"`
+	}{
+		Model: "sonar",
+		Messages: []OpenAIGPTMessage{
+			{Role: "system", Content: "Please keep responses concise and to the point. Do not include any additional information or commentary."},
+			{Role: "user", Content: originalPrompt},
+			{Role: "assistant", Content: "The first message is context, the second message is the user's message pertaining to the first."},
+			{Role: "user", Content: userPrompt},
+		},
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		logging.LogError("Error creating Perplexity request body")
+		return PerplexityResponse{}
+	}
 
-	dataTemplate := `{
-		"model": "sonar",
-		"messages": [
-			{"role": "system", "content": "Please keep responses concise and to the point. Do not include any additional information or commentary."},
-			{"role": "user", "content": "%s"},
-			{"role": "assistant", "content": "The first message is context, the second message is the user's message pertaining to the first."},
-			{"role": "user", "content": "%s"}
-		]
-	}`
-
-	data := fmt.Sprintf(dataTemplate, util.EscapeQuotes(originalPrompt), util.EscapeQuotes(userPrompt))
-
-	req, err := http.NewRequest(http.MethodPost, "https://api.perplexity.ai/chat/completions", strings.NewReader(data))
+	req, err := http.NewRequest(http.MethodPost, "https://api.perplexity.ai/chat/completions", bytes.NewReader(data))
 	if err != nil {
 		logging.LogError("Error creating POST request")
+		return PerplexityResponse{}
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+util.GetPerplexityAPIKey())
 
-	resp, _ := client.Do(req)
-	if resp == nil {
+	resp, err := client.Do(req)
+	if err != nil || resp == nil {
+		return PerplexityResponse{}
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		return PerplexityResponse{}
 	}
 
-	buf, _ := io.ReadAll(resp.Body)
+	buf, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return PerplexityResponse{}
+	}
 
 	respPex := PerplexityResponse{}
 	// need to add proper error handling
-	err = json.Unmarshal([]byte(string(buf)), &respPex)
+	err = json.Unmarshal(buf, &respPex)
 	if err != nil {
 		return PerplexityResponse{}
 	}

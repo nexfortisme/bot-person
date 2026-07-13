@@ -97,7 +97,7 @@ func main() {
 
 	// Step One: Read in flag variables
 	flag.BoolVar(&devMode, "dev", false, "Flag for starting the bot in dev mode")
-	flag.BoolVar(&removeCommands, "removeCommands", false, "Flag for removing registered commands on shutdown")
+	flag.BoolVar(&removeCommands, "removeCommands", false, "Remove registered commands and exit")
 	flag.BoolVar(&useEnvFile, "useEnvFile", true, "Flag for using the .env file")
 	flag.Parse()
 
@@ -106,6 +106,7 @@ func main() {
 
 	// Step 3: Connect to the database
 	dbPool := persistance.GetDB()
+	defer dbPool.Close()
 
 	// Step 4: Declare and create the Discord Session
 	var discordSession *discordgo.Session
@@ -114,17 +115,21 @@ func main() {
 	var inDevMode = devMode || os.Getenv("DEV_MODE") == "true"
 
 	// Checking to see if we are in dev mode
+	discordToken := util.GetDiscordKey()
 	if inDevMode {
 		log.Println("Entering Dev Mode...")
-		discordSession, err = discordgo.New("Bot " + util.GetDevDiscordKey())
-		if err != nil {
-			log.Fatal("Error connecting bot to server")
+		discordToken = util.GetDevDiscordKey()
+	}
+	if strings.TrimSpace(discordToken) == "" {
+		keyName := "DISCORD_API_KEY"
+		if inDevMode {
+			keyName = "DEV_DISCORD_API_KEY"
 		}
-	} else {
-		discordSession, err = discordgo.New("Bot " + util.GetDiscordKey())
-		if err != nil {
-			log.Fatal("Error connecting bot to server")
-		}
+		log.Fatalf("Required environment variable %s is not set", keyName)
+	}
+	discordSession, err = discordgo.New("Bot " + discordToken)
+	if err != nil {
+		log.Fatalf("Error creating Discord session: %v", err)
 	}
 
 	// Step 5: Add the messageReceive handler to the discord session
@@ -142,6 +147,8 @@ func main() {
 	// Step 7: Register the slash commands
 	if removeCommands {
 		removeRegisteredSlashCommands(discordSession)
+		shutDown(discordSession)
+		return
 	}
 
 	if !skipCmdReg {
@@ -155,9 +162,7 @@ func main() {
 	// until an interrupt is received, at which point the bot disconnects from
 	// the server cleanly
 	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-
-	defer dbPool.Close()
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
 	// This is a simple 5 minute loop originally used to save the bot statistics
 	for {

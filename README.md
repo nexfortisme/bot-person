@@ -1,96 +1,125 @@
+# Bot Person
+
 [![Discord](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/MtEG5zMtUR)
 
-## What is Bot Person
-
-Bot Person is a feature-rich Discord bot originally developed by [AltarCrystal](https://github.com/AltarCrystal) and continued by [nexfortisme](https://github.com/nexfortisme). The bot integrates AI models for chat, image generation, and video generation alongside an economy system built around tokens.
+Bot Person is a Discord bot originally developed by [AltarCrystal](https://github.com/AltarCrystal) and continued by [nexfortisme](https://github.com/nexfortisme). It combines local and hosted AI chat, image generation and editing, web search, conversation replies, usage statistics, and a token economy.
 
 ## Features
 
-- **AI Chat**: Chat via a local LLM or OpenAI's GPT models
-- **Image Generation**: Create AI-generated images using DALL-E
-- **Video Generation**: Generate short AI videos using OpenAI's Sora
-- **Token Economy**: Earn and spend tokens through daily bonuses and commands
-- **Statistics Tracking**: Monitor your usage and daily bonus streaks
-- **Search**: Search the web via Perplexity directly from Discord
+- Local LLM chat through an OpenAI-compatible endpoint such as Ollama
+- OpenAI chat, including optional web search for `/bot-gpt`
+- OpenAI image generation and, with a GPT image model, image editing
+- Threaded follow-up conversations by replying to bot responses
+- Image understanding when supported by the configured local model
+- Perplexity web search
+- SQLite-backed balances, daily bonuses, streaks, settings, statistics, and conversation history
+- Five-minute hot reloads for model and local-endpoint settings in `.env`
 
-## Commands
+Video generation, loot boxes, voice commands, and several experimental commands have source files in the repository but are not currently registered.
 
-### AI & Generation
-- `/bot` - Chat with a local LLM (sarcastic, humorous responses)
-- `/bot-gpt` - Chat with OpenAI's GPT model
-- `/image` - Generate images using DALL-E
-- `/slop` - Generate a short AI video using Sora (4, 8, or 12 seconds); costs tokens
+## Active slash commands
 
-### Economy & Rewards
-- `/balance` - Check your current token balance
-- `/send` - Send tokens to another user
-- `/bonus` - Claim your daily token bonus; includes a streak system with Save/Reset streak buttons
-- `/burn` - Burn tokens
+| Command | Purpose |
+| --- | --- |
+| `/bot` | Chat with the configured local LLM |
+| `/bot-gpt` | Chat with OpenAI, optionally with web search |
+| `/image` | Generate an image for one token |
+| `/search` | Search the web through Perplexity |
+| `/balance` | Check your own or another user's balance |
+| `/send` | Send tokens to another user |
+| `/bonus` | Claim a daily bonus and manage a missed streak |
+| `/burn` | Permanently remove tokens from your balance |
+| `/my-stats` | Show personal usage and economy statistics |
+| `/bot-stats` | Show bot-wide statistics |
+| `/set` | Configure supported per-user settings |
+| `/about`, `/help` | Show bot and command information |
+| `/invite`, `/donations`, `/broken` | Show community and support information |
 
-### Statistics & Information
-- `/my-stats` - View your personal statistics
-- `/bot-stats` - View bot-wide statistics
-- `/about` - Learn about the bot
-- `/help` - Get help with commands
-- `/search` - Search for information via Perplexity
+You can also mention the bot to chat, attach images for supported multimodal models, or reply to a `/bot`, `/bot-gpt`, or generated-image response to continue working with it.
 
-### Utility
-- `/invite` - Get the bot's invite link
-- `/donations` - See who has contributed to keeping the bot running
-- `/broken` - Get information on how to report a bug or issue
-- `/set` - Configure bot settings
+## Requirements
 
-## Setup
+- Go 1.24 or Docker
+- A Discord application and bot token
+- OpenAI and Perplexity API credentials
+- An OpenAI-compatible local chat-completions server for `/bot` and retorts
 
-Copy `example.env` to `.env` and fill in the required values:
+## Configuration
 
-```
-OPEN_AI_API_KEY=        # OpenAI API key (for /bot-gpt, /image, /slop)
-DISCORD_API_KEY=        # Discord bot token
-DEV_DISCORD_API_KEY=    # Discord bot token for dev mode
-PERPLEXITY_API_KEY=     # Perplexity API key (for /search)
-
-BOT_OPEN_AI_MODEL=      # Model used by /bot-gpt
-OPEN_AI_MODEL=          # Model used for chat
-IMAGE_GENERATION_MODEL= # Model used for /image
-
-ADMINS=                 # Comma-separated list of admin user IDs
-```
-
-The `/bot` command requires a locally-running LLM server (OpenAI-compatible API).
-
-## Running
+Copy the example file and fill in its blank values:
 
 ```bash
-# Normal mode
-go run main.go
-
-# Dev mode (uses DEV_DISCORD_API_KEY)
-go run main.go -dev
-
-# Remove registered slash commands on startup
-go run main.go -removeCommands
+cp example.env .env
 ```
 
-Or use the provided `Dockerfile` to run the bot in a container:
+| Variable | Description |
+| --- | --- |
+| `DISCORD_API_KEY` | Discord bot token used in normal mode |
+| `DEV_DISCORD_API_KEY` | Discord bot token used with `-dev` or `DEV_MODE=true` |
+| `OPEN_AI_API_KEY` | OpenAI API key for hosted chat and images |
+| `PERPLEXITY_API_KEY` | Perplexity API key for `/search` |
+| `BOT_OPEN_AI_MODEL` | OpenAI model used by legacy hosted bot paths |
+| `OPEN_AI_MODEL` | OpenAI model used by `/bot-gpt` |
+| `IMAGE_GENERATION_MODEL` | OpenAI image model used by `/image` and image edits |
+| `LOCAL_LLM_MODEL` | Local model used by `/bot`; defaults to `gemma4:12b` |
+| `RETORT_MACHINE_MODEL` | Local model used for short retorts and image-intent detection |
+| `LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT` | OpenAI-compatible local endpoint; defaults to `http://localhost:11434/v1/chat/completions` |
+| `ADMINS` | Comma-separated Discord user IDs allowed to use admin message commands |
+| `DB_PATH` | Optional SQLite path; defaults to `db.sqlite` |
+| `DEV_MODE` | Set to `true` to use the dev Discord token without the CLI flag |
+
+The application currently validates all OpenAI model settings and both hosted API keys at startup because active commands depend on them. It validates only the Discord token selected for the current mode.
+
+## Run locally
 
 ```bash
-# macOS / Windows (Docker Desktop) — reaches Ollama via host.docker.internal
+go run .
+```
+
+Useful flags:
+
+```bash
+# Use DEV_DISCORD_API_KEY
+go run . -dev
+
+# Read configuration only from the process environment
+go run . -useEnvFile=false
+
+# Remove this application's registered global slash commands, then exit
+go run . -removeCommands
+```
+
+The bot registers global slash commands, so Discord may take time to display registration changes.
+
+## Run with Docker
+
+On macOS or Windows with Docker Desktop:
+
+```bash
 docker compose up -d --build
+```
 
-# Native Linux — uses host networking so the bot reaches Ollama on localhost,
-# without opening the firewall for the Docker bridge or rebinding Ollama
+On native Linux, the override uses host networking so the container can reach a loopback-only local LLM:
+
+```bash
 docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d --build
 ```
 
-## Support & Development
+Compose mounts `.env` read-only, persists SQLite data under `./data`, and stores generated media under `./img`.
 
-This bot is actively maintained and improved. For support, join our [Discord server](https://discord.gg/MtEG5zMtUR) or open an issue on [GitHub](https://github.com/nexfortisme/bot-person/issues).
+## Development
 
-## Contributing
+```bash
+gofmt -w <changed-go-files>
+go test ./...
+go vet ./...
+go build ./...
+```
 
-Contributions are welcome! Feel free to submit issues and pull requests to help improve the bot.
+There are currently only focused unit tests; most Discord and provider integrations still require manual or mocked integration coverage. See [AGENTS.md](AGENTS.md) for repository-specific contribution guidance.
+
+For support, join the [Discord server](https://discord.gg/MtEG5zMtUR) or open a [GitHub issue](https://github.com/nexfortisme/bot-person/issues).
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Bot Person is available under the [MIT License](LICENSE).

@@ -7,7 +7,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var integerOptionMinValue = 0.1
+var integerOptionMinValue = 1.0
 
 type Send struct{}
 
@@ -23,7 +23,7 @@ func (sn *Send) ApplicationCommand() *discordgo.ApplicationCommand {
 					Required:    true,
 				},
 				{
-					Type:        discordgo.ApplicationCommandOptionNumber,
+					Type:        discordgo.ApplicationCommandOptionInteger,
 					Name:        "amount",
 					Description: "The amount of tokens you want to send.",
 					MinValue:    &integerOptionMinValue,
