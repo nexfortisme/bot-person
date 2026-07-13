@@ -11,18 +11,18 @@ import (
 )
 
 var (
-	open_ai_api_key        string
-	discord_api_key        string
-	dev_discord_api_key    string
-	elevenlabs_api_key     string
-	perplexity_api_key     string
-	bot_open_ai_model                 string
-	open_ai_model                     string
-	image_generation_model            string
-	local_llm_model                   string
-	retort_machine_model              string
+	open_ai_api_key                     string
+	discord_api_key                     string
+	dev_discord_api_key                 string
+	elevenlabs_api_key                  string
+	perplexity_api_key                  string
+	bot_open_ai_model                   string
+	open_ai_model                       string
+	image_generation_model              string
+	local_llm_model                     string
+	retort_machine_model                string
 	local_llm_chat_completions_endpoint string
-	admins                            []string
+	admins                              []string
 
 	modelMu sync.RWMutex
 
@@ -33,8 +33,8 @@ var (
 )
 
 const (
-	defaultLocalLLMModel                  = "gemma4:12b"
-	defaultRetortMachineModel             = "gemma4:12b"
+	defaultLocalLLMModel                   = "gemma4:12b"
+	defaultRetortMachineModel              = "gemma4:12b"
 	defaultLocalLLMChatCompletionsEndpoint = "http://localhost:11434/v1/chat/completions"
 )
 
@@ -43,9 +43,6 @@ func ReadEnv(useEnvFile bool) {
 	if useEnvFile {
 		cwd, err := os.Getwd()
 		if err != nil {
-
-			log.Printf("Tryign to get osEnv: %v", os.Getenv("OPEN_AI_API_KEY"))
-
 			log.Fatalf("Error getting current working directory: %v", err)
 		}
 
@@ -163,6 +160,12 @@ func ReloadModelConfig(useEnvFile bool) {
 	newLocalLLMEndpoint := envOrDefault("LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT", defaultLocalLLMChatCompletionsEndpoint)
 
 	modelMu.Lock()
+	changed := bot_open_ai_model != newBot ||
+		open_ai_model != newModel ||
+		image_generation_model != newImage ||
+		local_llm_model != newLocalLLM ||
+		retort_machine_model != newRetortMachine ||
+		local_llm_chat_completions_endpoint != newLocalLLMEndpoint
 	bot_open_ai_model = newBot
 	open_ai_model = newModel
 	image_generation_model = newImage
@@ -171,10 +174,12 @@ func ReloadModelConfig(useEnvFile bool) {
 	local_llm_chat_completions_endpoint = newLocalLLMEndpoint
 	modelMu.Unlock()
 
-	log.Printf(
-		"ReloadModelConfig: models updated — bot=%s, chat=%s, image=%s, local_llm=%s, retort_machine=%s, local_llm_endpoint=%s",
-		newBot, newModel, newImage, newLocalLLM, newRetortMachine, newLocalLLMEndpoint,
-	)
+	if changed {
+		log.Printf(
+			"ReloadModelConfig: models updated — bot=%s, chat=%s, image=%s, local_llm=%s, retort_machine=%s, local_llm_endpoint=%s",
+			newBot, newModel, newImage, newLocalLLM, newRetortMachine, newLocalLLMEndpoint,
+		)
+	}
 }
 
 func envOrDefault(key, fallback string) string {

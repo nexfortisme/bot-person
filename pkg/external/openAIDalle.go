@@ -50,7 +50,6 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 	openAIResponse, err := postOpenAIImageRequest(
 		openAIImageGenerationsEndpoint,
 		newImageGenerationRequest(prompt),
-		"dalle-response",
 	)
 	if err != nil {
 		return discordgo.File{}, err
@@ -59,19 +58,24 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 	return imageResponseToDiscordFile(openAIResponse)
 }
 
-func GetDalleFollowupResponse(prompt string, previousImageURL string) (discordgo.File, error) {
-	if strings.TrimSpace(previousImageURL) == "" {
-		return discordgo.File{}, errors.New("follow-up image URL is missing")
+func GetImageEditResponse(prompt string, imageURLs []string) (discordgo.File, error) {
+	urls := make([]string, 0, len(imageURLs))
+	for _, imageURL := range imageURLs {
+		if strings.TrimSpace(imageURL) != "" {
+			urls = append(urls, imageURL)
+		}
+	}
+	if len(urls) == 0 {
+		return discordgo.File{}, errors.New("no image was provided to edit")
 	}
 
-	if !supportsImageEdits(util.GetImageGenerationModel()) {
-		return discordgo.File{}, errors.New("follow-up image edits require a GPT image model")
+	if !ImageEditsSupported() {
+		return discordgo.File{}, errors.New("image edits require a GPT image model")
 	}
 
 	openAIResponse, err := postOpenAIImageRequest(
 		openAIImageEditsEndpoint,
-		newImageEditRequest(prompt, previousImageURL),
-		"dalle-followup-response",
+		newImageEditRequest(prompt, urls),
 	)
 	if err != nil {
 		return discordgo.File{}, err
@@ -98,18 +102,23 @@ func newImageGenerationRequest(prompt string) imageGenerationRequest {
 	return request
 }
 
-func newImageEditRequest(prompt string, previousImageURL string) imageEditRequest {
+func newImageEditRequest(prompt string, imageURLs []string) imageEditRequest {
+	images := make([]imageReference, 0, len(imageURLs))
+	for _, imageURL := range imageURLs {
+		images = append(images, imageReference{ImageURL: imageURL})
+	}
+
 	return imageEditRequest{
 		Model:        util.GetImageGenerationModel(),
 		Prompt:       prompt,
-		Images:       []imageReference{{ImageURL: previousImageURL}},
+		Images:       images,
 		N:            1,
 		Size:         defaultImageSize,
 		OutputFormat: defaultImageOutputFormat,
 	}
 }
 
-func postOpenAIImageRequest(endpoint string, requestBody any, debugPrefix string) (DalleResponse, error) {
+func postOpenAIImageRequest(endpoint string, requestBody any) (DalleResponse, error) {
 	body, err := json.Marshal(requestBody)
 	if err != nil {
 		return DalleResponse{}, errors.New("error creating request body: " + err.Error())
@@ -143,8 +152,6 @@ func postOpenAIImageRequest(endpoint string, requestBody any, debugPrefix string
 	if err != nil {
 		return DalleResponse{}, errors.New("error parsing response: " + err.Error())
 	}
-
-	saveImageResponseForDebugging(openAIResponse, debugPrefix)
 
 	if openAIResponse.Error != nil {
 		return DalleResponse{}, errors.New("Error Response from OpenAI: " + SimplifyOpenAIError(openAIResponse.Error.Message))
@@ -211,18 +218,14 @@ func imageContentType(outputFormat string) string {
 	}
 }
 
-func saveImageResponseForDebugging(openAIResponse DalleResponse, debugPrefix string) {
-	currentTime := time.Now().Format("2006-01-02-15-04-05")
-	data, _ := json.MarshalIndent(openAIResponse, "", "  ")
-	util.SaveResponseToFile(data, fmt.Sprintf("%s-%s.txt", debugPrefix, currentTime))
-}
-
 func usesGPTImageOutputFields(model string) bool {
 	return strings.HasPrefix(strings.ToLower(model), "gpt-image-") || strings.EqualFold(model, "chatgpt-image-latest")
 }
 
-func supportsImageEdits(model string) bool {
-	return usesGPTImageOutputFields(model)
+// ImageEditsSupported reports whether the configured image generation model
+// can take an existing image as input for edits.
+func ImageEditsSupported() bool {
+	return usesGPTImageOutputFields(util.GetImageGenerationModel())
 }
 
 func decodeBase64Image(b64String string) ([]byte, error) {

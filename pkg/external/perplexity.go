@@ -40,7 +40,6 @@ func GetPerplexityResponse(originalPrompt string, userPrompt string) PerplexityR
 	}
 
 	buf, _ := io.ReadAll(resp.Body)
-	// fmt.Println(string(buf))
 
 	respPex := PerplexityResponse{}
 	// need to add proper error handling

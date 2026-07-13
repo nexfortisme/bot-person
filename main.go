@@ -113,9 +113,6 @@ func main() {
 
 	var inDevMode = devMode || os.Getenv("DEV_MODE") == "true"
 
-	// log.Printf("DEV_MODE: %v", os.Getenv("DEV_MODE"))
-	// log.Printf("devMode: %v", devMode)
-
 	// Checking to see if we are in dev mode
 	if inDevMode {
 		log.Println("Entering Dev Mode...")

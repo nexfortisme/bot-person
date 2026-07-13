@@ -37,10 +37,6 @@ func GetSoraRespone(prompt string, duration int) (VideoJob, error) {
 	}
 
 	responseBuffer, _ := io.ReadAll(httpResponse.Body)
-	err = util.SaveResponseToFile(responseBuffer, "sora_response.txt")
-	if err != nil {
-		fmt.Println("Error saving response to file:", err)
-	}
 
 	var videoResponse VideoJob
 
@@ -52,7 +48,6 @@ func GetSoraRespone(prompt string, duration int) (VideoJob, error) {
 	if videoResponse.Error != nil {
 		return VideoJob{}, errors.New("error: " + videoResponse.Error.Message)
 	}
-
 
 	return videoResponse, nil
 }
@@ -75,11 +70,6 @@ func GetSoraJobStatus(videoId string) (VideoJob, error) {
 	}
 
 	responseBuffer, _ := io.ReadAll(httpResponse.Body)
-	currentTime := time.Now().Format("2006-01-02-15-04-05")
-	err = util.SaveResponseToFile(responseBuffer, fmt.Sprintf("video_status_response_%s.txt", currentTime))
-	if err != nil {
-		return VideoJob{}, errors.New("Error saving response to file: " + err.Error())
-	}
 
 	var videoResponse VideoJob
 	err = json.Unmarshal([]byte(string(responseBuffer)), &videoResponse)
