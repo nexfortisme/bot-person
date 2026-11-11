@@ -107,6 +107,11 @@ func newImageGenerationRequest(prompt string, outputFormat string) imageGenerati
 
 	if usesGPTImageOutputFields(model) {
 		request.OutputFormat = outputFormat
+		if outputFormat == "gif" {
+			// GIF frames are packed into one sheet, so a fixed frame size
+			// can exceed the API's pixel budget; "auto" lets it pick.
+			request.Size = "auto"
+		}
 	} else {
 		request.ResponseFormat = "b64_json"
 	}
