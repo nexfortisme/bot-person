@@ -47,9 +47,21 @@ type imageReference struct {
 }
 
 func GetDalleResponse(prompt string) (discordgo.File, error) {
+	return getImageGenerationResponse(prompt, defaultImageOutputFormat)
+}
+
+func GetDalleGifResponse(prompt string) (discordgo.File, error) {
+	if !usesGPTImageOutputFields(util.GetImageGenerationModel()) {
+		return discordgo.File{}, errors.New("GIF generation requires a GPT image model")
+	}
+
+	return getImageGenerationResponse(prompt, "gif")
+}
+
+func getImageGenerationResponse(prompt string, outputFormat string) (discordgo.File, error) {
 	openAIResponse, err := postOpenAIImageRequest(
 		openAIImageGenerationsEndpoint,
-		newImageGenerationRequest(prompt),
+		newImageGenerationRequest(prompt, outputFormat),
 	)
 	if err != nil {
 		return discordgo.File{}, err
@@ -84,7 +96,7 @@ func GetImageEditResponse(prompt string, imageURLs []string) (discordgo.File, er
 	return imageResponseToDiscordFile(openAIResponse)
 }
 
-func newImageGenerationRequest(prompt string) imageGenerationRequest {
+func newImageGenerationRequest(prompt string, outputFormat string) imageGenerationRequest {
 	model := util.GetImageGenerationModel()
 	request := imageGenerationRequest{
 		Model:  model,
@@ -94,7 +106,7 @@ func newImageGenerationRequest(prompt string) imageGenerationRequest {
 	}
 
 	if usesGPTImageOutputFields(model) {
-		request.OutputFormat = defaultImageOutputFormat
+		request.OutputFormat = outputFormat
 	} else {
 		request.ResponseFormat = "b64_json"
 	}
@@ -202,6 +214,8 @@ func normalizeImageFormat(outputFormat string) string {
 		return "jpg"
 	case "webp":
 		return "webp"
+	case "gif":
+		return "gif"
 	default:
 		return "png"
 	}
@@ -213,6 +227,8 @@ func imageContentType(outputFormat string) string {
 		return "image/jpeg"
 	case "webp":
 		return "image/webp"
+	case "gif":
+		return "image/gif"
 	default:
 		return "image/png"
 	}
