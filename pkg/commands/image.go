@@ -21,6 +21,12 @@ func (im *Image) ApplicationCommand() *discordgo.ApplicationCommand {
 				Description: "The actual prompt that Bot Person will generate an image from.",
 				Required:    true,
 			},
+			{
+				Type:        discordgo.ApplicationCommandOptionBoolean,
+				Name:        "gif",
+				Description: "Generate an animated GIF instead of a static image.",
+				Required:    false,
+			},
 		},
 	}
 }
@@ -50,6 +56,11 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	generateGif := false
+	if gifOption, ok := userImageOptionMap["gif"]; ok {
+		generateGif = gifOption.BoolValue()
+	}
+
 	// Pulling the propt out of the optionsMap
 	if option, ok := userImageOptionMap["prompt"]; ok {
 
@@ -65,7 +76,7 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 
 		// Going out to make the OpenAI call to get the proper response
-		returnFile, err := ParseDalleRequest(s, option.StringValue())
+		returnFile, err := ParseDalleRequest(s, option.StringValue(), generateGif)
 
 		if err != nil {
 
@@ -103,15 +114,22 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func (im *Image) HelpString() string {
-	return fmt.Sprintf("The `/images` command allows you to request an image from OpenAI's Dall-E API at the cost of %d Bot Person token per image. The image returned is based on what you give in the `prompt` option.", im.CommandCost())
+	return fmt.Sprintf("The `/images` command allows you to request an image from OpenAI's Dall-E API at the cost of %d Bot Person token per image. The image returned is based on what you give in the `prompt` option. Use the `gif` option to generate an animated GIF instead of a static image.", im.CommandCost())
 }
 
 func (im *Image) CommandCost() int {
 	return 1
 }
 
-func ParseDalleRequest(s *discordgo.Session, prompt string) (discordgo.File, error) {
-	dalleResponse, err := external.GetDalleResponse(prompt)
+func ParseDalleRequest(s *discordgo.Session, prompt string, asGif bool) (discordgo.File, error) {
+	var dalleResponse discordgo.File
+	var err error
+
+	if asGif {
+		dalleResponse, err = external.GetDalleGifResponse(prompt)
+	} else {
+		dalleResponse, err = external.GetDalleResponse(prompt)
+	}
 
 	if err != nil {
 		return discordgo.File{}, err
