@@ -38,17 +38,26 @@ func (b *RoutedBot) CommandName() string {
 
 func (b *RoutedBot) ApplicationCommand() *discordgo.ApplicationCommand {
 	route, _ := external.RouteByCommand(b.command)
+	options := []*discordgo.ApplicationCommandOption{
+		{
+			Type:        discordgo.ApplicationCommandOptionString,
+			Name:        "prompt",
+			Description: "The prompt to send.",
+			Required:    true,
+		},
+	}
+	if route.NativeWebSearch {
+		options = append(options, &discordgo.ApplicationCommandOption{
+			Type:        discordgo.ApplicationCommandOptionBoolean,
+			Name:        "web-search",
+			Description: "Enable web search to get up-to-date information.",
+			Required:    false,
+		})
+	}
 	return &discordgo.ApplicationCommand{
 		Name:        route.Command,
 		Description: route.Description,
-		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        "prompt",
-				Description: "The prompt to send.",
-				Required:    true,
-			},
-		},
+		Options:     options,
 	}
 }
 
@@ -69,6 +78,11 @@ func (b *RoutedBot) CommandCost() int {
 }
 
 func executeRoutedBot(s *discordgo.Session, i *discordgo.InteractionCreate, commandName string) {
+	route, ok := external.RouteByCommand(commandName)
+	if !ok {
+		return
+	}
+
 	options := i.ApplicationCommandData().Options
 	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
 	for _, opt := range options {
@@ -88,6 +102,13 @@ func executeRoutedBot(s *discordgo.Session, i *discordgo.InteractionCreate, comm
 			},
 		})
 		return
+	}
+
+	useWebSearch := false
+	if route.NativeWebSearch {
+		if webSearchOption, ok := optionMap["web-search"]; ok {
+			useWebSearch = webSearchOption.BoolValue()
+		}
 	}
 
 	initialResponse := formatPromptResponseInProgress(prompt, "")
@@ -123,34 +144,43 @@ func executeRoutedBot(s *discordgo.Session, i *discordgo.InteractionCreate, comm
 		Role:    "user",
 		Content: prompt,
 	}}
-	assistantResponse, streamErr := streamInteractionResponse(
-		s,
-		i,
-		initialResponse,
-		func(assistant string) string {
-			return formatPromptResponseInProgress(prompt, assistant)
-		},
-		func(onDelta func(string)) (string, error) {
-			return external.StreamBotCommand(commandName, userMessage, false, onDelta)
-		},
-	)
+	formatFn := func(assistant string) string {
+		return formatPromptResponseInProgress(prompt, assistant)
+	}
+	streamFn := func(onDelta func(string)) (string, error) {
+		return external.StreamBotCommand(commandName, userMessage, useWebSearch, onDelta)
+	}
+
+	var assistantResponse string
+	var streamErr error
+	if useWebSearch {
+		assistantResponse, streamErr = streamInteractionResponseSuppressEmbeds(s, i, initialResponse, formatFn, streamFn)
+	} else {
+		assistantResponse, streamErr = streamInteractionResponse(s, i, initialResponse, formatFn, streamFn)
+	}
 
 	if streamErr != nil || strings.TrimSpace(assistantResponse) == "" {
 		if streamErr != nil {
 			fmt.Printf("Error streaming /%s response: %v\n", commandName, streamErr)
 		}
 
-		assistantResponse = external.CompleteBotCommand(commandName, userMessage, false)
+		assistantResponse = external.CompleteBotCommand(commandName, userMessage, useWebSearch)
 		if strings.TrimSpace(assistantResponse) == "" {
 			assistantResponse = "I'm sorry, I don't understand?"
 		}
 
 		fallbackContent := util.TruncateForDiscord(formatPromptResponse(prompt, assistantResponse))
-		_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-			Content: &fallbackContent,
-		})
-		if err != nil {
-			fmt.Println("Error editing interaction response:", err)
+		var fallbackErr error
+		if useWebSearch {
+			// Clear SUPPRESS_EMBEDS flag (flags: 0) so sources render on the final message.
+			fallbackErr = interactionResponseEditWithFlags(s, i, fallbackContent, 0)
+		} else {
+			_, fallbackErr = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &fallbackContent,
+			})
+		}
+		if fallbackErr != nil {
+			fmt.Println("Error editing interaction response:", fallbackErr)
 			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: "Something went wrong.",
 			})
@@ -168,6 +198,15 @@ func executeRoutedBot(s *discordgo.Session, i *discordgo.InteractionCreate, comm
 			Content: &fileMessage,
 			Files:   []*discordgo.File{fileObj},
 		})
+		if err != nil {
+			fmt.Println("Error editing interaction response:", err)
+			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content: "Something went wrong.",
+			})
+		}
+	} else if useWebSearch {
+		// Clear SUPPRESS_EMBEDS flag (flags: 0) so sources render on the final message.
+		err := interactionResponseEditWithFlags(s, i, displayResponse, 0)
 		if err != nil {
 			fmt.Println("Error editing interaction response:", err)
 			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{

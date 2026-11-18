@@ -4,25 +4,27 @@ import "strings"
 
 // BotRoute is a named chat model exposed as a slash command and an @mention.
 type BotRoute struct {
-	Command     string
-	Mention     string
-	Model       string
-	ChoiceName  string
-	Label       string
-	Description string
-	Help        string
+	Command         string
+	Mention         string
+	Model           string
+	ChoiceName      string
+	Label           string
+	Description     string
+	Help            string
+	NativeWebSearch bool // OpenRouter can use the provider's native web search for this model
 }
 
 func BotRoutes() []BotRoute {
 	return []BotRoute{
 		{
-			Command:     "bot-gemini",
-			Mention:     "gemini",
-			Model:       "google/gemini-4-carbon",
-			ChoiceName:  "Bot Gemini",
-			Label:       "Gemini",
-			Description: "Ask Gemini through OpenRouter.",
-			Help:        "The `/bot-gemini` command asks Gemini (`google/gemini-4-carbon`) through OpenRouter and streams the reply. Reply to that message to continue the conversation. You can also mention `@gemini`.",
+			Command:         "bot-gemini",
+			Mention:         "gemini",
+			Model:           "google/gemini-4-carbon",
+			ChoiceName:      "Bot Gemini",
+			Label:           "Gemini",
+			Description:     "Ask Gemini through OpenRouter.",
+			Help:            "The `/bot-gemini` command asks Gemini (`google/gemini-4-carbon`) through OpenRouter and streams the reply. Use the `web-search` option to enable real-time web search. Reply to that message to continue the conversation. You can also mention `@gemini`.",
+			NativeWebSearch: true,
 		},
 		{
 			Command:     "bot-muse",
@@ -34,22 +36,24 @@ func BotRoutes() []BotRoute {
 			Help:        "The `/bot-muse` command asks Muse (`meta/muse-ember`) through OpenRouter and streams the reply. Reply to that message to continue the conversation. You can also mention `@muse`.",
 		},
 		{
-			Command:     "bot-claude",
-			Mention:     "claude",
-			Model:       "anthropic/claude-sonnet-5.5",
-			ChoiceName:  "Bot Claude",
-			Label:       "Claude",
-			Description: "Ask Claude through OpenRouter.",
-			Help:        "The `/bot-claude` command asks Claude (`anthropic/claude-sonnet-5.5`) through OpenRouter and streams the reply. Reply to that message to continue the conversation. You can also mention `@claude`.",
+			Command:         "bot-claude",
+			Mention:         "claude",
+			Model:           "anthropic/claude-sonnet-5.5",
+			ChoiceName:      "Bot Claude",
+			Label:           "Claude",
+			Description:     "Ask Claude through OpenRouter.",
+			Help:            "The `/bot-claude` command asks Claude (`anthropic/claude-sonnet-5.5`) through OpenRouter and streams the reply. Use the `web-search` option to enable real-time web search. Reply to that message to continue the conversation. You can also mention `@claude`.",
+			NativeWebSearch: true,
 		},
 		{
-			Command:     "bot-grok",
-			Mention:     "grok",
-			Model:       "x-ai/grok-4.7",
-			ChoiceName:  "Bot Grok",
-			Label:       "Grok",
-			Description: "Ask Grok through OpenRouter.",
-			Help:        "The `/bot-grok` command asks Grok (`x-ai/grok-4.7`) through OpenRouter and streams the reply. Reply to that message to continue the conversation. You can also mention `@grok`.",
+			Command:         "bot-grok",
+			Mention:         "grok",
+			Model:           "x-ai/grok-4.7",
+			ChoiceName:      "Bot Grok",
+			Label:           "Grok",
+			Description:     "Ask Grok through OpenRouter.",
+			Help:            "The `/bot-grok` command asks Grok (`x-ai/grok-4.7`) through OpenRouter and streams the reply. Use the `web-search` option to enable real-time web search. Reply to that message to continue the conversation. You can also mention `@grok`.",
+			NativeWebSearch: true,
 		},
 		{
 			Command:     "bot-bob",

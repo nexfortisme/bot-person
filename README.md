@@ -18,10 +18,10 @@ Bot Person is a feature-rich Discord bot originally developed by [AltarCrystal](
 ### AI & Generation
 - `/bot` - Sarcastic chat with the local Gemma model
 - `/bot-gpt` - Chat with the configured OpenRouter model, with optional web search
-- `/bot-gemini` - Chat with Gemini. Also responds to `@gemini`
+- `/bot-gemini` - Chat with Gemini, with optional web search. Also responds to `@gemini`
 - `/bot-muse` - Chat with Muse. Also responds to `@muse`
-- `/bot-claude` - Chat with Claude. Also responds to `@claude`
-- `/bot-grok` - Chat with Grok. Also responds to `@grok`
+- `/bot-claude` - Chat with Claude, with optional web search. Also responds to `@claude`
+- `/bot-grok` - Chat with Grok, with optional web search. Also responds to `@grok`
 - `/bot-bob` - Chat with IBM Granite. Also responds to `@bob`
 - `/image` - Generate images with GPT Image 2.6 Sunburst
 - `/slop` - Generate a short AI video using Sora (4, 8, or 12 seconds); costs tokens
