@@ -93,6 +93,13 @@ var (
 	}
 )
 
+func init() {
+	for _, bot := range commands.RoutedBots() {
+		slashCommands = append(slashCommands, bot.ApplicationCommand())
+		commandHandlers[bot.CommandName()] = bot.Execute
+	}
+}
+
 func main() {
 
 	// Step One: Read in flag variables

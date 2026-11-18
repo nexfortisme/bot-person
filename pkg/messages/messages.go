@@ -22,6 +22,7 @@ import (
 
 var badBotRegex = regexp.MustCompile(`(?i)\bbad bot\b`)
 var imageFileExtensionRegex = regexp.MustCompile(`(?i)\.(png|jpe?g|gif|webp|bmp|tiff|heic|heif)$`)
+var modelMentionRegex = regexp.MustCompile(`(?i)(?:^|[^A-Za-z0-9_])@(bob|gemini|muse|claude|grok)\b`)
 var attachmentDownloadClient = &http.Client{Timeout: 20 * time.Second}
 
 const defaultImageOnlyPrompt = "Please describe the attached image(s)."
@@ -94,8 +95,20 @@ func ParseMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if commandName, prompt, mentioned := detectModelMention(m.Message.Content); mentioned {
+		sameThread := isReply && isModelChatCommand(replyType) && normalizeCommandName(replyType) == commandName
+		if !sameThread {
+			err := handleModelMention(s, m, commandName, prompt)
+			if err != nil {
+				fmt.Println("Error handling model mention:", err)
+				s.ChannelMessageSendReply(m.ChannelID, "Something went wrong while generating a response.", m.Message.Reference())
+			}
+			return
+		}
+	}
+
 	// Reply Handling
-	if isReply && (replyType == "bot" || replyType == "bot_gpt") {
+	if isReply && isModelChatCommand(replyType) {
 		validReplyTarget, validationErr := validateBotConversationReplyTarget(s, m)
 		if validationErr != nil {
 			fmt.Println("Error validating threaded bot reply target:", validationErr)
@@ -155,10 +168,8 @@ func detectReplyType(referencedMessage *discordgo.Message) string {
 	}
 
 	switch strings.ToLower(referencedMessage.Interaction.Name) {
-	case "bot":
-		return "bot"
-	case "bot-gpt", "bot_gpt":
-		return "bot_gpt"
+	case "bot", "bot-gpt", "bot_gpt", "bot-gemini", "bot-muse", "bot-claude", "bot-grok", "bot-bob":
+		return normalizeCommandName(referencedMessage.Interaction.Name)
 	case "image":
 		return "image"
 	default:
@@ -179,16 +190,14 @@ func detectReplyTypeFromThreadStore(messageID string) (string, error) {
 		return "", nil
 	}
 
-	switch strings.ToLower(strings.TrimSpace(message.CommandName)) {
-	case "bot-gpt", "bot_gpt":
-		return "bot_gpt", nil
-	case "bot":
-		return "bot", nil
-	case "image":
-		return "image", nil
-	default:
-		return "", nil
+	canonical := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(message.CommandName)), "_", "-")
+	if isModelChatCommand(canonical) {
+		return canonical, nil
 	}
+	if canonical == "image" {
+		return "image", nil
+	}
+	return "", nil
 }
 
 func resolveThreadIDForLock(messageID string) (string, error) {
@@ -222,19 +231,14 @@ func validateBotConversationReplyTarget(s *discordgo.Session, m *discordgo.Messa
 	if storedMessage == nil {
 		// Slash-command and reply metadata can still identify a valid target even before persistence completes.
 		replyType := detectReplyType(referencedMessage)
-		return replyType == "bot" || replyType == "bot_gpt", nil
+		return isModelChatCommand(replyType), nil
 	}
 
 	if strings.ToLower(strings.TrimSpace(storedMessage.Role)) != "assistant" {
 		return false, nil
 	}
 
-	switch normalizeCommandName(storedMessage.CommandName) {
-	case "bot", "bot-gpt":
-		return true, nil
-	default:
-		return false, nil
-	}
+	return isModelChatCommand(storedMessage.CommandName), nil
 }
 
 func handleMentionedBotMessage(s *discordgo.Session, m *discordgo.MessageCreate) error {
@@ -378,7 +382,7 @@ func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, re
 		})
 	}
 
-	userMessageContent := strings.TrimSpace(m.Message.Content)
+	userMessageContent := stripModelMentions(m.Message.Content)
 	imageDataURLs, imageDescriptions, err := encodeImageAttachmentsToDataURLs(collectMessageAndReferencedAttachments(m))
 	if err != nil {
 		return err
@@ -398,20 +402,19 @@ func handleThreadedBotReply(s *discordgo.Session, m *discordgo.MessageCreate, re
 
 	var streamFn func(onDelta func(string)) (string, error)
 	var fallbackFn func() string
-	switch commandName {
-	case "bot-gpt":
-		streamFn = func(onDelta func(string)) (string, error) {
-			return external.StreamOpenAIGPTResponseWithChatMessages(modelMessages, onDelta)
-		}
-		fallbackFn = func() string {
-			return external.GetOpenAIGPTResponseWithChatMessages(modelMessages)
-		}
-	default:
+	if commandName == "bot" {
 		streamFn = func(onDelta func(string)) (string, error) {
 			return external.StreamLocalLLMResponseWithChatMessages(modelMessages, m.Author.ID, onDelta)
 		}
 		fallbackFn = func() string {
 			return external.GetLocalLLMResponseWithChatMessages(modelMessages, m.Author.ID)
+		}
+	} else {
+		streamFn = func(onDelta func(string)) (string, error) {
+			return external.StreamBotCommand(commandName, modelMessages, false, onDelta)
+		}
+		fallbackFn = func() string {
+			return external.CompleteBotCommand(commandName, modelMessages, false)
 		}
 	}
 
@@ -780,14 +783,169 @@ func attachmentDescription(attachment *discordgo.MessageAttachment) string {
 }
 
 func normalizeCommandName(commandName string) string {
-	switch strings.ToLower(commandName) {
-	case "bot_gpt", "bot-gpt":
-		return "bot-gpt"
-	case "bot":
-		return "bot"
+	canonical := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(commandName)), "_", "-")
+	switch canonical {
+	case "bot", "bot-gpt", "bot-gemini", "bot-muse", "bot-claude", "bot-grok", "bot-bob":
+		return canonical
 	default:
 		return "bot"
 	}
+}
+
+func isModelChatCommand(name string) bool {
+	canonical := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(name)), "_", "-")
+	switch canonical {
+	case "bot", "bot-gpt", "bot-gemini", "bot-muse", "bot-claude", "bot-grok", "bot-bob":
+		return true
+	default:
+		return false
+	}
+}
+
+func detectModelMention(content string) (string, string, bool) {
+	match := modelMentionRegex.FindStringSubmatch(content)
+	if len(match) < 2 {
+		return "", "", false
+	}
+
+	route, ok := external.RouteByMention(strings.ToLower(match[1]))
+	if !ok {
+		return "", "", false
+	}
+
+	return route.Command, stripModelMentions(content), true
+}
+
+func stripModelMentions(content string) string {
+	return strings.Join(strings.Fields(modelMentionRegex.ReplaceAllString(content, " ")), " ")
+}
+
+func handleModelMention(s *discordgo.Session, m *discordgo.MessageCreate, commandName string, prompt string) error {
+	prompt = strings.TrimSpace(extractMentionPrompt(prompt, s.State.User.ID, m.Mentions))
+
+	if prompt != "" && external.ImageEditsSupported() {
+		if editImageURLs := collectEditableImageURLs(m); len(editImageURLs) > 0 && external.DetectImageEditIntent(prompt) {
+			return handleImageEdit(s, m, prompt, editImageURLs)
+		}
+	}
+
+	imageDataURLs, imageDescriptions, err := encodeImageAttachmentsToDataURLs(collectMessageAndReferencedAttachments(m))
+	if err != nil {
+		return err
+	}
+	if prompt == "" && len(imageDataURLs) == 0 {
+		prompt = "Hello"
+	}
+
+	if !util.TryStartThreadResponse(m.ID) {
+		_, _ = s.ChannelMessageSendReply(
+			m.ChannelID,
+			"Please wait for the current response to finish before sending another message.",
+			m.Message.Reference(),
+		)
+		return nil
+	}
+	defer util.FinishThreadResponse(m.ID)
+
+	modelMessages := []external.OpenAIChatMessage{
+		buildUserChatMessage(prompt, imageDataURLs),
+	}
+
+	placeholderContent := appendSuffixWithinDiscordLimit("Thinking...", streamInProgressSuffix)
+	responseMessage, err := s.ChannelMessageSendReply(m.ChannelID, placeholderContent, m.Message.Reference())
+	if err != nil {
+		return err
+	}
+
+	assistantResponse, streamErr := util.StreamResponseWithThrottledEdits(
+		placeholderContent,
+		func(assistant string) string {
+			trimmedAssistant := strings.TrimSpace(assistant)
+			if trimmedAssistant == "" {
+				return placeholderContent
+			}
+			return appendSuffixWithinDiscordLimit(trimmedAssistant, streamInProgressSuffix)
+		},
+		func(onDelta func(string)) (string, error) {
+			return external.StreamBotCommand(commandName, modelMessages, false, onDelta)
+		},
+		func(content string) error {
+			_, editErr := s.ChannelMessageEdit(m.ChannelID, responseMessage.ID, content)
+			if editErr != nil {
+				fmt.Println("Error editing model mention response while streaming:", editErr)
+			}
+			return editErr
+		},
+	)
+	if streamErr != nil || strings.TrimSpace(assistantResponse) == "" {
+		if streamErr != nil {
+			fmt.Println("Error streaming model mention response:", streamErr)
+		}
+		assistantResponse = external.CompleteBotCommand(commandName, modelMessages, false)
+	}
+	if strings.TrimSpace(assistantResponse) == "" {
+		assistantResponse = "I'm sorry, I don't understand?"
+	}
+
+	trimmedAssistantResponse := strings.TrimSpace(assistantResponse)
+	if len(trimmedAssistantResponse) > 2000 {
+		filePreview := appendSuffixWithinDiscordLimit(trimmedAssistantResponse, longResponseFileSuffix)
+		fileObj := util.HandleTooLongResponseWithFileName(trimmedAssistantResponse, "too-long.txt")
+
+		messageEdit := discordgo.NewMessageEdit(m.ChannelID, responseMessage.ID)
+		messageEdit.Content = &filePreview
+		messageEdit.Files = []*discordgo.File{fileObj}
+		_, err = s.ChannelMessageEditComplex(messageEdit)
+		if err != nil {
+			fmt.Println("Error attaching model mention too-long file:", err)
+			_, _ = s.ChannelMessageEdit(m.ChannelID, responseMessage.ID, filePreview)
+		}
+	} else {
+		_, err = s.ChannelMessageEdit(m.ChannelID, responseMessage.ID, trimmedAssistantResponse)
+		if err != nil {
+			fmt.Println("Error editing final model mention response:", err)
+		}
+	}
+
+	parentMessageID := ""
+	if m.Message.ReferencedMessage != nil {
+		parentMessageID = m.Message.ReferencedMessage.ID
+	}
+
+	threadID := responseMessage.ID
+	if threadID == "" {
+		threadID = m.ID
+	}
+
+	err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+		ThreadId:        threadID,
+		MessageId:       m.ID,
+		ParentMessageId: parentMessageID,
+		ChannelId:       m.ChannelID,
+		GuildId:         m.GuildID,
+		CommandName:     commandName,
+		Role:            "user",
+		Content:         buildPersistenceContent(prompt, imageDescriptions),
+	})
+	if err != nil {
+		fmt.Println("Error saving model mention user message:", err)
+	}
+
+	err = persistance.SaveConversationMessage(persistance.ConversationMessage{
+		ThreadId:        threadID,
+		MessageId:       responseMessage.ID,
+		ParentMessageId: m.ID,
+		ChannelId:       m.ChannelID,
+		GuildId:         m.GuildID,
+		CommandName:     commandName,
+		Role:            "assistant",
+		Content:         assistantResponse,
+	})
+	if err != nil {
+		fmt.Println("Error saving model mention assistant message:", err)
+	}
+
+	return nil
 }
 
 func appendSuffixWithinDiscordLimit(content string, suffix string) string {

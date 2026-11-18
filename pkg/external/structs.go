@@ -4,6 +4,7 @@ type DalleImages struct {
 	B64JSON       string `json:"b64_json"`
 	RevisedPrompt string `json:"revised_prompt"`
 	URL           string `json:"url"`
+	MediaType     string `json:"media_type"`
 }
 
 type DalleResponse struct {

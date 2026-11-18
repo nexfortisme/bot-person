@@ -42,9 +42,10 @@ func streamChatCompletions(
 		return "", 0, err
 	}
 
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 	if strings.TrimSpace(authorizationHeader) != "" {
-		req.Header.Add("Authorization", authorizationHeader)
+		req.Header.Set("Authorization", authorizationHeader)
+		req.Header.Set("X-OpenRouter-Title", "Bot Person")
 	}
 
 	resp, err := client.Do(req)

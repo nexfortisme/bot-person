@@ -6,8 +6,8 @@ Bot Person is a feature-rich Discord bot originally developed by [AltarCrystal](
 
 ## Features
 
-- **AI Chat**: Chat via a local LLM or OpenAI's GPT models
-- **Image Generation**: Create AI-generated images using DALL-E
+- **AI Chat**: Chat with a local Gemma model, or through OpenRouter for GPT, Gemini, Muse, Claude, Grok, and IBM Granite
+- **Image Generation**: Create images with GPT Image 2.6 Sunburst through OpenRouter
 - **Video Generation**: Generate short AI videos using OpenAI's Sora
 - **Token Economy**: Earn and spend tokens through daily bonuses and commands
 - **Statistics Tracking**: Monitor your usage and daily bonus streaks
@@ -16,9 +16,14 @@ Bot Person is a feature-rich Discord bot originally developed by [AltarCrystal](
 ## Commands
 
 ### AI & Generation
-- `/bot` - Chat with a local LLM (sarcastic, humorous responses)
-- `/bot-gpt` - Chat with OpenAI's GPT model
-- `/image` - Generate images using DALL-E
+- `/bot` - Sarcastic chat with the local Gemma model
+- `/bot-gpt` - Chat with the configured OpenRouter model, with optional web search
+- `/bot-gemini` - Chat with Gemini. Also responds to `@gemini`
+- `/bot-muse` - Chat with Muse. Also responds to `@muse`
+- `/bot-claude` - Chat with Claude. Also responds to `@claude`
+- `/bot-grok` - Chat with Grok. Also responds to `@grok`
+- `/bot-bob` - Chat with IBM Granite. Also responds to `@bob`
+- `/image` - Generate images with GPT Image 2.6 Sunburst
 - `/slop` - Generate a short AI video using Sora (4, 8, or 12 seconds); costs tokens
 
 ### Economy & Rewards
@@ -45,19 +50,20 @@ Bot Person is a feature-rich Discord bot originally developed by [AltarCrystal](
 Copy `example.env` to `.env` and fill in the required values:
 
 ```
-OPEN_AI_API_KEY=        # OpenAI API key (for /bot-gpt, /image, /slop)
+OPEN_AI_API_KEY=        # OpenAI API key (still used by /slop)
+OPENROUTER_API_KEY=     # OpenRouter API key for chat and image generation
 DISCORD_API_KEY=        # Discord bot token
 DEV_DISCORD_API_KEY=    # Discord bot token for dev mode
 PERPLEXITY_API_KEY=     # Perplexity API key (for /search)
 
-BOT_OPEN_AI_MODEL=      # Model used by /bot-gpt
-OPEN_AI_MODEL=          # Model used for chat
-IMAGE_GENERATION_MODEL= # Model used for /image
+BOT_OPEN_AI_MODEL=      # OpenRouter model slug used by older bot calls
+OPEN_AI_MODEL=          # OpenRouter model slug used by /bot-gpt
+IMAGE_GENERATION_MODEL= # Defaults to openai/gpt-image-2.6-sunburst
 
 ADMINS=                 # Comma-separated list of admin user IDs
 ```
 
-The `/bot` command requires a locally-running LLM server (OpenAI-compatible API).
+`/bot` and bot mentions use the local LLM (`LOCAL_LLM_MODEL` at `LOCAL_LLM_CHAT_COMPLETIONS_ENDPOINT`). The other chat commands and image generation go through OpenRouter.
 
 ## Running
 
@@ -75,11 +81,10 @@ go run main.go -removeCommands
 Or use the provided `Dockerfile` to run the bot in a container:
 
 ```bash
-# macOS / Windows (Docker Desktop) — reaches Ollama via host.docker.internal
+# macOS / Windows (Docker Desktop) — /bot reaches Ollama via host.docker.internal
 docker compose up -d --build
 
-# Native Linux — uses host networking so the bot reaches Ollama on localhost,
-# without opening the firewall for the Docker bridge or rebinding Ollama
+# Native Linux — uses host networking so /bot reaches Ollama on localhost
 docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d --build
 ```
 

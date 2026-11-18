@@ -12,6 +12,7 @@ import (
 
 var (
 	open_ai_api_key                     string
+	openrouter_api_key                  string
 	discord_api_key                     string
 	dev_discord_api_key                 string
 	elevenlabs_api_key                  string
@@ -55,6 +56,7 @@ func ReadEnv(useEnvFile bool) {
 	}
 
 	open_ai_api_key = os.Getenv("OPEN_AI_API_KEY")
+	openrouter_api_key = os.Getenv("OPENROUTER_API_KEY")
 	discord_api_key = os.Getenv("DISCORD_API_KEY")
 	dev_discord_api_key = os.Getenv("DEV_DISCORD_API_KEY")
 	elevenlabs_api_key = os.Getenv("ELEVEN_LABS_API_KEY")
@@ -70,6 +72,7 @@ func ReadEnv(useEnvFile bool) {
 	// Validate required environment variables
 	requiredVars := map[string]string{
 		"OPEN_AI_API_KEY":        open_ai_api_key,
+		"OPENROUTER_API_KEY":     openrouter_api_key,
 		"DISCORD_API_KEY":        discord_api_key,
 		"BOT_OPEN_AI_MODEL":      bot_open_ai_model,
 		"OPEN_AI_MODEL":          open_ai_model,
@@ -86,6 +89,10 @@ func ReadEnv(useEnvFile bool) {
 
 func GetOpenAIKey() string {
 	return open_ai_api_key
+}
+
+func GetOpenRouterAPIKey() string {
+	return openrouter_api_key
 }
 
 func GetOpenAIModel() string {

@@ -75,7 +75,7 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 		})
 
-		// Going out to make the OpenAI call to get the proper response
+		// Going out to OpenRouter to generate the image
 		returnFile, err := ParseDalleRequest(s, option.StringValue(), generateGif)
 
 		if err != nil {
@@ -98,7 +98,7 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		user.ImageTokens -= im.CommandCost()
 		persistance.UpdateUser(*user)
 
-		// Updating the initial message with the response from the OpenAI API
+		// Updating the initial message with the generated image
 		_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Files: []*discordgo.File{&returnFile},
 		})
@@ -114,7 +114,7 @@ func (im *Image) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func (im *Image) HelpString() string {
-	return fmt.Sprintf("The `/images` command allows you to request an image from OpenAI's Dall-E API at the cost of %d Bot Person token per image. The image returned is based on what you give in the `prompt` option. Use the `gif` option to generate an animated GIF instead of a static image.", im.CommandCost())
+	return fmt.Sprintf("The `/image` command generates an image with GPT Image 2.6 Sunburst through OpenRouter. Each image costs %d Bot Person token. The image is based on the `prompt` option. Use the `gif` option to generate an animated GIF instead of a static image.", im.CommandCost())
 }
 
 func (im *Image) CommandCost() int {

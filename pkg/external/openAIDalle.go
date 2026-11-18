@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"main/pkg/util"
 	"net/http"
 	"regexp"
 	"strings"
@@ -16,34 +15,24 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-const (
-	openAIImageGenerationsEndpoint = "https://api.openai.com/v1/images/generations"
-	openAIImageEditsEndpoint       = "https://api.openai.com/v1/images/edits"
-	defaultImageSize               = "1024x1024"
-	defaultImageOutputFormat       = "png"
-)
+const defaultImageOutputFormat = "png"
 
-type imageGenerationRequest struct {
-	Model          string `json:"model"`
-	Prompt         string `json:"prompt"`
-	N              int    `json:"n,omitempty"`
-	Size           string `json:"size,omitempty"`
-	OutputFormat   string `json:"output_format,omitempty"`
-	ResponseFormat string `json:"response_format,omitempty"`
+type openRouterImageURL struct {
+	URL string `json:"url"`
 }
 
-type imageEditRequest struct {
-	Model        string           `json:"model"`
-	Prompt       string           `json:"prompt"`
-	Images       []imageReference `json:"images"`
-	N            int              `json:"n,omitempty"`
-	Size         string           `json:"size,omitempty"`
-	OutputFormat string           `json:"output_format,omitempty"`
+type openRouterImageReference struct {
+	Type     string             `json:"type"`
+	ImageURL openRouterImageURL `json:"image_url"`
 }
 
-type imageReference struct {
-	ImageURL string `json:"image_url,omitempty"`
-	FileID   string `json:"file_id,omitempty"`
+type openRouterImageRequest struct {
+	Model           string                     `json:"model"`
+	Prompt          string                     `json:"prompt"`
+	N               int                        `json:"n,omitempty"`
+	AspectRatio     string                     `json:"aspect_ratio,omitempty"`
+	OutputFormat    string                     `json:"output_format,omitempty"`
+	InputReferences []openRouterImageReference `json:"input_references,omitempty"`
 }
 
 func GetDalleResponse(prompt string) (discordgo.File, error) {
@@ -51,7 +40,8 @@ func GetDalleResponse(prompt string) (discordgo.File, error) {
 }
 
 func GetDalleGifResponse(prompt string) (discordgo.File, error) {
-	if !usesGPTImageOutputFields(util.GetImageGenerationModel()) {
+	model := strings.ToLower(ImageGenerationModel())
+	if !strings.Contains(model, "gpt-image") {
 		return discordgo.File{}, errors.New("GIF generation requires a GPT image model")
 	}
 
@@ -59,15 +49,12 @@ func GetDalleGifResponse(prompt string) (discordgo.File, error) {
 }
 
 func getImageGenerationResponse(prompt string, outputFormat string) (discordgo.File, error) {
-	openAIResponse, err := postOpenAIImageRequest(
-		openAIImageGenerationsEndpoint,
-		newImageGenerationRequest(prompt, outputFormat),
-	)
+	openRouterResponse, err := postOpenRouterImageRequest(newImageGenerationRequest(prompt, outputFormat))
 	if err != nil {
 		return discordgo.File{}, err
 	}
 
-	return imageResponseToDiscordFile(openAIResponse)
+	return imageResponseToDiscordFile(openRouterResponse)
 }
 
 func GetImageEditResponse(prompt string, imageURLs []string) (discordgo.File, error) {
@@ -81,76 +68,56 @@ func GetImageEditResponse(prompt string, imageURLs []string) (discordgo.File, er
 		return discordgo.File{}, errors.New("no image was provided to edit")
 	}
 
-	if !ImageEditsSupported() {
-		return discordgo.File{}, errors.New("image edits require a GPT image model")
-	}
-
-	openAIResponse, err := postOpenAIImageRequest(
-		openAIImageEditsEndpoint,
-		newImageEditRequest(prompt, urls),
-	)
+	openRouterResponse, err := postOpenRouterImageRequest(newImageEditRequest(prompt, urls))
 	if err != nil {
 		return discordgo.File{}, err
 	}
 
-	return imageResponseToDiscordFile(openAIResponse)
+	return imageResponseToDiscordFile(openRouterResponse)
 }
 
-func newImageGenerationRequest(prompt string, outputFormat string) imageGenerationRequest {
-	model := util.GetImageGenerationModel()
-	request := imageGenerationRequest{
-		Model:  model,
-		Prompt: prompt,
-		N:      1,
-		Size:   defaultImageSize,
-	}
-
-	if usesGPTImageOutputFields(model) {
-		request.OutputFormat = outputFormat
-		if outputFormat == "gif" {
-			// GIF frames are packed into one sheet, so a fixed frame size
-			// can exceed the API's pixel budget; "auto" lets it pick.
-			request.Size = "auto"
-		}
-	} else {
-		request.ResponseFormat = "b64_json"
-	}
-
-	return request
-}
-
-func newImageEditRequest(prompt string, imageURLs []string) imageEditRequest {
-	images := make([]imageReference, 0, len(imageURLs))
-	for _, imageURL := range imageURLs {
-		images = append(images, imageReference{ImageURL: imageURL})
-	}
-
-	return imageEditRequest{
-		Model:        util.GetImageGenerationModel(),
+func newImageGenerationRequest(prompt string, outputFormat string) openRouterImageRequest {
+	return openRouterImageRequest{
+		Model:        ImageGenerationModel(),
 		Prompt:       prompt,
-		Images:       images,
 		N:            1,
-		Size:         defaultImageSize,
-		OutputFormat: defaultImageOutputFormat,
+		AspectRatio:  "1:1",
+		OutputFormat: outputFormat,
 	}
 }
 
-func postOpenAIImageRequest(endpoint string, requestBody any) (DalleResponse, error) {
+func newImageEditRequest(prompt string, imageURLs []string) openRouterImageRequest {
+	images := make([]openRouterImageReference, 0, len(imageURLs))
+	for _, imageURL := range imageURLs {
+		images = append(images, openRouterImageReference{
+			Type:     "image_url",
+			ImageURL: openRouterImageURL{URL: imageURL},
+		})
+	}
+
+	return openRouterImageRequest{
+		Model:           ImageGenerationModel(),
+		Prompt:          prompt,
+		N:               1,
+		AspectRatio:     "1:1",
+		OutputFormat:    defaultImageOutputFormat,
+		InputReferences: images,
+	}
+}
+
+func postOpenRouterImageRequest(requestBody openRouterImageRequest) (DalleResponse, error) {
 	body, err := json.Marshal(requestBody)
 	if err != nil {
 		return DalleResponse{}, errors.New("error creating request body: " + err.Error())
 	}
 
-	postRequest, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	postRequest, err := http.NewRequest(http.MethodPost, openRouterImagesURL, bytes.NewReader(body))
 	if err != nil {
 		return DalleResponse{}, errors.New("POST Request Error: " + err.Error())
 	}
+	setOpenRouterHeaders(postRequest)
 
-	postRequest.Header.Add("Content-Type", "application/json")
-	postRequest.Header.Add("Authorization", "Bearer "+util.GetOpenAIKey())
-
-	httpClient := &http.Client{}
-	httpResponse, err := httpClient.Do(postRequest)
+	httpResponse, err := openRouterImageClient.Do(postRequest)
 	if err != nil {
 		return DalleResponse{}, errors.New("API Error: " + err.Error())
 	}
@@ -164,40 +131,36 @@ func postOpenAIImageRequest(endpoint string, requestBody any) (DalleResponse, er
 		return DalleResponse{}, errors.New("error reading response: " + err.Error())
 	}
 
-	var openAIResponse DalleResponse
-	err = json.Unmarshal(responseBuffer, &openAIResponse)
+	var openRouterResponse DalleResponse
+	err = json.Unmarshal(responseBuffer, &openRouterResponse)
 	if err != nil {
 		return DalleResponse{}, errors.New("error parsing response: " + err.Error())
 	}
 
-	if openAIResponse.Error != nil {
-		return DalleResponse{}, errors.New("Error Response from OpenAI: " + SimplifyOpenAIError(openAIResponse.Error.Message))
+	if openRouterResponse.Error != nil {
+		return DalleResponse{}, errors.New("Error response from OpenRouter: " + SimplifyOpenAIError(openRouterResponse.Error.Message))
 	}
 	if httpResponse.StatusCode < http.StatusOK || httpResponse.StatusCode >= http.StatusMultipleChoices {
 		return DalleResponse{}, errors.New("API Error: " + httpResponse.Status)
 	}
 
-	return openAIResponse, nil
+	return openRouterResponse, nil
 }
 
-func imageResponseToDiscordFile(openAIResponse DalleResponse) (discordgo.File, error) {
-	if len(openAIResponse.Data) == 0 {
+func imageResponseToDiscordFile(openRouterResponse DalleResponse) (discordgo.File, error) {
+	if len(openRouterResponse.Data) == 0 {
 		return discordgo.File{}, errors.New("no image was generated")
 	}
 
-	image := openAIResponse.Data[0]
-	if strings.TrimSpace(image.B64JSON) == "" {
-		return discordgo.File{}, errors.New("no image data was returned")
-	}
-
-	imageData, err := decodeBase64Image(image.B64JSON)
+	image := openRouterResponse.Data[0]
+	imageData, mediaType, err := readGeneratedImage(image)
 	if err != nil {
-		return discordgo.File{}, errors.New("Error decoding image: " + err.Error())
+		return discordgo.File{}, err
 	}
 
-	outputFormat := normalizeImageFormat(openAIResponse.OutputFormat)
+	outputFormat := imageFormat(image, mediaType, openRouterResponse.OutputFormat)
 	fileObj := &discordgo.File{
-		Name:        fmt.Sprintf("%s.%s", imageFileName(openAIResponse.Created), outputFormat),
+		Name:        fmt.Sprintf("%s.%s", imageFileName(openRouterResponse.Created), outputFormat),
 		ContentType: imageContentType(outputFormat),
 		Reader:      bytes.NewReader(imageData),
 	}
@@ -205,12 +168,81 @@ func imageResponseToDiscordFile(openAIResponse DalleResponse) (discordgo.File, e
 	return *fileObj, nil
 }
 
-func imageFileName(created int64) string {
-	if created > 0 {
-		return fmt.Sprintf("openai-image-%d", created)
+func readGeneratedImage(image DalleImages) ([]byte, string, error) {
+	if strings.TrimSpace(image.B64JSON) != "" {
+		imageData, err := decodeBase64Image(image.B64JSON)
+		if err != nil {
+			return nil, "", errors.New("Error decoding image: " + err.Error())
+		}
+		return imageData, image.MediaType, nil
 	}
 
-	return fmt.Sprintf("openai-image-%s", time.Now().Format("2006-01-02-15-04-05"))
+	if strings.TrimSpace(image.URL) == "" {
+		return nil, "", errors.New("no image data was returned")
+	}
+
+	response, err := openRouterImageClient.Get(image.URL)
+	if err != nil {
+		return nil, "", errors.New("error downloading image: " + err.Error())
+	}
+	if response == nil {
+		return nil, "", errors.New("error downloading image: empty response")
+	}
+	defer response.Body.Close()
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return nil, "", errors.New("error downloading image: " + response.Status)
+	}
+
+	imageData, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, "", errors.New("error downloading image: " + err.Error())
+	}
+	if len(imageData) == 0 {
+		return nil, "", errors.New("no image data was returned")
+	}
+
+	mediaType := image.MediaType
+	if strings.TrimSpace(mediaType) == "" {
+		mediaType = response.Header.Get("Content-Type")
+	}
+	return imageData, mediaType, nil
+}
+
+func imageFileName(created int64) string {
+	if created > 0 {
+		return fmt.Sprintf("bot-image-%d", created)
+	}
+
+	return fmt.Sprintf("bot-image-%s", time.Now().Format("2006-01-02-15-04-05"))
+}
+
+func imageFormat(image DalleImages, mediaType string, outputFormat string) string {
+	if format := formatFromMediaType(mediaType); format != "" {
+		return format
+	}
+	if format := formatFromMediaType(image.MediaType); format != "" {
+		return format
+	}
+	if strings.TrimSpace(outputFormat) != "" {
+		return normalizeImageFormat(outputFormat)
+	}
+	return defaultImageOutputFormat
+}
+
+func formatFromMediaType(mediaType string) string {
+	mediaType = strings.ToLower(mediaType)
+	switch {
+	case strings.Contains(mediaType, "jpeg"), strings.Contains(mediaType, "jpg"):
+		return "jpg"
+	case strings.Contains(mediaType, "webp"):
+		return "webp"
+	case strings.Contains(mediaType, "gif"):
+		return "gif"
+	case strings.Contains(mediaType, "png"):
+		return "png"
+	default:
+		return ""
+	}
 }
 
 func normalizeImageFormat(outputFormat string) string {
@@ -239,14 +271,10 @@ func imageContentType(outputFormat string) string {
 	}
 }
 
-func usesGPTImageOutputFields(model string) bool {
-	return strings.HasPrefix(strings.ToLower(model), "gpt-image-") || strings.EqualFold(model, "chatgpt-image-latest")
-}
-
-// ImageEditsSupported reports whether the configured image generation model
-// can take an existing image as input for edits.
+// ImageEditsSupported reports whether image edits can be sent to the
+// configured image model. GPT Image 2.6 Sunburst accepts reference images.
 func ImageEditsSupported() bool {
-	return usesGPTImageOutputFields(util.GetImageGenerationModel())
+	return true
 }
 
 func decodeBase64Image(b64String string) ([]byte, error) {

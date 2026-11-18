@@ -1,16 +1,9 @@
 package external
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
-
-	"main/pkg/logging"
 	"main/pkg/persistance"
 	attribute "main/pkg/persistance/eums"
 	"main/pkg/util"
-
-	"net/http"
 )
 
 func GetOpenAIResponse(prompt string, userId string) string {
@@ -23,59 +16,17 @@ func GetOpenAIResponse(prompt string, userId string) string {
 }
 
 func GetOpenAIResponseWithMessages(messages []OpenAIGPTMessage, userId string) string {
-	client := &http.Client{}
-
 	prePrompt, err := persistance.GetUserAttribute(userId, attribute.BOT_PREPROMPT)
 	if err != nil {
 		prePrompt = "You are a whimsical and dear friend. You respond to any inquiries with a level of spontaneity and randomness. You don't take anything too seriously and are not afraid to 'shoot from the hip' so to speak when responding to people."
 	}
 
-	requestMessages := make([]OpenAIGPTMessage, 0, len(messages)+1)
-	requestMessages = append(requestMessages, OpenAIGPTMessage{
+	requestMessages := make([]OpenAIChatMessage, 0, len(messages)+1)
+	requestMessages = append(requestMessages, OpenAIChatMessage{
 		Role:    "system",
 		Content: prePrompt,
 	})
-	requestMessages = append(requestMessages, messages...)
+	requestMessages = append(requestMessages, gptMessagesToChat(messages)...)
 
-	payload := chatCompletionsRequest{
-		Model:    util.GetBotOpenAIModel(),
-		Messages: requestMessages,
-	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		logging.LogError("Error creating request body for OpenAI chat completions")
-		return "Error Contacting OpenAI API. Please Try Again Later."
-	}
-
-	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/chat/completions", bytes.NewReader(body))
-	if err != nil {
-		logging.LogError("Error creating POST request")
-		return "Error Contacting OpenAI API. Please Try Again Later."
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+util.GetOpenAIKey())
-
-	resp, _ := client.Do(req)
-	if resp == nil {
-		return "Error Contacting OpenAI API. Please Try Again Later."
-	}
-	defer resp.Body.Close()
-
-	buf, _ := io.ReadAll(resp.Body)
-	rspOAI := OpenAIGPTResponse{}
-	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
-	// need to add proper error handling
-	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
-	if err != nil {
-		return ""
-	}
-
-	// It's possible that OpenAI returns no response, so
-	// fallback to a default one
-	if len(rspOAI.Choices) == 0 {
-		return "I'm sorry, I don't understand?"
-	} else {
-		return rspOAI.Choices[0].Message.Content
-	}
+	return completeOrErrorMessage(NormalizeOpenRouterModel(util.GetBotOpenAIModel()), requestMessages, false)
 }

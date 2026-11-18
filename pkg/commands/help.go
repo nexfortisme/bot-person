@@ -1,82 +1,103 @@
 package commands
 
 import (
+	"main/pkg/external"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-type Help struct {}
+type Help struct{}
 
 func (h *Help) ApplicationCommand() *discordgo.ApplicationCommand {
 	return &discordgo.ApplicationCommand{
 		Name:        "help",
-			Description: "List of commands to use with Bot Person.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "command",
-					Description: "Which command you want to get help with.",
-					Type:        discordgo.ApplicationCommandOptionString,
-					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{
-							Name:  "Bot",
-							Value: "bot",
-						},
-						{
-							Name:  "Bot GPT",
-							Value: "bot-gpt",
-						},
-						{
-							Name:  "My Stats",
-							Value: "my-stats",
-						},
-						{
-							Name:  "Bot Stats",
-							Value: "bot-stats",
-						},
-						{
-							Name:  "About",
-							Value: "about",
-						},
-						{
-							Name:  "Donations",
-							Value: "donations",
-						},
-						{
-							Name:  "Images",
-							Value: "images",
-						},
-						{
-							Name:  "Balance",
-							Value: "balance",
-						},
-						{
-							Name:  "Send",
-							Value: "send",
-						},
-						{
-							Name:  "Bonus",
-							Value: "bonus",
-						},
-						{
-							Name:  "Loot Box",
-							Value: "loot-box",
-						},
-						{
-							Name:  "Broken",
-							Value: "broken",
-						},
-						{
-							Name:  "Burn",
-							Value: "burn",
-						},
-						{
-							Name:  "Invite",
-							Value: "invite",
-						},
+		Description: "List of commands to use with Bot Person.",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Name:        "command",
+				Description: "Which command you want to get help with.",
+				Type:        discordgo.ApplicationCommandOptionString,
+				Choices: []*discordgo.ApplicationCommandOptionChoice{
+					{
+						Name:  "Bot",
+						Value: "bot",
 					},
-					Required: false,
+					{
+						Name:  "Bot GPT",
+						Value: "bot-gpt",
+					},
+					{
+						Name:  "Bot Gemini",
+						Value: "bot-gemini",
+					},
+					{
+						Name:  "Bot Muse",
+						Value: "bot-muse",
+					},
+					{
+						Name:  "Bot Claude",
+						Value: "bot-claude",
+					},
+					{
+						Name:  "Bot Grok",
+						Value: "bot-grok",
+					},
+					{
+						Name:  "Bot Bob",
+						Value: "bot-bob",
+					},
+					{
+						Name:  "My Stats",
+						Value: "my-stats",
+					},
+					{
+						Name:  "Bot Stats",
+						Value: "bot-stats",
+					},
+					{
+						Name:  "About",
+						Value: "about",
+					},
+					{
+						Name:  "Donations",
+						Value: "donations",
+					},
+					{
+						Name:  "Images",
+						Value: "images",
+					},
+					{
+						Name:  "Balance",
+						Value: "balance",
+					},
+					{
+						Name:  "Send",
+						Value: "send",
+					},
+					{
+						Name:  "Bonus",
+						Value: "bonus",
+					},
+					{
+						Name:  "Loot Box",
+						Value: "loot-box",
+					},
+					{
+						Name:  "Broken",
+						Value: "broken",
+					},
+					{
+						Name:  "Burn",
+						Value: "burn",
+					},
+					{
+						Name:  "Invite",
+						Value: "invite",
+					},
 				},
+				Required: false,
 			},
+		},
 	}
 }
 
@@ -107,6 +128,12 @@ func (h *Help) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		helpString = (&Bot{}).HelpString()
 	case "bot-gpt":
 		helpString = (&BotGPT{}).HelpString()
+	case "bot-gemini", "bot-muse", "bot-claude", "bot-grok", "bot-bob":
+		if route, ok := external.RouteByCommand(helpOption); ok {
+			helpString = route.Help
+		} else {
+			helpString = "Command not found. Use `/help` for a list of available commands."
+		}
 	case "my-stats":
 		helpString = (&MyStats{}).HelpString()
 	case "bot-stats":

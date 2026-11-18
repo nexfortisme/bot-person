@@ -11,6 +11,12 @@ import (
 	"net/http"
 )
 
+type localChatCompletionsRequest struct {
+	Model            string `json:"model"`
+	Messages         any    `json:"messages"`
+	Reasoning_Effort string `json:"reasoning_effort,omitempty"`
+}
+
 func StreamLocalLLMResponse(prompt string, userId string, onDelta func(string)) (string, error) {
 	return StreamLocalLLMResponseWithChatMessages([]OpenAIChatMessage{
 		{
@@ -89,7 +95,7 @@ func GetLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId st
 	})
 	requestMessages = append(requestMessages, messages...)
 
-	payload := chatCompletionsRequest{
+	payload := localChatCompletionsRequest{
 		Model:    model,
 		Messages: requestMessages,
 	}
@@ -124,18 +130,13 @@ func GetLocalLLMResponseWithChatMessages(messages []OpenAIChatMessage, userId st
 	}
 
 	rspOAI := OpenAIGPTResponse{}
-	// TODO: This could contain an error from OpenAI (rate limit, server issue, etc)
-	// need to add proper error handling
-	err = json.Unmarshal([]byte(string(buf)), &rspOAI)
+	err = json.Unmarshal(buf, &rspOAI)
 	if err != nil {
 		return ""
 	}
 
-	// It's possible that OpenAI returns no response, so
-	// fallback to a default one
 	if len(rspOAI.Choices) == 0 {
 		return "I'm sorry, I don't understand?"
-	} else {
-		return rspOAI.Choices[0].Message.Content
 	}
+	return rspOAI.Choices[0].Message.Content
 }
